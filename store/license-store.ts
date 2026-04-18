@@ -1,12 +1,12 @@
-import { JamaicanDriverLicense } from "@/models";
+import { DynamicDriverLicense } from "@/models";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 interface LicenseState {
-  license: JamaicanDriverLicense | null;
-  setLicense: (license: JamaicanDriverLicense) => void;
-  updateLicense: (updates: Partial<JamaicanDriverLicense>) => void;
+  license: DynamicDriverLicense | null;
+  setLicense: (license: DynamicDriverLicense) => void;
+  updateLicense: (updates: Partial<DynamicDriverLicense>) => void;
   deleteLicense: () => void;
 }
 

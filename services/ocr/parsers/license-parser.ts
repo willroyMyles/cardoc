@@ -2,15 +2,18 @@
  * Regex-based parsers to extract structured fields from raw OCR text.
  */
 
-import { DriverLicense, JamaicanDriverLicense } from "@/models";
+import { DynamicDriverLicense } from "@/models";
+import { type CountryCode } from "@/services/docs-registry";
 import { v4 as uuidv4 } from "uuid";
 
 /**
- * Attempt to parse OCR text into partial DriverLicense fields.
+ * Attempt to parse OCR text into partial fields.
  * Not exhaustive — fill in remaining fields manually.
  */
-export function parseLicenseFromText(text: string): Partial<DriverLicense> {
-  const result: Partial<DriverLicense> = {};
+function parseLicenseFromText(
+  text: string,
+): Record<string, string | undefined> {
+  const result: Record<string, string | undefined> = {};
 
   // Full name — look for lines that are all caps (common on licenses)
   const nameMatch = text.match(/^([A-Z][A-Z\s,'-]{4,})\s*$/m);
@@ -127,10 +130,9 @@ function normalizeJamaicanDate(raw: string): string {
  * Fields that cannot be reliably extracted are omitted so the caller can
  * prompt the user to fill them in.
  */
-export function parseJamaicanLicenseFromText(
+function parseJamaicanLicenseFromText(
   text: string,
-): Omit<JamaicanDriverLicense, "id" | "createdAt" | "updatedAt"> &
-  Partial<Pick<JamaicanDriverLicense, "id" | "createdAt" | "updatedAt">> {
+): Record<string, string | undefined> {
   const lines = text
     .split(/\n/)
     .map((l) => l.trim())
@@ -226,14 +228,9 @@ export function parseJamaicanLicenseFromText(
         .join(", ")
     : undefined;
 
-  // ── Issuing authority ─────────────────────────────────────────────────────
-  const issuingAuthority = upper.includes("GOVERNMENT OF JAMAICA")
-    ? "Government of Jamaica"
-    : undefined;
-
   return {
     fullName,
-    licenseNumber: trn, // The TRN doubles as the licence reference on JA cards
+    licenseNumber: trn,
     trn,
     licenseClass,
     collectorate,
@@ -243,11 +240,26 @@ export function parseJamaicanLicenseFromText(
     originalIssueDate: issueDate,
     dateOfBirth,
     address,
-    issuingRegion: "Jamaica",
-    issuingAuthority,
     nationality: "Jamaican",
-    controlNumber: "", // only on the back — populate when back is scanned
+    controlNumber: "",
   };
+}
+
+/**
+ * Country-aware OCR parser. Returns a fields Record for known countries,
+ * or `null` for unsupported countries (caller should fall back to AI).
+ */
+export function parseLicenseByCountry(
+  text: string,
+  country: CountryCode,
+): Record<string, string | undefined> | null {
+  if (country === "jm") {
+    if (isJamaicanLicenseText(text)) {
+      return parseJamaicanLicenseFromText(text);
+    }
+    return parseLicenseFromText(text);
+  }
+  return null;
 }
 
 /**
@@ -258,15 +270,16 @@ export function parseJamaicanLicenseFromText(
  */
 export function extractLicenseFromOCR(
   text: string,
-): JamaicanDriverLicense | null {
+): DynamicDriverLicense | null {
   if (!isJamaicanLicenseText(text)) return null;
 
   const now = new Date().toISOString();
-  const partial = parseJamaicanLicenseFromText(text);
+  const fields = parseJamaicanLicenseFromText(text);
 
   return {
-    ...partial,
     id: uuidv4(),
+    country: "jm",
+    fields,
     createdAt: now,
     updatedAt: now,
   };

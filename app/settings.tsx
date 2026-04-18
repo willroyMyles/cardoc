@@ -4,11 +4,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { syncFromCloud, syncToCloud } from "@/services/cloud-sync";
 import { requestNotificationPermissions } from "@/services/notifications/expiry-reminders";
 import { useSettingsStore } from "@/store";
-import {
-    REGION_LABELS,
-    type CloudProvider,
-    type RegionCode,
-} from "@/store/settings-store";
+import { type CloudProvider } from "@/store/settings-store";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -23,7 +19,6 @@ import {
     View,
 } from "react-native";
 
-const REGIONS = Object.entries(REGION_LABELS) as [RegionCode, string][];
 const PROVIDERS: { value: CloudProvider; label: string }[] = [
   { value: "none", label: "None (local only)" },
   { value: "supabase", label: "Supabase" },
@@ -35,8 +30,6 @@ export default function SettingsScreen() {
   const c = Colors[scheme];
 
   const {
-    region,
-    setRegion,
     currency,
     setCurrency,
     cloudProvider,
@@ -107,35 +100,6 @@ export default function SettingsScreen() {
           </TouchableOpacity>
           <Text style={[styles.pageTitle, { color: c.text }]}>Settings</Text>
           <View style={{ width: 22 }} />
-        </View>
-
-        {/* Region */}
-        <SectionHeader title="Region" c={c} />
-        <View
-          style={[
-            styles.group,
-            { backgroundColor: c.card, borderColor: c.border },
-          ]}
-        >
-          {REGIONS.map(([code, label]) => (
-            <TouchableOpacity
-              key={code}
-              style={styles.optionRow}
-              onPress={() => setRegion(code)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.optionLabel, { color: c.text }]}>
-                {label}
-              </Text>
-              {region === code && (
-                <IconSymbol
-                  name="checkmark.circle.fill"
-                  size={20}
-                  color={c.tint}
-                />
-              )}
-            </TouchableOpacity>
-          ))}
         </View>
 
         {/* Currency */}

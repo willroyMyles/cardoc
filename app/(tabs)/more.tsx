@@ -2,18 +2,21 @@ import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { COUNTRY_LABELS, type CountryCode } from "@/services/docs-registry";
 import { useLicenseStore, useSettingsStore } from "@/store";
 import { router } from "expo-router";
 import React from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+const COUNTRIES = Object.entries(COUNTRY_LABELS) as [CountryCode, string][];
 
 type MenuItem = {
   label: string;
@@ -73,12 +76,47 @@ export default function MoreScreen() {
   const license = useLicenseStore((s) => s.license);
   const parsingMode = useSettingsStore((s) => s.parsingMode);
   const setParsingMode = useSettingsStore((s) => s.setParsingMode);
+  const country = useSettingsStore((s) => s.country);
+  const setCountry = useSettingsStore((s) => s.setCountry);
   const isEntityMode = parsingMode === "entity";
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[styles.header, { color: c.text }]}>More</Text>
+
+        {/* Country picker */}
+        <View
+          style={[
+            styles.settingsGroup,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
+        >
+          <Text style={[styles.settingsGroupTitle, { color: c.subtext }]}>
+            COUNTRY
+          </Text>
+          {COUNTRIES.map(([code, label]) => (
+            <TouchableOpacity
+              key={code}
+              style={styles.menuItem}
+              onPress={() => setCountry(code)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuText}>
+                <Text style={[styles.menuLabel, { color: c.text }]}>
+                  {label}
+                </Text>
+              </View>
+              {country === code && (
+                <IconSymbol
+                  name="checkmark.circle.fill"
+                  size={20}
+                  color={c.tint}
+                />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {license && (
           <TouchableOpacity
@@ -93,12 +131,14 @@ export default function MoreScreen() {
                 color="#fff"
               />
               <View style={styles.licenseInfo}>
-                <Text style={styles.licenseCardName}>{license.fullName}</Text>
+                <Text style={styles.licenseCardName}>
+                  {license.fields.fullName ?? ""}
+                </Text>
                 <Text style={styles.licenseCardSub}>
-                  {license.licenseNumber}
+                  {license.fields.licenseNumber ?? ""}
                 </Text>
               </View>
-              <ExpiryIndicator expiryDate={license.expiryDate} />
+              <ExpiryIndicator expiryDate={license.fields.expiryDate ?? ""} />
             </View>
           </TouchableOpacity>
         )}
