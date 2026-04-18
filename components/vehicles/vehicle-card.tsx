@@ -9,14 +9,20 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface VehicleCardProps {
   vehicle: Vehicle;
+  onPress?: () => void;
 }
 
-export function VehicleCard({ vehicle }: VehicleCardProps) {
+export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
   const scheme = useColorScheme() ?? "light";
   return (
     <TouchableOpacity
-      onPress={() =>
-        router.push({ pathname: "/vehicle/[id]", params: { id: vehicle.id } })
+      onPress={
+        onPress ??
+        (() =>
+          router.push({
+            pathname: "/vehicle/[id]",
+            params: { id: vehicle.id },
+          }))
       }
       activeOpacity={0.75}
     >

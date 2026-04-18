@@ -1,11 +1,14 @@
 import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useVehiclesStore } from "@/store";
 import { router } from "expo-router";
 import React from "react";
 import {
     SafeAreaView,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -15,70 +18,93 @@ import {
 export default function HomeScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
+  const vehicles = useVehiclesStore((s) => s.vehicles);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <View style={styles.header}>
-        <ThemedText type="title">Home</ThemedText>
-      </View>
-
-      <View style={styles.content}>
-        <TouchableOpacity
-          style={[styles.scanCard, { backgroundColor: c.tint }]}
-          onPress={() => router.push("/scan")}
-          activeOpacity={0.85}
-        >
-          <View style={styles.scanIconWrap}>
-            <IconSymbol name="doc.text.viewfinder" size={48} color="#fff" />
-          </View>
-          <Text style={styles.scanTitle}>Scan to begin</Text>
-          <Text style={styles.scanSubtitle}>
-            Scan a document or driver's license to get started
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.quickRow}>
-          <TouchableOpacity
-            style={[
-              styles.quickBtn,
-              { backgroundColor: c.card, borderColor: c.border },
-            ]}
-            onPress={() => router.push("/vehicle/add")}
-            activeOpacity={0.75}
-          >
-            <IconSymbol name="car.fill" size={22} color={c.tint} />
-            <Text style={[styles.quickBtnLabel, { color: c.text }]}>
-              Add Vehicle
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.quickBtn,
-              { backgroundColor: c.card, borderColor: c.border },
-            ]}
-            onPress={() => router.push("/document/add")}
-            activeOpacity={0.75}
-          >
-            <IconSymbol name="doc.fill" size={22} color={c.tint} />
-            <Text style={[styles.quickBtnLabel, { color: c.text }]}>
-              Add Document
-            </Text>
-          </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.header}>
+          <ThemedText type="title">Home</ThemedText>
         </View>
-      </View>
+
+        <View style={styles.content}>
+          <TouchableOpacity
+            style={[styles.scanCard, { backgroundColor: c.tint }]}
+            onPress={() => router.push("/scan")}
+            activeOpacity={0.85}
+          >
+            <View style={styles.scanIconWrap}>
+              <IconSymbol name="doc.text.viewfinder" size={48} color="#fff" />
+            </View>
+            <Text style={styles.scanTitle}>Scan to begin</Text>
+            <Text style={styles.scanSubtitle}>
+              Scan a document or driver's license to get started
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.quickRow}>
+            <TouchableOpacity
+              style={[
+                styles.quickBtn,
+                { backgroundColor: c.card, borderColor: c.border },
+              ]}
+              onPress={() => router.push("/vehicle/add")}
+              activeOpacity={0.75}
+            >
+              <IconSymbol name="car.fill" size={22} color={c.tint} />
+              <Text style={[styles.quickBtnLabel, { color: c.text }]}>
+                Add Vehicle
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.quickBtn,
+                { backgroundColor: c.card, borderColor: c.border },
+              ]}
+              onPress={() => router.push("/document/add")}
+              activeOpacity={0.75}
+            >
+              <IconSymbol name="doc.fill" size={22} color={c.tint} />
+              <Text style={[styles.quickBtnLabel, { color: c.text }]}>
+                Add Document
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {vehicles.length > 0 ? (
+            <View style={styles.vehiclesSection}>
+              <Text style={[styles.sectionTitle, { color: c.subtext }]}>
+                YOUR VEHICLES
+              </Text>
+              {vehicles.map((v) => (
+                <VehicleCard
+                  key={v.id}
+                  vehicle={v}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/vehicle/[id]/related",
+                      params: { id: v.id },
+                    })
+                  }
+                />
+              ))}
+            </View>
+          ) : null}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  scroll: { paddingBottom: 40 },
   header: {
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
   },
   content: {
-    flex: 1,
     paddingHorizontal: 16,
     paddingTop: 24,
     gap: 16,
@@ -120,5 +146,16 @@ const styles = StyleSheet.create({
   quickBtnLabel: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  vehiclesSection: {
+    marginTop: 8,
+    gap: 0,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+    marginBottom: 8,
+    marginHorizontal: 16,
   },
 });
