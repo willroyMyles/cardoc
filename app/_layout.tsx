@@ -1,7 +1,7 @@
 import {
-    DarkTheme,
-    DefaultTheme,
-    ThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -67,6 +67,10 @@ export default function RootLayout() {
         <Stack.Screen
           name="scan"
           options={{ presentation: "modal", title: "Scan Document" }}
+        />
+        <Stack.Screen
+          name="scan-review"
+          options={{ title: "Review Scan", headerBackTitle: "Back" }}
         />
         <Stack.Screen
           name="settings"

@@ -32,10 +32,8 @@ export const COUNTRY_LABELS: Record<CountryCode, string> = Object.fromEntries(
 type CountryModule = Record<string, unknown>;
 
 export function getDriverLicenseSpec(country: CountryCode): DocSpec {
-  console.log(countries);
-
-  const mod = countries[country] as CountryModule;
-  console.log(mod);
+  const mod = countries[country] as CountryModule | undefined;
+  if (!mod) throw new Error(`No spec module found for country: ${country}`);
 
   const spec = mod.driver_license as DocSpec[] | undefined;
   if (!spec) throw new Error(`No driver_license spec for country: ${country}`);
@@ -43,11 +41,14 @@ export function getDriverLicenseSpec(country: CountryCode): DocSpec {
 }
 
 export function getDocumentSpecs(country: CountryCode): DocSpec[] | undefined {
-  const mod = countries[country] as CountryModule;
+  const mod = countries[country] as CountryModule | undefined;
+  if (!mod) return undefined;
   return mod.document as DocSpec[] | undefined;
 }
 
 /** Returns the form-type keys available for a country (e.g. "driver_license", "document"). */
 export function getAvailableForms(country: CountryCode): string[] {
-  return Object.keys(countries[country]);
+  const mod = countries[country];
+  if (!mod) return [];
+  return Object.keys(mod);
 }

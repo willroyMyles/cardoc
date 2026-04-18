@@ -21,7 +21,32 @@ export function LicenseCard({
 }: LicenseCardProps) {
   const scheme = useColorScheme() ?? "light";
   const isDark = scheme === "dark";
-  const spec = specProp ?? getDriverLicenseSpec(license.country);
+
+  let spec: DriverLicenseSpec | null = specProp ?? null;
+  if (!spec) {
+    try {
+      spec = getDriverLicenseSpec(license.country);
+    } catch {
+      spec = null;
+    }
+  }
+
+  if (!spec) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
+        <View style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}>
+          <Text style={styles.headerLabel}>DRIVER'S LICENSE</Text>
+          <Text style={styles.field}>
+            {Object.entries(license.fields)
+              .filter(([, v]) => v)
+              .slice(0, 4)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join("\n")}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>

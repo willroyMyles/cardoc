@@ -12,7 +12,7 @@ import {
     useVehiclesStore
 } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
     SafeAreaView,
     ScrollView,
@@ -27,10 +27,12 @@ export default function VehicleDetailScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
 
-  const vehicle = useVehiclesStore((s) => s.getVehicle(id));
+  const vehicle = useVehiclesStore((s) => s.vehicles.find((v) => v.id === id));
   const deleteVehicle = useVehiclesStore((s) => s.deleteVehicle);
-  const docs = useDocumentsStore((s) => s.getDocumentsForVehicle(id));
-  const tickets = useTicketsStore((s) => s.getTicketsForVehicle(id));
+  const allDocs = useDocumentsStore((s) => s.documents);
+  const allTickets = useTicketsStore((s) => s.tickets);
+  const docs = useMemo(() => allDocs.filter((d) => d.vehicleId === id), [allDocs, id]);
+  const tickets = useMemo(() => allTickets.filter((t) => t.vehicleId === id), [allTickets, id]);
 
   const [showDelete, setShowDelete] = useState(false);
 
