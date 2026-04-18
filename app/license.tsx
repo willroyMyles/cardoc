@@ -9,8 +9,6 @@ import {
   type DriverLicenseSpec,
 } from "@/services/docs-registry";
 import { extractLicenseFieldsWithAI } from "@/services/firebase/ai-license";
-import { recognizeFromUri } from "@/services/ocr/ml-kit";
-import { parseLicenseByCountry } from "@/services/ocr/parsers/license-parser";
 import { useLicenseStore, useSettingsStore } from "@/store";
 import * as ImagePicker from "expo-image-picker";
 import React, { useMemo, useState } from "react";
@@ -155,66 +153,66 @@ export default function LicenseScreen() {
     }
   }
 
-  async function handleProcessWithMLKit() {
-    if (!frontUri && !backUri) {
-      Alert.alert("No Images", "Add at least one image to process.");
-      return;
-    }
-    setProcessing(true);
-    try {
-      let frontInfo = null;
-      let backInfo = null;
-      if (frontUri) frontInfo = await recognizeFromUri(frontUri);
-      if (backUri) backInfo = await recognizeFromUri(backUri);
-      const combined = (frontInfo?.text ?? "") + (backInfo?.text ?? "");
+  // async function handleProcessWithMLKit() {
+  //   if (!frontUri && !backUri) {
+  //     Alert.alert("No Images", "Add at least one image to process.");
+  //     return;
+  //   }
+  //   setProcessing(true);
+  //   try {
+  //     let frontInfo = null;
+  //     let backInfo = null;
+  //     if (frontUri) frontInfo = await recognizeFromUri(frontUri);
+  //     if (backUri) backInfo = await recognizeFromUri(backUri);
+  //     const combined = (frontInfo?.text ?? "") + (backInfo?.text ?? "");
 
-      if (!combined.trim()) {
-        Alert.alert(
-          "No Text Found",
-          "Could not detect text. Try clearer images with good lighting.",
-        );
-        return;
-      }
+  //     if (!combined.trim()) {
+  //       Alert.alert(
+  //         "No Text Found",
+  //         "Could not detect text. Try clearer images with good lighting.",
+  //       );
+  //       return;
+  //     }
 
-      const parsed = parseLicenseByCountry(combined, country);
-      if (parsed) {
-        setFields((prev) => {
-          const next = { ...prev };
-          for (const [k, v] of Object.entries(parsed)) {
-            if (v !== undefined) {
-              next[k] = spec.fields[k]?.type === "date" ? v.split("T")[0] : v;
-            }
-          }
-          return next;
-        });
-        Alert.alert(
-          "Done",
-          "Fields filled from scan. Please review and correct any errors.",
-        );
-      } else {
-        Alert.alert(
-          "Not Recognised",
-          "Could not parse licence for this country. Try AI scan instead.",
-        );
-      }
-    } catch (e: any) {
-      const msg = String(e?.message ?? e);
-      if (
-        msg.includes("ML Kit") ||
-        msg.includes("not available") ||
-        msg.includes("Expo development build")
-      ) {
-        Alert.alert(
-          "OCR Not Available",
-          "On-device OCR requires an Expo dev build and cannot run in Expo Go.\n\nRun: npx expo run:ios  or  npx expo run:android",
-        );
-      } else {
-        Alert.alert("Processing Error", msg);
-      }
-    } finally {
-      setProcessing(false);
-    }
-  }
+  //     const parsed = parseLicenseByCountry(combined, country);
+  //     if (parsed) {
+  //       setFields((prev) => {
+  //         const next = { ...prev };
+  //         for (const [k, v] of Object.entries(parsed)) {
+  //           if (v !== undefined) {
+  //             next[k] = spec.fields[k]?.type === "date" ? v.split("T")[0] : v;
+  //           }
+  //         }
+  //         return next;
+  //       });
+  //       Alert.alert(
+  //         "Done",
+  //         "Fields filled from scan. Please review and correct any errors.",
+  //       );
+  //     } else {
+  //       Alert.alert(
+  //         "Not Recognised",
+  //         "Could not parse licence for this country. Try AI scan instead.",
+  //       );
+  //     }
+  //   } catch (e: any) {
+  //     const msg = String(e?.message ?? e);
+  //     if (
+  //       msg.includes("ML Kit") ||
+  //       msg.includes("not available") ||
+  //       msg.includes("Expo development build")
+  //     ) {
+  //       Alert.alert(
+  //         "OCR Not Available",
+  //         "On-device OCR requires an Expo dev build and cannot run in Expo Go.\n\nRun: npx expo run:ios  or  npx expo run:android",
+  //       );
+  //     } else {
+  //       Alert.alert("Processing Error", msg);
+  //     }
+  //   } finally {
+  //     setProcessing(false);
+  //   }
+  // }
 
   function handleSave() {
     const missingRequired = Object.entries(spec.fields)
@@ -396,7 +394,7 @@ export default function LicenseScreen() {
 
         {/* ── Process buttons ────────────────────────────────────────── */}
         <View style={styles.processRow}>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[
               styles.mlBtn,
               styles.mlBtnHalf,
@@ -426,7 +424,7 @@ export default function LicenseScreen() {
             >
               {processing ? "Processing…" : "ML Kit"}
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity
             style={[
