@@ -1,7 +1,6 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { recognizeFromUri } from "@/services/ocr/ml-kit";
-import { parseDocumentFromText } from "@/services/ocr/parsers/document-parser";
-import { parseLicenseByCountry } from "@/services/ocr/parsers/license-parser";
+
 import { useSettingsStore } from "@/store";
 import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
@@ -9,13 +8,13 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function ScanScreen() {
@@ -66,13 +65,13 @@ export default function ScanScreen() {
       }
 
       console.log("text", text);
-
+      let parsed: any;
       if (mode === "license") {
-        const parsed = parseLicenseByCountry(text, country);
+        // const parsed = parseLicenseByCountry(text, country);
         router.back();
         router.setParams({ scannedLicense: JSON.stringify(parsed ?? {}) });
       } else {
-        const parsed = parseDocumentFromText(text);
+        // const parsed = parseDocumentFromText(text);
         router.back();
         router.setParams({ scannedDocument: JSON.stringify(parsed) });
       }

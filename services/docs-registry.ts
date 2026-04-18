@@ -1,13 +1,9 @@
-import jmSpec from "@/docs/jamaica/driver_license.json";
+import { countries, type CountryCode } from "@/docs";
 
-export type CountryCode = "jm";
-
-export const COUNTRY_LABELS: Record<CountryCode, string> = {
-  jm: "Jamaica",
-};
+export type { CountryCode };
 
 export interface FieldSpec {
-  type: "string" | "date" | "enum";
+  type: "string" | "date" | "enum" | "number";
   required?: boolean;
   pattern?: string;
   values?: string[];
@@ -15,17 +11,43 @@ export interface FieldSpec {
   label?: string;
 }
 
-export interface DriverLicenseSpec {
+export interface DocSpec {
   type: string;
   label: string;
   issuing_authority: string;
   fields: Record<string, FieldSpec>;
 }
 
-const COUNTRY_REGISTRY: Record<CountryCode, DriverLicenseSpec> = {
-  jm: (jmSpec as DriverLicenseSpec[])[0],
-};
+/** @deprecated use DocSpec */
+export type DriverLicenseSpec = DocSpec;
 
-export function getDriverLicenseSpec(country: CountryCode): DriverLicenseSpec {
-  return COUNTRY_REGISTRY[country];
+function toLabel(key: string): string {
+  return key.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export const COUNTRY_LABELS: Record<CountryCode, string> = Object.fromEntries(
+  (Object.keys(countries) as CountryCode[]).map((k) => [k, toLabel(k)]),
+) as Record<CountryCode, string>;
+
+type CountryModule = Record<string, unknown>;
+
+export function getDriverLicenseSpec(country: CountryCode): DocSpec {
+  console.log(countries);
+
+  const mod = countries[country] as CountryModule;
+  console.log(mod);
+
+  const spec = mod.driver_license as DocSpec[] | undefined;
+  if (!spec) throw new Error(`No driver_license spec for country: ${country}`);
+  return spec[0];
+}
+
+export function getDocumentSpecs(country: CountryCode): DocSpec[] | undefined {
+  const mod = countries[country] as CountryModule;
+  return mod.document as DocSpec[] | undefined;
+}
+
+/** Returns the form-type keys available for a country (e.g. "driver_license", "document"). */
+export function getAvailableForms(country: CountryCode): string[] {
+  return Object.keys(countries[country]);
 }

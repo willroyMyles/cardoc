@@ -32,7 +32,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      country: "jm",
+      country: "jamaica",
       currency: "USD",
       cloudProvider: "none",
       supabaseUrl: "",
