@@ -17,7 +17,7 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    TouchableOpacity
+    TouchableOpacity,
 } from "react-native";
 
 function generateId() {
@@ -79,7 +79,10 @@ export default function AddDocumentScreen() {
     };
     addDocument(doc);
     await scheduleDocumentExpiryReminders(doc).catch(() => {});
-    router.back();
+    router.replace({
+      pathname: "/vehicle/[id]/related",
+      params: { id: vehicleId },
+    });
   }
 
   return (
