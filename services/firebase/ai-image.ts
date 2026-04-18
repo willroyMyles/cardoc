@@ -20,7 +20,7 @@ export interface AIImageInput {
 export async function processImagesWithAI(
   images: AIImageInput[],
   prompt: string,
-  modelName = "gemini-2.5-flash",
+  modelName = "gemini-2.5-flash-lite",
 ): Promise<string> {
   const model = getModel(modelName);
 

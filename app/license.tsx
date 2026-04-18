@@ -76,9 +76,7 @@ export default function LicenseScreen() {
   const [originalIssueDate, setOriginalIssueDate] = useState(
     license?.originalIssueDate ? license.originalIssueDate.split("T")[0] : "",
   );
-  const [licenseDate, setLicenseDate] = useState(
-    license?.date ? license.date.split("T")[0] : "",
-  );
+
   const [licenseToDrive, setLicenseToDrive] = useState(
     license?.licenseToDrive ?? "",
   );
@@ -163,7 +161,6 @@ export default function LicenseScreen() {
       if (parsed.nationality) setNationality(parsed.nationality);
       if (parsed.originalIssueDate)
         setOriginalIssueDate(parsed.originalIssueDate.split("T")[0]);
-      if (parsed.date) setLicenseDate(parsed.date.split("T")[0]);
       if (parsed.licenseToDrive) setLicenseToDrive(parsed.licenseToDrive);
       if (parsed.controlNumber) setControlNumber(parsed.controlNumber);
       if (parsed.judicialEndorsement)
@@ -223,7 +220,6 @@ export default function LicenseScreen() {
       if (jam.nationality) setNationality(jam.nationality);
       if (jam.originalIssueDate)
         setOriginalIssueDate(jam.originalIssueDate.split("T")[0]);
-      if (jam.date) setLicenseDate(jam.date.split("T")[0]);
       if (jam.licenseToDrive) setLicenseToDrive(jam.licenseToDrive);
       if (jam.controlNumber) setControlNumber(jam.controlNumber);
       if (jam.judicialEndorsement)
@@ -283,7 +279,6 @@ export default function LicenseScreen() {
       originalIssueDate: originalIssueDate
         ? new Date(originalIssueDate).toISOString()
         : "",
-      date: licenseDate ? new Date(licenseDate).toISOString() : undefined,
       licenseToDrive: licenseToDrive || undefined,
       controlNumber,
       judicialEndorsement: judicialEndorsement || undefined,
@@ -309,7 +304,6 @@ export default function LicenseScreen() {
     setSex("M");
     setNationality("JAMAICAN");
     setOriginalIssueDate("");
-    setLicenseDate("");
     setLicenseToDrive("");
     setControlNumber("");
     setJudicialEndorsement("");
@@ -343,7 +337,6 @@ export default function LicenseScreen() {
                 setOriginalIssueDate(
                   license.originalIssueDate?.split("T")[0] ?? "",
                 );
-                setLicenseDate(license.date?.split("T")[0] ?? "");
                 setLicenseToDrive(license.licenseToDrive ?? "");
                 setControlNumber(license.controlNumber ?? "");
                 setJudicialEndorsement(license.judicialEndorsement ?? "");
@@ -636,14 +629,6 @@ export default function LicenseScreen() {
         />
 
         <Text style={labelStyle}>Date (YYYY-MM-DD)</Text>
-        <TextInput
-          style={inputStyle}
-          value={licenseDate}
-          onChangeText={setLicenseDate}
-          placeholder="2023-08-17"
-          placeholderTextColor={c.subtext}
-          keyboardType="numbers-and-punctuation"
-        />
 
         <Text style={labelStyle}>Class</Text>
         <TextInput
