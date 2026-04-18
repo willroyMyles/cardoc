@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "988380567626",
+    "project_id": "car-doc-1666e",
+    "storage_bucket": "car-doc-1666e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:988380567626:android:020ba522bce1005189aeb3",
+        "android_client_info": {
+          "package_name": "com.fortech.cardoc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGoMff0qmxxssIJfvqErd_OMkXbKHB6ng"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
