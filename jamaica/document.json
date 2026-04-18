@@ -1,0 +1,115 @@
+[
+  {
+    "type": "motor_vehicle_registration",
+    "label": "Motor Vehicle Registration",
+    "issuing_authority": "Tax Administration Jamaica (TAJ)",
+    "fields": {
+      "registration_number": { "label": "Registration Number", "type": "string", "required": true },
+      "chassis_number": { "label": "Chassis Number (VIN)", "type": "string", "required": true },
+      "engine_number": { "label": "Engine Number", "type": "string", "required": true },
+      "engine_displacement_cc": { "label": "Engine Displacement (cc)", "type": "number", "required": false },
+      "make": { "label": "Make", "type": "string", "required": true },
+      "model": { "label": "Model", "type": "string", "required": true },
+      "year": { "label": "Year of Manufacture", "type": "number", "required": true },
+      "body_type": { "label": "Body Type", "type": "string", "required": true },
+      "color": { "label": "Color", "type": "string", "required": true },
+      "seating_capacity": { "label": "Seating Capacity", "type": "number", "required": false },
+      "gross_weight_kg": { "label": "Gross Weight (kg)", "type": "number", "required": false },
+      "owner_name": { "label": "Registered Owner Name", "type": "string", "required": true },
+      "owner_address": { "label": "Owner Address", "type": "string", "required": true },
+      "owner_trn": { "label": "Owner TRN", "type": "string", "required": true },
+      "registration_date": { "label": "Registration Date", "type": "date", "required": true },
+      "expiry_date": { "label": "Expiry Date", "type": "date", "required": true }
+    }
+  },
+  {
+    "type": "certificate_of_title",
+    "label": "Certificate of Title",
+    "issuing_authority": "Tax Administration Jamaica (TAJ)",
+    "fields": {
+      "title_number": { "label": "Title Number", "type": "string", "required": true },
+      "chassis_number": { "label": "Chassis Number (VIN)", "type": "string", "required": true },
+      "engine_number": { "label": "Engine Number", "type": "string", "required": true },
+      "make": { "label": "Make", "type": "string", "required": true },
+      "model": { "label": "Model", "type": "string", "required": true },
+      "year": { "label": "Year of Manufacture", "type": "number", "required": true },
+      "body_type": { "label": "Body Type", "type": "string", "required": false },
+      "color": { "label": "Color", "type": "string", "required": true },
+      "owner_name": { "label": "Registered Owner Name", "type": "string", "required": true },
+      "owner_address": { "label": "Owner Address", "type": "string", "required": true },
+      "owner_trn": { "label": "Owner TRN", "type": "string", "required": true },
+      "lienholder_name": { "label": "Lienholder / Financier Name", "type": "string", "required": false },
+      "lienholder_address": { "label": "Lienholder Address", "type": "string", "required": false },
+      "date_issued": { "label": "Date Issued", "type": "date", "required": true },
+      "previous_owners": { "label": "Previous Owners", "type": "array", "required": false }
+    }
+  },
+  {
+    "type": "certificate_of_fitness",
+    "label": "Certificate of Fitness (CoF)",
+    "issuing_authority": "National Works Agency (NWA) / Authorised Inspection Station",
+    "fields": {
+      "certificate_number": { "label": "Certificate Number", "type": "string", "required": true },
+      "registration_number": { "label": "Vehicle Registration Number", "type": "string", "required": true },
+      "chassis_number": { "label": "Chassis Number (VIN)", "type": "string", "required": true },
+      "make": { "label": "Make", "type": "string", "required": true },
+      "model": { "label": "Model", "type": "string", "required": true },
+      "year": { "label": "Year of Manufacture", "type": "number", "required": true },
+      "body_type": { "label": "Body Type", "type": "string", "required": false },
+      "color": { "label": "Color", "type": "string", "required": true },
+      "seating_capacity": { "label": "Seating Capacity", "type": "number", "required": false },
+      "inspection_station": { "label": "Inspection Station Name", "type": "string", "required": true },
+      "inspection_station_id": { "label": "Inspection Station ID", "type": "string", "required": true },
+      "inspector_name": { "label": "Inspector Name", "type": "string", "required": true },
+      "inspection_date": { "label": "Inspection Date", "type": "date", "required": true },
+      "issue_date": { "label": "Issue Date", "type": "date", "required": true },
+      "expiry_date": { "label": "Expiry Date", "type": "date", "required": true },
+      "result": { "label": "Result", "type": "enum", "values": ["PASS", "FAIL"], "required": true },
+      "defects_noted": { "label": "Defects / Remarks", "type": "string", "required": false }
+    }
+  },
+  {
+    "type": "insurance_certificate",
+    "label": "Certificate of Insurance",
+    "issuing_authority": "Licensed Insurer (regulated by FSC Jamaica)",
+    "fields": {
+      "certificate_number": { "label": "Certificate Number", "type": "string", "required": true },
+      "policy_number": { "label": "Policy Number", "type": "string", "required": true },
+      "insured_name": { "label": "Name of Insured", "type": "string", "required": true },
+      "insured_address": { "label": "Address of Insured", "type": "string", "required": true },
+      "insured_trn": { "label": "Insured TRN", "type": "string", "required": false },
+      "registration_number": { "label": "Vehicle Registration Number", "type": "string", "required": true },
+      "chassis_number": { "label": "Chassis Number (VIN)", "type": "string", "required": true },
+      "engine_number": { "label": "Engine Number", "type": "string", "required": false },
+      "make": { "label": "Make", "type": "string", "required": true },
+      "model": { "label": "Model", "type": "string", "required": true },
+      "year": { "label": "Year of Manufacture", "type": "number", "required": true },
+      "cover_type": { "label": "Type of Cover", "type": "enum", "values": ["Third Party", "Third Party Fire & Theft", "Comprehensive"], "required": true },
+      "insurer_name": { "label": "Name of Insurer", "type": "string", "required": true },
+      "broker_name": { "label": "Broker / Agent Name", "type": "string", "required": false },
+      "issue_date": { "label": "Issue Date", "type": "date", "required": true },
+      "expiry_date": { "label": "Expiry Date", "type": "date", "required": true },
+      "sum_insured": { "label": "Sum Insured (JMD)", "type": "number", "required": false },
+      "annual_premium": { "label": "Annual Premium (JMD)", "type": "number", "required": false }
+    }
+  },
+  {
+    "type": "road_licence",
+    "label": "Road Licence (Licence Disc)",
+    "issuing_authority": "Tax Administration Jamaica (TAJ)",
+    "fields": {
+      "licence_number": { "label": "Licence Number", "type": "string", "required": true },
+      "registration_number": { "label": "Vehicle Registration Number", "type": "string", "required": true },
+      "chassis_number": { "label": "Chassis Number (VIN)", "type": "string", "required": true },
+      "make": { "label": "Make", "type": "string", "required": true },
+      "model": { "label": "Model", "type": "string", "required": false },
+      "year": { "label": "Year of Manufacture", "type": "number", "required": false },
+      "vehicle_class": { "label": "Vehicle Class", "type": "string", "required": true },
+      "owner_name": { "label": "Owner Name", "type": "string", "required": true },
+      "owner_trn": { "label": "Owner TRN", "type": "string", "required": true },
+      "issue_date": { "label": "Issue Date", "type": "date", "required": true },
+      "expiry_date": { "label": "Expiry Date", "type": "date", "required": true },
+      "fee_paid_jmd": { "label": "Fee Paid (JMD)", "type": "number", "required": false }
+    }
+  }
+]
