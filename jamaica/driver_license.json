@@ -4,50 +4,22 @@
     "label": "Driver's Licence",
     "issuing_authority": "Tax Administration Jamaica (TAJ) / Island Traffic Authority (ITA)",
     "fields": {
-      "licence_number": { "label": "Licence Number", "type": "string", "required": true },
-      "first_name": { "label": "First Name", "type": "string", "required": true },
-      "middle_name": { "label": "Middle Name", "type": "string", "required": false },
-      "last_name": { "label": "Last Name", "type": "string", "required": true },
-      "date_of_birth": { "label": "Date of Birth", "type": "date", "required": true },
-      "gender": { "label": "Gender", "type": "enum", "values": ["M", "F"], "required": true },
-      "address_line_1": { "label": "Address Line 1", "type": "string", "required": true },
-      "parish": {
-        "label": "Parish",
-        "type": "enum",
-        "values": [
-          "Kingston", "St. Andrew", "St. Thomas", "Portland", "St. Mary",
-          "St. Ann", "Trelawny", "St. James", "Hanover", "Westmoreland",
-          "St. Elizabeth", "Manchester", "Clarendon", "St. Catherine"
-        ],
-        "required": true
-      },
-      "licence_classes": {
-        "label": "Licence Classes",
-        "type": "array",
-        "items": {
-          "type": "enum",
-          "values": [
-            "1 - Motorcycle",
-            "2 - Light Motor Vehicle (up to 3500 kg)",
-            "3 - Medium Motor Vehicle (3501–11000 kg)",
-            "4 - Heavy Motor Vehicle (over 11000 kg)",
-            "5 - Articulated Vehicle",
-            "6 - Special Purpose Vehicle",
-            "7 - Agricultural Tractor"
-          ]
-        },
-        "required": true
-      },
-      "endorsements": { "label": "Endorsements / Restrictions", "type": "string", "required": false },
-      "blood_group": {
-        "label": "Blood Group",
-        "type": "enum",
-        "values": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
-        "required": false
-      },
-      "organ_donor": { "label": "Organ Donor", "type": "boolean", "required": false },
-      "issue_date": { "label": "Issue Date", "type": "date", "required": true },
-      "expiry_date": { "label": "Expiry Date", "type": "date", "required": true }
+      "fullName": { "label": "Full Name", "type": "string", "required": true },
+      "licenseNumber": { "label": "Licence Number", "type": "string", "pattern": "^\\d{7}$", "required": true },
+      "dateOfBirth": { "label": "Date of Birth", "type": "date", "format": "ISO 8601", "required": true },
+      "issueDate": { "label": "Issue Date", "type": "date", "format": "ISO 8601", "required": true },
+      "expiryDate": { "label": "Expiry Date", "type": "date", "format": "ISO 8601", "required": true },
+      "licenseClass": { "label": "Licence Class", "type": "string", "required": true },
+      "address": { "label": "Address", "type": "string", "required": true },
+      "trn": { "label": "Tax Registration Number", "type": "string", "pattern": "^\\d{9}$", "required": true },
+      "collectorate": { "label": "Collectorate", "type": "string", "required": false },
+      "sex": { "label": "Sex", "type": "enum", "values": ["M", "F"], "required": true },
+      "nationality": { "label": "Nationality", "type": "string", "required": false },
+      "originalIssueDate": { "label": "Original Issue Date", "type": "date", "format": "ISO 8601", "required": false },
+      "date": { "label": "Date", "type": "date", "format": "ISO 8601", "required": false },
+      "licenseToDrive": { "label": "Licence to Drive", "type": "string", "required": false },
+      "controlNumber": { "label": "Control Number", "type": "string", "required": false },
+      "judicialEndorsement": { "label": "Judicial Endorsement", "type": "string", "required": false }
     }
   }
 ]
