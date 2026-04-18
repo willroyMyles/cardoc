@@ -6,7 +6,7 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useDocumentsStore, useLicenseStore, useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useMemo } from "react";
 import {
     SafeAreaView,
     ScrollView,
@@ -21,8 +21,9 @@ export default function RelatedDocumentsScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
 
-  const vehicle = useVehiclesStore((s) => s.getVehicle(id));
-  const docs = useDocumentsStore((s) => s.getDocumentsForVehicle(id));
+  const vehicle = useVehiclesStore((s) => s.vehicles.find((v) => v.id === id));
+  const allDocs = useDocumentsStore((s) => s.documents);
+  const docs = useMemo(() => allDocs.filter((d) => d.vehicleId === id), [allDocs, id]);
   const license = useLicenseStore((s) => s.license);
 
   const hasRelated = docs.length > 0 || !!license;
