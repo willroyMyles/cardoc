@@ -42,6 +42,4 @@ export interface JamaicanDriverLicense extends DriverLicense {
   judicialEndorsement?: string;
   /** Biological sex as printed on the card */
   sex: "M" | "F";
-  /** "DATE" field printed on the card (may differ from issueDate on renewals) */
-  date?: string;
 }

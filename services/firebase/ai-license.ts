@@ -82,7 +82,6 @@ export async function extractLicenseFieldsWithAI(
   if (parsed.nationality) out.nationality = parsed.nationality;
   if (parsed.originalIssueDate)
     out.originalIssueDate = normalizeToISO(parsed.originalIssueDate);
-  if (parsed.date) out.date = normalizeToISO(parsed.date);
   if (parsed.licenseToDrive) out.licenseToDrive = parsed.licenseToDrive;
   if (parsed.controlNumber) out.controlNumber = parsed.controlNumber;
   if (parsed.judicialEndorsement)
