@@ -1,28 +1,25 @@
-import { JamaicanDriverLicense } from "@/models";
+import { DynamicDriverLicense } from "@/models";
+import {
+  type CountryCode,
+  getDriverLicenseSpec,
+} from "@/services/docs-registry";
 import { InlineDataPart, TextPart } from "@react-native-firebase/ai";
 import { File } from "expo-file-system";
 import { getModel } from "./index";
 
-const PROMPT = `Extract structured data from image/s.
-Return ONLY a valid JSON object.
-Fields:
-- fullName
-- licenseNumber (a 7 digit number)
-- dateOfBirth (ISO 8601)
-- issueDate (ISO 8601)
-- expiryDate (ISO 8601)
-- licenseClass
-- address
-- trn (9 digits)
-- collectorate
-- sex
-- nationality
-- originalIssueDate (ISO 8601)
-- date (ISO 8601)
-- licenseToDrive
-- controlNumber
-- judicialEndorsement
-`;
+function buildPrompt(country: CountryCode): string {
+  const spec = getDriverLicenseSpec(country);
+  const fieldLines = Object.entries(spec.fields)
+    .map(([key, fs]) => {
+      let desc = `  ${key} → ${fs.type}`;
+      if (fs.pattern) desc += ` (pattern: ${fs.pattern})`;
+      if (fs.values) desc += `: ${fs.values.join(", ")}`;
+      if (fs.format) desc += ` [${fs.format}]`;
+      return desc;
+    })
+    .join("\n");
+  return `Extract structured data from image/s of a ${spec.label}.\nReturn ONLY a valid JSON object.\nFields:\n${fieldLines}`;
+}
 
 async function uriToInlineDataPart(uri: string): Promise<InlineDataPart> {
   let buffer: ArrayBuffer;
@@ -40,22 +37,25 @@ async function uriToInlineDataPart(uri: string): Promise<InlineDataPart> {
 }
 
 /**
- * Uses Firebase AI Logic (Gemini) to extract structured fields from images
- * of a Jamaican driver's licence.
+ * Uses Firebase AI Logic (Gemini) to extract structured fields from licence
+ * images. The prompt is built dynamically from the country's field spec.
  *
+ * @param country  - The active country code (drives the spec and prompt).
  * @param frontUri - Local or remote URI of the front-of-licence image.
  * @param backUri  - Local or remote URI of the back-of-licence image.
- * @returns A partial JamaicanDriverLicense with confidently-detected fields.
+ * @returns A Record of field name → extracted value.
  */
 export async function extractLicenseFieldsWithAI(
+  country: CountryCode,
   frontUri?: string,
   backUri?: string,
-): Promise<Partial<JamaicanDriverLicense>> {
+): Promise<DynamicDriverLicense["fields"]> {
   const model = getModel("gemini-2.5-flash");
+  const spec = getDriverLicenseSpec(country);
 
   const uris = [frontUri, backUri].filter(Boolean) as string[];
   const imageParts = await Promise.all(uris.map(uriToInlineDataPart));
-  const textPart: TextPart = { text: PROMPT };
+  const textPart: TextPart = { text: buildPrompt(country) };
 
   const result = await model.generateContent([...imageParts, textPart]);
   const raw = result.response.text().trim();
@@ -67,26 +67,12 @@ export async function extractLicenseFieldsWithAI(
 
   const parsed = JSON.parse(jsonString) as Record<string, string>;
 
-  const out: Partial<JamaicanDriverLicense> = {};
-
-  if (parsed.fullName) out.fullName = parsed.fullName;
-  if (parsed.licenseNumber) out.licenseNumber = parsed.licenseNumber;
-  if (parsed.dateOfBirth) out.dateOfBirth = normalizeToISO(parsed.dateOfBirth);
-  if (parsed.issueDate) out.issueDate = normalizeToISO(parsed.issueDate);
-  if (parsed.expiryDate) out.expiryDate = normalizeToISO(parsed.expiryDate);
-  if (parsed.licenseClass) out.licenseClass = parsed.licenseClass;
-  if (parsed.address) out.address = parsed.address;
-  if (parsed.trn) out.trn = parsed.trn;
-  if (parsed.collectorate) out.collectorate = parsed.collectorate;
-  if (parsed.sex === "M" || parsed.sex === "F") out.sex = parsed.sex;
-  if (parsed.nationality) out.nationality = parsed.nationality;
-  if (parsed.originalIssueDate)
-    out.originalIssueDate = normalizeToISO(parsed.originalIssueDate);
-  if (parsed.licenseToDrive) out.licenseToDrive = parsed.licenseToDrive;
-  if (parsed.controlNumber) out.controlNumber = parsed.controlNumber;
-  if (parsed.judicialEndorsement)
-    out.judicialEndorsement = parsed.judicialEndorsement;
-
+  const out: DynamicDriverLicense["fields"] = {};
+  for (const [key, fieldSpec] of Object.entries(spec.fields)) {
+    const val = parsed[key];
+    if (!val) continue;
+    out[key] = fieldSpec.type === "date" ? normalizeToISO(val) : val;
+  }
   return out;
 }
 

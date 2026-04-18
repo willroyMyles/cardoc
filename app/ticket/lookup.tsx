@@ -4,8 +4,7 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { TicketLookupProvider } from "@/services/ticket-lookup/provider";
 import {
-    getAllProviders,
-    getProvidersByRegion,
+    getProvidersByRegion
 } from "@/services/ticket-lookup/registry";
 import { useSettingsStore } from "@/store";
 import React, { useState } from "react";
@@ -23,10 +22,9 @@ import { WebView } from "react-native-webview";
 export default function TicketLookupScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
-  const region = useSettingsStore((s) => s.region);
+  const country = useSettingsStore((s) => s.country);
 
-  const providers =
-    region !== "other" ? getProvidersByRegion(region) : getAllProviders();
+  const providers = getProvidersByRegion(country);
   const [selected, setSelected] = useState<TicketLookupProvider | null>(null);
 
   if (selected) {

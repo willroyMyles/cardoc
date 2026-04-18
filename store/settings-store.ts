@@ -1,21 +1,15 @@
-export type CloudProvider = "none" | "supabase" | "appwrite";
-export type RegionCode = "us" | "za" | "uk" | "au" | "ca" | "other";
-
-export const REGION_LABELS: Record<RegionCode, string> = {
-  us: "United States",
-  za: "South Africa",
-  uk: "United Kingdom",
-  au: "Australia",
-  ca: "Canada",
-  other: "Other",
-};
-
+import { type CountryCode, COUNTRY_LABELS } from "@/services/docs-registry";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+export { COUNTRY_LABELS };
+export type { CountryCode };
+
+export type CloudProvider = "none" | "supabase" | "appwrite";
+
 interface SettingsState {
-  region: RegionCode;
+  country: CountryCode;
   currency: string;
   cloudProvider: CloudProvider;
   supabaseUrl: string;
@@ -24,19 +18,21 @@ interface SettingsState {
   appwriteProjectId: string;
   notificationsEnabled: boolean;
   biometricLockEnabled: boolean;
-  setRegion: (region: RegionCode) => void;
+  parsingMode: "entity" | "ocr";
+  setCountry: (country: CountryCode) => void;
   setCurrency: (currency: string) => void;
   setCloudProvider: (provider: CloudProvider) => void;
   setSupabaseCredentials: (url: string, anonKey: string) => void;
   setAppwriteCredentials: (endpoint: string, projectId: string) => void;
   setNotificationsEnabled: (enabled: boolean) => void;
   setBiometricLockEnabled: (enabled: boolean) => void;
+  setParsingMode: (mode: "entity" | "ocr") => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      region: "other",
+      country: "jm",
       currency: "USD",
       cloudProvider: "none",
       supabaseUrl: "",
@@ -45,7 +41,8 @@ export const useSettingsStore = create<SettingsState>()(
       appwriteProjectId: "",
       notificationsEnabled: true,
       biometricLockEnabled: false,
-      setRegion: (region) => set({ region }),
+      parsingMode: "ocr",
+      setCountry: (country) => set({ country }),
       setCurrency: (currency) => set({ currency }),
       setCloudProvider: (cloudProvider) => set({ cloudProvider }),
       setSupabaseCredentials: (supabaseUrl, supabaseAnonKey) =>
@@ -56,6 +53,7 @@ export const useSettingsStore = create<SettingsState>()(
         set({ notificationsEnabled }),
       setBiometricLockEnabled: (biometricLockEnabled) =>
         set({ biometricLockEnabled }),
+      setParsingMode: (parsingMode) => set({ parsingMode }),
     }),
     {
       name: "settings-storage",

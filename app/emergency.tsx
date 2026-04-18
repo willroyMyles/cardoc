@@ -43,16 +43,22 @@ export default function EmergencyScreen() {
           <Text style={styles.sectionTitle}>Driver Information</Text>
           {license ? (
             <>
-              <Row label="Full Name" value={license.fullName} />
-              <Row label="Date of Birth" value={license.dateOfBirth} />
-              <Row label="License Number" value={license.licenseNumber} />
-              <Row label="License Class" value={license.licenseClass ?? "—"} />
+              <Row label="Full Name" value={license.fields.fullName ?? "—"} />
               <Row
-                label="Issuing Region"
-                value={license.issuingRegion ?? "—"}
+                label="Date of Birth"
+                value={license.fields.dateOfBirth ?? "—"}
               />
-              {license.address ? (
-                <Row label="Address" value={license.address} />
+              <Row
+                label="License Number"
+                value={license.fields.licenseNumber ?? "—"}
+              />
+              <Row
+                label="License Class"
+                value={license.fields.licenseClass ?? "—"}
+              />
+              <Row label="Issuing Region" value={"—"} />
+              {license.fields.address ? (
+                <Row label="Address" value={license.fields.address} />
               ) : null}
             </>
           ) : (

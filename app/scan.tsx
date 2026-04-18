@@ -1,24 +1,26 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { recognizeFromUri } from "@/services/ocr/ml-kit";
 import { parseDocumentFromText } from "@/services/ocr/parsers/document-parser";
-import { parseLicenseFromText } from "@/services/ocr/parsers/license-parser";
+import { parseLicenseByCountry } from "@/services/ocr/parsers/license-parser";
+import { useSettingsStore } from "@/store";
 import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function ScanScreen() {
   const { mode } = useLocalSearchParams<{ mode?: "license" | "document" }>();
+  const country = useSettingsStore((s) => s.country);
   const [permission, requestPermission] = useCameraPermissions();
   const [processing, setProcessing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
@@ -52,7 +54,8 @@ export default function ScanScreen() {
   const processUri = async (uri: string) => {
     setProcessing(true);
     try {
-      const text = await recognizeFromUri(uri);
+      const textObj = await recognizeFromUri(uri);
+      const text = textObj?.text ?? "";
 
       if (!text || text.trim().length === 0) {
         Alert.alert(
@@ -65,9 +68,9 @@ export default function ScanScreen() {
       console.log("text", text);
 
       if (mode === "license") {
-        const parsed = parseLicenseFromText(text);
+        const parsed = parseLicenseByCountry(text, country);
         router.back();
-        router.setParams({ scannedLicense: JSON.stringify(parsed) });
+        router.setParams({ scannedLicense: JSON.stringify(parsed ?? {}) });
       } else {
         const parsed = parseDocumentFromText(text);
         router.back();
