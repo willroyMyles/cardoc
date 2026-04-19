@@ -8,12 +8,12 @@ import { useDocumentsStore, useLicenseStore, useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function RelatedDocumentsScreen() {
@@ -23,7 +23,10 @@ export default function RelatedDocumentsScreen() {
 
   const vehicle = useVehiclesStore((s) => s.vehicles.find((v) => v.id === id));
   const allDocs = useDocumentsStore((s) => s.documents);
-  const docs = useMemo(() => allDocs.filter((d) => d.vehicleId === id), [allDocs, id]);
+  const docs = useMemo(
+    () => allDocs.filter((d) => d.vehicleId === id),
+    [allDocs, id],
+  );
   const license = useLicenseStore((s) => s.license);
 
   const hasRelated = docs.length > 0 || !!license;

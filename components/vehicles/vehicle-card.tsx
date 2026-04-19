@@ -12,8 +12,17 @@ interface VehicleCardProps {
   onPress?: () => void;
 }
 
+function makeLogoUrl(make: string) {
+  const slug = make.toLowerCase().replace(/\s+/g, "-");
+  return `https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/${slug}.png`;
+}
+
 export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
   const scheme = useColorScheme() ?? "light";
+  const logoUrl = makeLogoUrl(vehicle.make);
+  const bgColor = vehicle.color || Colors[scheme].border;
+  console.log(bgColor, vehicle);
+
   return (
     <TouchableOpacity
       onPress={
@@ -32,22 +41,33 @@ export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
             <Image source={{ uri: vehicle.imageUri }} style={styles.image} />
           ) : (
             <View
-              style={[
-                styles.imagePlaceholder,
-                { backgroundColor: Colors[scheme].border },
-              ]}
+              style={[styles.imagePlaceholder, { backgroundColor: bgColor }]}
             >
-              <IconSymbol
-                name="car.fill"
-                size={28}
-                color={Colors[scheme].icon}
+              <Image
+                source={{ uri: logoUrl }}
+                style={styles.logo}
+                resizeMode="contain"
               />
             </View>
           )}
           <View style={styles.info}>
-            <Text style={[styles.title, { color: Colors[scheme].text }]}>
-              {vehicle.year} {vehicle.make} {vehicle.model}
-            </Text>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+            >
+              <Text style={[styles.title, { color: Colors[scheme].text }]}>
+                {vehicle.year} {vehicle.make} {vehicle.model}
+              </Text>
+              <View
+                style={{
+                  backgroundColor: `${bgColor.toLowerCase()}`,
+                  borderRadius: 15,
+                  height: 20,
+                  width: 20,
+                  borderWidth: 1,
+                  borderColor: Colors[scheme].border,
+                }}
+              />
+            </View>
             <Text style={[styles.sub, { color: Colors[scheme].subtext }]}>
               {vehicle.licensePlate}
             </Text>
@@ -78,7 +98,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
+  logo: { width: 44, height: 44 },
   info: { flex: 1 },
   title: { fontSize: 16, fontWeight: "600" },
   sub: { fontSize: 13, marginTop: 2 },
