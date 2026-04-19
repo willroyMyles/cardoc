@@ -2,8 +2,8 @@ import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { DynamicDriverLicense } from "@/models";
 import {
-    getDriverLicenseSpec,
-    type DriverLicenseSpec,
+  getDriverLicenseSpec,
+  type DriverLicenseSpec,
 } from "@/services/docs-registry";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -34,7 +34,9 @@ export function LicenseCard({
   if (!spec) {
     return (
       <TouchableOpacity onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
-        <View style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}>
+        <View
+          style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}
+        >
           <Text style={styles.headerLabel}>DRIVER'S LICENSE</Text>
           <Text style={styles.field}>
             {Object.entries(license.fields)

@@ -6,20 +6,16 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import {
-    useDocumentsStore,
-    useTicketsStore,
-    useVehiclesStore
-} from "@/store";
+import { useDocumentsStore, useTicketsStore, useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function VehicleDetailScreen() {
@@ -31,8 +27,14 @@ export default function VehicleDetailScreen() {
   const deleteVehicle = useVehiclesStore((s) => s.deleteVehicle);
   const allDocs = useDocumentsStore((s) => s.documents);
   const allTickets = useTicketsStore((s) => s.tickets);
-  const docs = useMemo(() => allDocs.filter((d) => d.vehicleId === id), [allDocs, id]);
-  const tickets = useMemo(() => allTickets.filter((t) => t.vehicleId === id), [allTickets, id]);
+  const docs = useMemo(
+    () => allDocs.filter((d) => d.vehicleId === id),
+    [allDocs, id],
+  );
+  const tickets = useMemo(
+    () => allTickets.filter((t) => t.vehicleId === id),
+    [allTickets, id],
+  );
 
   const [showDelete, setShowDelete] = useState(false);
 
