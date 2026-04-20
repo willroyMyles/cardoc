@@ -79,7 +79,9 @@ export default function MaintenanceListScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
+    <SafeAreaView
+      style={[styles.container, { flex: 1, backgroundColor: c.background }]}
+    >
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()}>
           <IconSymbol name="chevron.left" size={22} color={c.tint} />

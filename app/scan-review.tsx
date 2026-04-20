@@ -1,37 +1,62 @@
+// Utility to check if a vehicle matches scanned VIN/chassis
+function isSameVehicleByVinChassis(
+  vehicle: Vehicle,
+  fields: Record<string, string>,
+): boolean {
+  const scannedVin = (fields.vin ?? fields.engine_number ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const scannedChassis = (fields.chassis_number ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const vehicleVin = (vehicle.vin ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const vehicleChassis = (vehicle.chassis ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  if (scannedVin && vehicleVin && scannedChassis && vehicleChassis) {
+    return scannedVin === vehicleVin && scannedChassis === vehicleChassis;
+  }
+  if (scannedVin && vehicleVin && scannedVin === vehicleVin) return true;
+  if (scannedChassis && vehicleChassis && scannedChassis === vehicleChassis)
+    return true;
+  return false;
+}
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
-    CAR_DOCUMENT_TYPE_LABELS,
-    CarDocument,
-    CarDocumentType,
-    DynamicDriverLicense,
-    Vehicle,
+  CAR_DOCUMENT_TYPE_LABELS,
+  CarDocument,
+  CarDocumentType,
+  DynamicDriverLicense,
+  Vehicle,
 } from "@/models";
 import {
-    getDocumentSpecs,
-    getDriverLicenseSpec,
-    type DocSpec,
+  getDocumentSpecs,
+  getDriverLicenseSpec,
+  type DocSpec,
 } from "@/services/docs-registry";
 import { scheduleDocumentExpiryReminders } from "@/services/notifications/expiry-reminders";
 import {
-    useDocumentsStore,
-    useLicenseStore,
-    useSettingsStore,
-    useVehiclesStore,
+  useDocumentsStore,
+  useLicenseStore,
+  useSettingsStore,
+  useVehiclesStore,
 } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 function generateId() {
@@ -92,6 +117,27 @@ export default function ScanReviewScreen() {
     imageUri: string;
   }>();
 
+  useEffect(() => {
+    // create new vehicle from fields if no vehicles exist — this ensures we have a vehicle to link documents to, and saves the user from having to manually create one first
+    if (category === "document" && vehicles.length === 0) {
+      const vehicleId = createVehicleFromFields();
+      setSelectedVehicleId(vehicleId);
+    }
+
+    //create new vicheile if fields dont match
+    if (category === "document" && vehicles.length > 0) {
+      const matchedVehicle = vehicles.find((v) =>
+        isSameVehicleByVinChassis(v, fields),
+      );
+      if (matchedVehicle) {
+        setSelectedVehicleId(matchedVehicle.id);
+      } else {
+        const vehicleId = createVehicleFromFields();
+        setSelectedVehicleId(vehicleId);
+      }
+    }
+  }, [category, specType]);
+
   const spec: DocSpec | null = useMemo(() => {
     try {
       if (category === "driver_license") {
@@ -135,6 +181,7 @@ export default function ScanReviewScreen() {
       id: generateId(),
       make: make || "Unknown",
       model: model || "Unknown",
+      chassis: vin,
       year,
       vin,
       licensePlate: plate,
@@ -173,6 +220,14 @@ export default function ScanReviewScreen() {
           );
           setSaving(false);
           return;
+        }
+
+        // Try to find a matching vehicle by VIN/chassis — this is more reliable than make/model/year which can be generic or missing
+        const matchedVehicle = vehicles.find((v) =>
+          isSameVehicleByVinChassis(v, fields),
+        );
+        if (matchedVehicle) {
+          setSelectedVehicleId(matchedVehicle.id);
         }
 
         // No vehicle selected — lift vehicle info from document fields

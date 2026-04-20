@@ -2,6 +2,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { detectAndExtractDocument } from "@/services/firebase/ai-document";
 import { useSettingsStore } from "@/store";
 import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
+import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -17,44 +18,62 @@ import {
   View,
 } from "react-native";
 
+type InputMode = "chooser" | "camera" | "preview";
+
 export default function ScanScreen() {
   const country = useSettingsStore((s) => s.country);
   const [permission, requestPermission] = useCameraPermissions();
+  const [mode, setMode] = useState<InputMode>("chooser");
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
+  const [capturedMimeType, setCapturedMimeType] =
+    useState<string>("image/jpeg");
   const [processing, setProcessing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
 
-  if (!permission) {
-    return <View style={styles.container} />;
-  }
+  const openCamera = async () => {
+    if (!permission?.granted) {
+      const { granted } = await requestPermission();
+      if (!granted) {
+        Alert.alert(
+          "Permission required",
+          "Camera access is needed to take a photo.",
+        );
+        return;
+      }
+    }
+    setMode("camera");
+  };
 
-  if (!permission.granted) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.permissionText}>
-          Camera access is required to scan documents.
-        </Text>
-        <TouchableOpacity
-          style={styles.permissionBtn}
-          onPress={requestPermission}
-        >
-          <Text style={styles.permissionBtnText}>Grant Permission</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={{ marginTop: 12 }}
-        >
-          <Text style={styles.cancelText}>Cancel</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
+  const handlePickPhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
+      allowsEditing: false,
+    });
+    if (result.canceled || !result.assets?.[0]?.uri) return;
+    setCapturedUri(result.assets[0].uri);
+    setCapturedMimeType("image/jpeg");
+    setMode("preview");
+  };
+
+  const handlePickFile = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ["application/pdf", "image/*"],
+      copyToCacheDirectory: true,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    setCapturedUri(result.assets[0].uri);
+    setCapturedMimeType(result.assets[0].mimeType ?? "image/jpeg");
+    setMode("preview");
+  };
 
   const handleProcess = async () => {
     if (!capturedUri) return;
     setProcessing(true);
     try {
-      const result = await detectAndExtractDocument(country, [capturedUri]);
+      const result = await detectAndExtractDocument(country, [
+        { uri: capturedUri, mimeType: capturedMimeType },
+      ]);
       router.replace({
         pathname: "/scan-review",
         params: {
@@ -73,16 +92,6 @@ export default function ScanScreen() {
     }
   };
 
-  const handlePickPhoto = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.9,
-      allowsEditing: false,
-    });
-    if (result.canceled || !result.assets?.[0]?.uri) return;
-    setCapturedUri(result.assets[0].uri);
-  };
-
   const handleCapture = async () => {
     if (!cameraRef.current) return;
     try {
@@ -92,13 +101,84 @@ export default function ScanScreen() {
       });
       if (!photo?.uri) throw new Error("Could not capture photo");
       setCapturedUri(photo.uri);
+      setCapturedMimeType("image/jpeg");
     } catch (e: any) {
       Alert.alert("Capture Error", String(e?.message ?? e));
     }
   };
 
+  // ── Chooser state ──────────────────────────────────────────────────────────
+  if (mode === "chooser") {
+    return (
+      <SafeAreaView style={[styles.container, styles.chooserContainer]}>
+        <StatusBar style="dark" />
+        <View style={styles.chooserHeader}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.closeBtn}
+          >
+            <IconSymbol name="xmark" size={20} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.chooserTitle}>Scan Document</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.chooserBody}>
+          <TouchableOpacity
+            style={styles.choiceBtn}
+            onPress={openCamera}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.choiceIcon, { backgroundColor: "#EFF6FF" }]}>
+              <IconSymbol name="camera.fill" size={28} color="#3B82F6" />
+            </View>
+            <View style={styles.choiceText}>
+              <Text style={styles.choiceBtnLabel}>Camera</Text>
+              <Text style={styles.choiceBtnSub}>
+                Take a photo of a document
+              </Text>
+            </View>
+            <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.choiceBtn}
+            onPress={handlePickPhoto}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.choiceIcon, { backgroundColor: "#F0FDF4" }]}>
+              <IconSymbol name="photo.on.rectangle" size={28} color="#10B981" />
+            </View>
+            <View style={styles.choiceText}>
+              <Text style={styles.choiceBtnLabel}>Photo Library</Text>
+              <Text style={styles.choiceBtnSub}>Choose an existing photo</Text>
+            </View>
+            <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.choiceBtn}
+            onPress={handlePickFile}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.choiceIcon, { backgroundColor: "#FFF7ED" }]}>
+              <IconSymbol name="doc.fill" size={28} color="#F97316" />
+            </View>
+            <View style={styles.choiceText}>
+              <Text style={styles.choiceBtnLabel}>Choose File</Text>
+              <Text style={styles.choiceBtnSub}>
+                Import a PDF or image file
+              </Text>
+            </View>
+            <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   // ── Preview state ──────────────────────────────────────────────────────────
-  if (capturedUri) {
+  if (mode === "preview" && capturedUri) {
     return (
       <View style={styles.container}>
         <StatusBar style="light" />
@@ -124,10 +204,13 @@ export default function ScanScreen() {
           <View style={styles.previewBottomBar}>
             <TouchableOpacity
               style={styles.retakeBtn}
-              onPress={() => setCapturedUri(null)}
+              onPress={() => {
+                setCapturedUri(null);
+                setMode("chooser");
+              }}
               disabled={processing}
             >
-              <Text style={styles.retakeBtnText}>Retake</Text>
+              <Text style={styles.retakeBtnText}>Back</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.processBtn, processing && { opacity: 0.6 }]}
@@ -161,10 +244,10 @@ export default function ScanScreen() {
       <View style={styles.overlay}>
         <View style={styles.topBar}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => setMode("chooser")}
             style={styles.closeBtn}
           >
-            <IconSymbol name="xmark" size={20} color="#fff" />
+            <IconSymbol name="chevron.left" size={20} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.overlayTitle}>Scan Document</Text>
           <View style={{ width: 40 }} />
@@ -183,14 +266,7 @@ export default function ScanScreen() {
         </View>
 
         <View style={styles.bottomBar}>
-          <TouchableOpacity
-            style={styles.uploadBtn}
-            onPress={handlePickPhoto}
-            disabled={processing}
-            activeOpacity={0.8}
-          >
-            <IconSymbol name="photo.on.rectangle" size={24} color="#fff" />
-          </TouchableOpacity>
+          <View style={{ width: 56 }} />
           <TouchableOpacity
             style={styles.captureBtn}
             onPress={handleCapture}
@@ -362,4 +438,39 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   processBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  // Chooser state styles
+  chooserContainer: { backgroundColor: "#fff" },
+  chooserHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    paddingBottom: 16,
+  },
+  chooserTitle: { fontSize: 18, fontWeight: "700", color: "#11181C" },
+  chooserBody: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    gap: 2,
+  },
+  choiceBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E5E7EB",
+  },
+  choiceIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  choiceText: { flex: 1 },
+  choiceBtnLabel: { fontSize: 16, fontWeight: "600", color: "#11181C" },
+  choiceBtnSub: { fontSize: 13, color: "#6B7280", marginTop: 2 },
 });

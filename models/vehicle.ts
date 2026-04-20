@@ -4,6 +4,7 @@ export interface Vehicle {
   model: string;
   year: number;
   vin: string;
+  chassis: string;
   licensePlate: string;
   color: string;
   bodyType?: string;
