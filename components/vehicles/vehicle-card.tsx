@@ -55,7 +55,8 @@ export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
               style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
             >
               <Text style={[styles.title, { color: Colors[scheme].text }]}>
-                {vehicle.year} {vehicle.make} {vehicle.model}
+                {vehicle.year} {vehicle.make.toProperCase()}{" "}
+                {vehicle.model.toProperCase()}
               </Text>
               <View
                 style={{
@@ -69,7 +70,7 @@ export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
               />
             </View>
             <Text style={[styles.sub, { color: Colors[scheme].subtext }]}>
-              {vehicle.licensePlate}
+              Plate No. {vehicle.licensePlate}
             </Text>
             {vehicle.vin ? (
               <Text style={[styles.vin, { color: Colors[scheme].subtext }]}>

@@ -55,6 +55,7 @@ export default function RelatedDocumentsScreen() {
             onPress={() => router.back()}
           >
             <IconSymbol name="chevron.left" size={20} color={c.tint} />
+
             <Text style={[styles.backLabel, { color: c.tint }]}>Back</Text>
           </TouchableOpacity>
           <View style={styles.titleBlock}>
@@ -67,19 +68,45 @@ export default function RelatedDocumentsScreen() {
               </Text>
             ) : null}
           </View>
-          <TouchableOpacity
-            style={[styles.addDocBtn, { backgroundColor: c.tint }]}
-            onPress={() =>
-              router.push({
-                pathname: "/document/add",
-                params: { vehicleId: id },
-              })
-            }
-            activeOpacity={0.8}
+          <View
+            className="row flex-row"
+            style={{
+              gap: 6,
+              flex: 1,
+              justifyContent: "flex-start",
+              flexDirection: "row",
+            }}
           >
-            <IconSymbol name="plus" size={16} color="#fff" />
-            <Text style={styles.addDocLabel}>Add Document</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.addDocBtn, { backgroundColor: c.tint }]}
+              onPress={() =>
+                router.push({
+                  pathname: "/document/add",
+                  params: { vehicleId: id },
+                })
+              }
+              activeOpacity={0.8}
+            >
+              <IconSymbol name="plus" size={16} color="#fff" />
+              <Text style={styles.addDocLabel}>Add Document</Text>
+            </TouchableOpacity>
+            {/* Edit Vehicle Button */}
+            <TouchableOpacity
+              style={[styles.addDocBtn, { backgroundColor: c.border }]}
+              onPress={() =>
+                router.push({
+                  pathname: "/vehicle/edit/[id]",
+                  params: { id },
+                })
+              }
+              activeOpacity={0.8}
+            >
+              <IconSymbol name="pencil" size={16} color={c.tint} />
+              <Text style={[styles.addDocLabel, { color: c.tint }]}>
+                Edit Vehicle
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {!hasRelated ? (
