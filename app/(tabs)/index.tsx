@@ -1,95 +1,97 @@
-import { ThemedText } from "@/components/themed-text";
+import { EmptyState } from "@/components/ui/empty-state";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useVehiclesStore } from "@/store";
 import { router } from "expo-router";
-import React from "react";
+import React, { useCallback, useState } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function HomeScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
+  const [refreshing, setRefreshing] = useState(false);
+
   const vehicles = useVehiclesStore((s) => s.vehicles);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  }, []);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.header}>
-          <ThemedText type="title">Home</ThemedText>
-        </View>
-
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={c.tint}
+          />
+        }
+      >
         <View style={styles.content}>
-          <TouchableOpacity
-            style={[styles.scanCard, { backgroundColor: c.tint }]}
-            onPress={() => router.push("/scan")}
-            activeOpacity={0.85}
-          >
-            <View style={styles.scanIconWrap}>
-              <IconSymbol name="doc.text.viewfinder" size={48} color="#fff" />
-            </View>
-            <Text style={styles.scanTitle}>Scan to begin</Text>
-            <Text style={styles.scanSubtitle}>
-              Scan a document or driver's license to get started
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.quickRow}>
+          <View style={styles.heroRow}>
             <TouchableOpacity
-              style={[
-                styles.quickBtn,
-                { backgroundColor: c.card, borderColor: c.border },
-              ]}
-              onPress={() => router.push("/vehicle/add")}
-              activeOpacity={0.75}
+              style={[styles.heroCard, { backgroundColor: c.tint }]}
+              onPress={() => router.push("/scan")}
+              activeOpacity={0.85}
             >
-              <IconSymbol name="car.fill" size={22} color={c.tint} />
-              <Text style={[styles.quickBtnLabel, { color: c.text }]}>
-                Add Vehicle
-              </Text>
+              <IconSymbol name="doc.text.viewfinder" size={34} color="#fff" />
+              <Text style={styles.heroCardLabelPrimary}>Scan to begin</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={[
-                styles.quickBtn,
-                { backgroundColor: c.card, borderColor: c.border },
+                styles.heroCard,
+                styles.heroCardOutlined,
+                { backgroundColor: c.card, borderColor: c.tint + "66" },
               ]}
-              onPress={() => router.push("/document/add")}
+              onPress={() => router.push("/ticket/lookup")}
               activeOpacity={0.75}
             >
-              <IconSymbol name="doc.fill" size={22} color={c.tint} />
-              <Text style={[styles.quickBtnLabel, { color: c.text }]}>
-                Add Document
+              <IconSymbol name="magnifyingglass" size={34} color={c.tint} />
+              <Text style={[styles.heroCardLabelSecondary, { color: c.tint }]}>
+                Ticket Lookup
               </Text>
             </TouchableOpacity>
           </View>
 
           {vehicles.length > 0 ? (
-            <View style={styles.vehiclesSection}>
-              <Text style={[styles.sectionTitle, { color: c.subtext }]}>
-                YOUR VEHICLES
-              </Text>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: c.text }]}>
+                  My Vehicles
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push("/(tabs)/vehicles")}
+                >
+                  <Text style={[styles.sectionAction, { color: c.tint }]}>
+                    See all
+                  </Text>
+                </TouchableOpacity>
+              </View>
               {vehicles.map((v) => (
-                <VehicleCard
-                  key={v.id}
-                  vehicle={v}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/vehicle/[id]/related",
-                      params: { id: v.id },
-                    })
-                  }
-                />
+                <VehicleCard key={v.id} vehicle={v} />
               ))}
             </View>
-          ) : null}
+          ) : (
+            <EmptyState
+              icon="car.fill"
+              title="No vehicles yet"
+              subtitle="Scan a document or add a vehicle to get started."
+            />
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -99,63 +101,47 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingBottom: 40 },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
+    paddingHorizontal: 14,
+    paddingTop: 20,
     gap: 16,
   },
-  scanCard: {
-    borderRadius: 20,
-    padding: 32,
-    alignItems: "center",
-    gap: 12,
-  },
-  scanIconWrap: {
-    marginBottom: 4,
-  },
-  scanTitle: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "800",
-    letterSpacing: 0.2,
-  },
-  scanSubtitle: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  quickRow: {
+  heroRow: {
     flexDirection: "row",
     gap: 12,
   },
-  quickBtn: {
+  heroCard: {
     flex: 1,
-    flexDirection: "row",
+    paddingVertical: 28,
+    borderRadius: 20,
     alignItems: "center",
+    justifyContent: "center",
     gap: 10,
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
   },
-  quickBtnLabel: {
+  heroCardOutlined: {
+    borderWidth: 1.5,
+  },
+  heroCardLabelPrimary: {
+    color: "#fff",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
+    textAlign: "center",
   },
-  vehiclesSection: {
-    marginTop: 8,
+  heroCardLabelSecondary: {
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  section: {
     gap: 0,
   },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginBottom: 8,
-    marginHorizontal: 16,
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    marginBottom: 6,
   },
+  sectionTitle: { fontSize: 17, fontWeight: "700" },
+  sectionAction: { fontSize: 14, fontWeight: "600" },
 });

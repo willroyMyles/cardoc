@@ -298,7 +298,7 @@ export default function InsuranceReviewScreen() {
             onPress={() => router.back()}
             style={styles.backBtn}
           >
-            <IconSymbol name="chevron.left" size={20} color={c.tint} />
+            <IconSymbol name="xmark" size={20} color={c.tint} />
           </TouchableOpacity>
           <Text style={[styles.title, { color: c.text }]}>
             Review Insurance

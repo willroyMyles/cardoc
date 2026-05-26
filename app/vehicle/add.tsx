@@ -78,6 +78,7 @@ export default function AddVehicleScreen() {
       year: parseInt(year, 10),
       vin,
       licensePlate: plate,
+      chassis: vin,
       color,
       bodyType,
       createdAt: new Date().toISOString(),
@@ -92,6 +93,13 @@ export default function AddVehicleScreen() {
       style={[styles.container, { backgroundColor: c.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <IconSymbol name="xmark" size={22} color={c.tint} />
+        </TouchableOpacity>
+        <Text style={[styles.pageTitle, { color: c.text }]}>Add Vehicle</Text>
+        <View style={{ width: 22 }} />
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
@@ -199,6 +207,14 @@ export default function AddVehicleScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  pageTitle: { fontSize: 20, fontWeight: "700" },
   scroll: { padding: 16, gap: 4, paddingBottom: 40 },
   label: { fontSize: 13, fontWeight: "600", marginTop: 12, marginBottom: 4 },
   input: {

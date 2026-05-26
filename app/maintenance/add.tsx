@@ -72,7 +72,7 @@ export default function AddMaintenanceScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="chevron.left" size={22} color={c.tint} />
+          <IconSymbol name="xmark" size={22} color={c.tint} />
         </TouchableOpacity>
         <Text style={[styles.pageTitle, { color: c.text }]}>
           Add Maintenance

@@ -1,28 +1,42 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { syncFromCloud, syncToCloud } from "@/services/cloud-sync";
+import { COUNTRY_LABELS, type CountryCode } from "@/services/docs-registry";
+import { syncAllStores } from "@/services/firebase/sync-manager";
 import { requestNotificationPermissions } from "@/services/notifications/expiry-reminders";
-import { useSettingsStore } from "@/store";
-import { type CloudProvider } from "@/store/settings-store";
+import { useAuthStore, useSettingsStore } from "@/store";
+import { type SyncMode } from "@/store/settings-store";
+import { useCameraPermissions } from "expo-camera";
+import { useMediaLibraryPermissions } from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+    ActionSheetIOS,
     Alert,
+    Linking,
+    Platform,
     SafeAreaView,
     ScrollView,
     StyleSheet,
     Switch,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
 
-const PROVIDERS: { value: CloudProvider; label: string }[] = [
-  { value: "none", label: "None (local only)" },
-  { value: "supabase", label: "Supabase" },
-  { value: "appwrite", label: "Appwrite" },
+const COUNTRIES = Object.entries(COUNTRY_LABELS) as [CountryCode, string][];
+
+const SYNC_MODES: { value: SyncMode; label: string; description: string }[] = [
+  {
+    value: "local",
+    label: "Local only",
+    description: "Data stored on this device",
+  },
+  {
+    value: "online",
+    label: "Online (Firebase)",
+    description: "Sync across devices via Firestore",
+  },
 ];
 
 export default function SettingsScreen() {
@@ -30,48 +44,70 @@ export default function SettingsScreen() {
   const c = Colors[scheme];
 
   const {
-    currency,
-    setCurrency,
-    cloudProvider,
-    setCloudProvider,
-    supabaseUrl,
-    supabaseAnonKey,
-    setSupabaseCredentials,
-    appwriteEndpoint,
-    appwriteProjectId,
-    setAppwriteCredentials,
+    country,
+    setCountry,
+    syncMode,
+    setSyncMode,
     notificationsEnabled,
     setNotificationsEnabled,
   } = useSettingsStore();
 
-  const [currencyInput, setCurrencyInput] = useState(currency);
-  const [supabaseUrlInput, setSupabaseUrlInput] = useState(supabaseUrl);
-  const [supabaseKeyInput, setSupabaseKeyInput] = useState(supabaseAnonKey);
-  const [appwriteEndpointInput, setAppwriteEndpointInput] =
-    useState(appwriteEndpoint);
-  const [appwriteProjectInput, setAppwriteProjectInput] =
-    useState(appwriteProjectId);
+  const user = useAuthStore((s) => s.user);
+
   const [syncing, setSyncing] = useState(false);
 
-  const handleSyncUp = async () => {
-    setSyncing(true);
-    try {
-      await syncToCloud({});
-      Alert.alert("Success", "Data synced to cloud.");
-    } catch (e: any) {
-      Alert.alert("Sync Failed", e?.message ?? "Check your credentials.");
-    } finally {
-      setSyncing(false);
+  const currentCountryLabel = COUNTRY_LABELS[country] ?? country;
+
+  function handleCountryPick() {
+    const options = COUNTRIES.map(([, label]) => label);
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ["Cancel", ...options], cancelButtonIndex: 0 },
+        (i) => {
+          if (i > 0) setCountry(COUNTRIES[i - 1][0]);
+        },
+      );
+    } else {
+      Alert.alert("Select Country", undefined, [
+        { text: "Cancel", style: "cancel" },
+        ...COUNTRIES.map(([code, label]) => ({
+          text: label,
+          onPress: () => setCountry(code),
+        })),
+      ]);
     }
+  }
+
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [mediaPermission, requestMediaPermission] =
+    useMediaLibraryPermissions();
+
+  const handleSyncModeChange = (mode: SyncMode) => {
+    if (mode === "online" && !user) {
+      Alert.alert(
+        "Sign In Required",
+        "Online sync requires an account. Sign in from the More tab.",
+        [
+          { text: "Later", style: "cancel" },
+          { text: "Go to More", onPress: () => router.push("/(tabs)/more") },
+        ],
+      );
+      return;
+    }
+    setSyncMode(mode);
   };
 
-  const handleSyncDown = async () => {
+  const handleSyncNow = async () => {
+    if (!user) {
+      Alert.alert("Not signed in", "Sign in to sync with Firebase.");
+      return;
+    }
     setSyncing(true);
     try {
-      await syncFromCloud();
-      Alert.alert("Success", "Data restored from cloud.");
+      await syncAllStores();
+      Alert.alert("Synced", "All stores reconciled with Firestore.");
     } catch (e: any) {
-      Alert.alert("Restore Failed", e?.message ?? "Check your credentials.");
+      Alert.alert("Sync failed", e?.message ?? "An error occurred.");
     } finally {
       setSyncing(false);
     }
@@ -84,6 +120,10 @@ export default function SettingsScreen() {
         Alert.alert(
           "Permission Denied",
           "Enable notifications in System Settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: () => Linking.openSettings() },
+          ],
         );
         return;
       }
@@ -91,34 +131,87 @@ export default function SettingsScreen() {
     setNotificationsEnabled(val);
   };
 
+  const handleCameraToggle = async (val: boolean) => {
+    if (!val) {
+      Alert.alert(
+        "Revoke Camera Access",
+        "To revoke camera access, go to System Settings.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+        ],
+      );
+      return;
+    }
+    if (cameraPermission?.status === "granted") return;
+    const result = await requestCameraPermission();
+    if (!result.granted) {
+      Alert.alert(
+        "Camera Permission Denied",
+        "Enable camera access in System Settings to scan documents.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+        ],
+      );
+    }
+  };
+
+  const handleMediaToggle = async (val: boolean) => {
+    if (!val) {
+      Alert.alert(
+        "Revoke Photo Library Access",
+        "To revoke access, go to System Settings.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+        ],
+      );
+      return;
+    }
+    if (mediaPermission?.status === "granted") return;
+    const result = await requestMediaPermission();
+    if (!result.granted) {
+      Alert.alert(
+        "Photo Library Permission Denied",
+        "Enable photo library access in System Settings.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+        ],
+      );
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.topRow}>
           <TouchableOpacity onPress={() => router.back()}>
-            <IconSymbol name="chevron.left" size={22} color={c.tint} />
+            <IconSymbol name="xmark" size={22} color={c.tint} />
           </TouchableOpacity>
           <Text style={[styles.pageTitle, { color: c.text }]}>Settings</Text>
           <View style={{ width: 22 }} />
         </View>
 
-        {/* Currency */}
-        <SectionHeader title="Currency Symbol" c={c} />
+        {/* Country */}
+        <SectionHeader title="Country" c={c} />
         <View
           style={[
             styles.group,
             { backgroundColor: c.card, borderColor: c.border },
           ]}
         >
-          <TextInput
-            style={[styles.input, { color: c.text, borderColor: c.border }]}
-            value={currencyInput}
-            onChangeText={setCurrencyInput}
-            onBlur={() => setCurrency(currencyInput)}
-            placeholder="e.g. $ or R"
-            placeholderTextColor={c.subtext}
-            maxLength={4}
-          />
+          <TouchableOpacity
+            style={styles.countryRow}
+            onPress={handleCountryPick}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.countryLabel, { color: c.text }]}>
+              {currentCountryLabel}
+            </Text>
+            <IconSymbol name="chevron.right" size={16} color={c.subtext} />
+          </TouchableOpacity>
         </View>
 
         {/* Notifications */}
@@ -140,6 +233,45 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Permissions */}
+        <SectionHeader title="Permissions" c={c} />
+        <View
+          style={[
+            styles.group,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
+        >
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={[styles.switchLabel, { color: c.text }]}>
+                Camera
+              </Text>
+              <Text style={[styles.optionDescription, { color: c.subtext }]}>
+                Required for scanning documents
+              </Text>
+            </View>
+            <Switch
+              value={cameraPermission?.status === "granted"}
+              onValueChange={handleCameraToggle}
+            />
+          </View>
+          <View style={[styles.permDivider, { backgroundColor: c.border }]} />
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={[styles.switchLabel, { color: c.text }]}>
+                Photo Library
+              </Text>
+              <Text style={[styles.optionDescription, { color: c.subtext }]}>
+                Required for uploading document images
+              </Text>
+            </View>
+            <Switch
+              value={mediaPermission?.status === "granted"}
+              onValueChange={handleMediaToggle}
+            />
+          </View>
+        </View>
+
         {/* Cloud Sync */}
         <SectionHeader title="Cloud Sync" c={c} />
         <View
@@ -148,17 +280,22 @@ export default function SettingsScreen() {
             { backgroundColor: c.card, borderColor: c.border },
           ]}
         >
-          {PROVIDERS.map((p) => (
+          {SYNC_MODES.map((mode) => (
             <TouchableOpacity
-              key={p.value}
+              key={mode.value}
               style={styles.optionRow}
-              onPress={() => setCloudProvider(p.value)}
+              onPress={() => handleSyncModeChange(mode.value)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.optionLabel, { color: c.text }]}>
-                {p.label}
-              </Text>
-              {cloudProvider === p.value && (
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.optionLabel, { color: c.text }]}>
+                  {mode.label}
+                </Text>
+                <Text style={[styles.optionDescription, { color: c.subtext }]}>
+                  {mode.description}
+                </Text>
+              </View>
+              {syncMode === mode.value && (
                 <IconSymbol
                   name="checkmark.circle.fill"
                   size={20}
@@ -169,109 +306,30 @@ export default function SettingsScreen() {
           ))}
         </View>
 
-        {cloudProvider === "supabase" && (
+        {syncMode === "online" && (
           <>
-            <SectionHeader title="Supabase Credentials" c={c} />
-            <View
-              style={[
-                styles.group,
-                { backgroundColor: c.card, borderColor: c.border },
-              ]}
-            >
-              <LabeledInput
-                label="Project URL"
-                value={supabaseUrlInput}
-                onChangeText={setSupabaseUrlInput}
-                onBlur={() =>
-                  setSupabaseCredentials(supabaseUrlInput, supabaseKeyInput)
-                }
-                placeholder="https://xxx.supabase.co"
-                c={c}
-              />
-              <LabeledInput
-                label="Anon Key"
-                value={supabaseKeyInput}
-                onChangeText={setSupabaseKeyInput}
-                onBlur={() =>
-                  setSupabaseCredentials(supabaseUrlInput, supabaseKeyInput)
-                }
-                placeholder="eyJ..."
-                c={c}
-                secureTextEntry
-              />
-            </View>
-          </>
-        )}
-
-        {cloudProvider === "appwrite" && (
-          <>
-            <SectionHeader title="Appwrite Credentials" c={c} />
-            <View
-              style={[
-                styles.group,
-                { backgroundColor: c.card, borderColor: c.border },
-              ]}
-            >
-              <LabeledInput
-                label="Endpoint"
-                value={appwriteEndpointInput}
-                onChangeText={setAppwriteEndpointInput}
-                onBlur={() =>
-                  setAppwriteCredentials(
-                    appwriteEndpointInput,
-                    appwriteProjectInput,
-                  )
-                }
-                placeholder="https://cloud.appwrite.io/v1"
-                c={c}
-              />
-              <LabeledInput
-                label="Project ID"
-                value={appwriteProjectInput}
-                onChangeText={setAppwriteProjectInput}
-                onBlur={() =>
-                  setAppwriteCredentials(
-                    appwriteEndpointInput,
-                    appwriteProjectInput,
-                  )
-                }
-                placeholder="project-id"
-                c={c}
-              />
-            </View>
-          </>
-        )}
-
-        {cloudProvider !== "none" && (
-          <View style={styles.syncButtons}>
-            <TouchableOpacity
-              style={[styles.syncBtn, { backgroundColor: c.tint }]}
-              onPress={handleSyncUp}
-              disabled={syncing}
-            >
-              <IconSymbol name="icloud.fill" size={16} color="#fff" />
-              <Text style={styles.syncBtnText}>
-                {syncing ? "Syncing…" : "Sync to Cloud"}
+            {!user && (
+              <Text style={[styles.onlineWarning, { color: c.subtext }]}>
+                Sign in to enable Firestore sync.
               </Text>
-            </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={[
                 styles.syncBtn,
                 {
-                  backgroundColor: c.card,
-                  borderWidth: 1,
-                  borderColor: c.tint,
+                  backgroundColor: c.tint,
+                  opacity: !user || syncing ? 0.5 : 1,
                 },
               ]}
-              onPress={handleSyncDown}
-              disabled={syncing}
+              onPress={handleSyncNow}
+              disabled={!user || syncing}
             >
-              <IconSymbol name="icloud.fill" size={16} color={c.tint} />
-              <Text style={[styles.syncBtnText, { color: c.tint }]}>
-                {syncing ? "Restoring…" : "Restore from Cloud"}
+              <IconSymbol name="icloud.fill" size={16} color="#fff" />
+              <Text style={styles.syncBtnText}>
+                {syncing ? "Syncing…" : "Sync Now"}
               </Text>
             </TouchableOpacity>
-          </View>
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -339,6 +397,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   optionLabel: { fontSize: 15 },
+  optionDescription: { fontSize: 12, marginTop: 2 },
+  onlineWarning: { fontSize: 13, paddingHorizontal: 4 },
   switchRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -347,16 +407,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   switchLabel: { fontSize: 15 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    margin: 12,
-    fontSize: 15,
+  permDivider: { height: 1, marginHorizontal: 16 },
+  countryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  labeledInput: { paddingHorizontal: 16, paddingVertical: 10, gap: 4 },
-  inputLabel: { fontSize: 12, fontWeight: "600" },
-  syncButtons: { gap: 10 },
+  countryLabel: { fontSize: 15, fontWeight: "500" },
   syncBtn: {
     flexDirection: "row",
     alignItems: "center",

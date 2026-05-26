@@ -1,7 +1,7 @@
 import {
-    getAI,
-    getGenerativeModel,
-    GoogleAIBackend,
+  getAI,
+  getGenerativeModel,
+  GoogleAIBackend,
 } from "@react-native-firebase/ai";
 import analytics from "@react-native-firebase/analytics";
 import firebase from "@react-native-firebase/app";
@@ -19,7 +19,7 @@ const ai = getAI(firebase.app(), { backend: new GoogleAIBackend() });
  * const model = getModel('gemini-2.5-flash');
  * const result = await model.generateContent('Hello!');
  */
-function getModel(modelName = "gemini-2.5-flash") {
+function getModel(modelName = "gemini-3.1-flash-lite") {
   return getGenerativeModel(ai, { model: modelName });
 }
 

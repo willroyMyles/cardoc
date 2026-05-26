@@ -6,24 +6,18 @@ import { createJSONStorage, persist } from "zustand/middleware";
 export { COUNTRY_LABELS };
 export type { CountryCode };
 
-export type CloudProvider = "none" | "supabase" | "appwrite";
+export type SyncMode = "local" | "online";
 
 interface SettingsState {
   country: CountryCode;
   currency: string;
-  cloudProvider: CloudProvider;
-  supabaseUrl: string;
-  supabaseAnonKey: string;
-  appwriteEndpoint: string;
-  appwriteProjectId: string;
+  syncMode: SyncMode;
   notificationsEnabled: boolean;
   biometricLockEnabled: boolean;
   parsingMode: "entity" | "ocr";
   setCountry: (country: CountryCode) => void;
   setCurrency: (currency: string) => void;
-  setCloudProvider: (provider: CloudProvider) => void;
-  setSupabaseCredentials: (url: string, anonKey: string) => void;
-  setAppwriteCredentials: (endpoint: string, projectId: string) => void;
+  setSyncMode: (mode: SyncMode) => void;
   setNotificationsEnabled: (enabled: boolean) => void;
   setBiometricLockEnabled: (enabled: boolean) => void;
   setParsingMode: (mode: "entity" | "ocr") => void;
@@ -34,21 +28,13 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       country: "jamaica",
       currency: "USD",
-      cloudProvider: "none",
-      supabaseUrl: "",
-      supabaseAnonKey: "",
-      appwriteEndpoint: "",
-      appwriteProjectId: "",
+      syncMode: "local",
       notificationsEnabled: true,
       biometricLockEnabled: false,
       parsingMode: "ocr",
       setCountry: (country) => set({ country }),
       setCurrency: (currency) => set({ currency }),
-      setCloudProvider: (cloudProvider) => set({ cloudProvider }),
-      setSupabaseCredentials: (supabaseUrl, supabaseAnonKey) =>
-        set({ supabaseUrl, supabaseAnonKey }),
-      setAppwriteCredentials: (appwriteEndpoint, appwriteProjectId) =>
-        set({ appwriteEndpoint, appwriteProjectId }),
+      setSyncMode: (syncMode) => set({ syncMode }),
       setNotificationsEnabled: (notificationsEnabled) =>
         set({ notificationsEnabled }),
       setBiometricLockEnabled: (biometricLockEnabled) =>

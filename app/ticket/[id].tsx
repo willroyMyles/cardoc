@@ -10,12 +10,12 @@ import { useTicketsStore, useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const statusBadgeMap: Record<
@@ -60,6 +60,11 @@ export default function TicketDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <IconSymbol name="xmark" size={22} color={c.tint} />
+        </TouchableOpacity>
+      </View>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Card style={styles.card}>
           <View style={styles.headerRow}>
@@ -190,6 +195,12 @@ export default function TicketDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   scroll: { padding: 16, gap: 8, paddingBottom: 40 },
   card: { gap: 8 },
   headerRow: {

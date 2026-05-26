@@ -84,7 +84,7 @@ export default function MaintenanceListScreen() {
     >
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="chevron.left" size={22} color={c.tint} />
+          <IconSymbol name="xmark" size={22} color={c.tint} />
         </TouchableOpacity>
         <Text style={[styles.pageTitle, { color: c.text }]}>
           Maintenance Log
@@ -97,7 +97,9 @@ export default function MaintenanceListScreen() {
         data={entries}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={
+          entries.length === 0 ? styles.emptyList : styles.list
+        }
         ListEmptyComponent={
           <EmptyState
             icon="wrench.and.screwdriver.fill"
@@ -121,6 +123,7 @@ const styles = StyleSheet.create({
   },
   pageTitle: { fontSize: 20, fontWeight: "700" },
   list: { padding: 16, gap: 12, paddingBottom: 40 },
+  emptyList: { flex: 1, padding: 16 },
   card: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 6 },
   cardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   typeIcon: {

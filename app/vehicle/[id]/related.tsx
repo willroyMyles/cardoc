@@ -50,47 +50,22 @@ export default function RelatedDocumentsScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <IconSymbol name="chevron.left" size={20} color={c.tint} />
-
-            <Text style={[styles.backLabel, { color: c.tint }]}>Back</Text>
-          </TouchableOpacity>
-          <View style={styles.titleBlock}>
-            <ThemedText type="title">
-              {vehicle.year} {vehicle.make} {vehicle.model}
-            </ThemedText>
-            {vehicle.licensePlate ? (
-              <Text style={[styles.plate, { color: c.subtext }]}>
-                {vehicle.licensePlate}
-              </Text>
-            ) : null}
-          </View>
           <View
-            className="row flex-row"
             style={{
-              gap: 6,
-              flex: 1,
-              justifyContent: "flex-start",
               flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              justifyContent: "space-between",
             }}
           >
             <TouchableOpacity
-              style={[styles.addDocBtn, { backgroundColor: c.tint }]}
-              onPress={() =>
-                router.push({
-                  pathname: "/document/add",
-                  params: { vehicleId: id },
-                })
-              }
-              activeOpacity={0.8}
+              style={styles.backBtn}
+              onPress={() => router.back()}
             >
-              <IconSymbol name="plus" size={16} color="#fff" />
-              <Text style={styles.addDocLabel}>Add Document</Text>
+              <IconSymbol name="chevron.left" size={20} color={c.tint} />
+
+              <Text style={[styles.backLabel, { color: c.tint }]}>Back</Text>
             </TouchableOpacity>
-            {/* Edit Vehicle Button */}
             <TouchableOpacity
               style={[styles.addDocBtn, { backgroundColor: c.border }]}
               onPress={() =>
@@ -106,6 +81,51 @@ export default function RelatedDocumentsScreen() {
                 Edit Vehicle
               </Text>
             </TouchableOpacity>
+          </View>
+          <View style={styles.titleBlock}>
+            <ThemedText type="title">
+              {vehicle.year} {vehicle.make} {vehicle.model}
+            </ThemedText>
+            {vehicle.licensePlate ? (
+              <Text style={[styles.plate, { color: c.subtext }]}>
+                {vehicle.licensePlate}
+              </Text>
+            ) : null}
+            <Text
+              style={[
+                {
+                  color: vehicle.color
+                    ? `${vehicle.color.toLocaleLowerCase()}`
+                    : c.subtext,
+                },
+              ]}
+            >
+              {vehicle.color ? vehicle.color : "No color specified"}
+            </Text>
+          </View>
+          <View
+            className="row flex-row"
+            style={{
+              gap: 6,
+              flex: 1,
+              justifyContent: "flex-start",
+              flexDirection: "row",
+            }}
+          >
+            {/* <TouchableOpacity
+              style={[styles.addDocBtn, { backgroundColor: c.tint }]}
+              onPress={() =>
+                router.push({
+                  pathname: "/document/add",
+                  params: { vehicleId: id },
+                })
+              }
+              activeOpacity={0.8}
+            >
+              <IconSymbol name="plus" size={16} color="#fff" />
+              <Text style={styles.addDocLabel}>Add Document</Text>
+            </TouchableOpacity> */}
+            {/* Edit Vehicle Button */}
           </View>
         </View>
 

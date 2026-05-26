@@ -12,7 +12,20 @@
           "package_name": "com.fortech.cardoc"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "988380567626-71q9sauglj7t0juofl73c6g4i0ic9ir9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fortech.cardoc",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "988380567626-6bi2i7c0h7dvv3gl022n0huorestkegc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCGoMff0qmxxssIJfvqErd_OMkXbKHB6ng"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "988380567626-6bi2i7c0h7dvv3gl022n0huorestkegc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "988380567626-c9tltgvp5centjvul10d43l39n1gev0k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.fortech.cardoc"
+              }
+            }
+          ]
         }
       }
     }

@@ -1,3 +1,4 @@
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
@@ -18,6 +19,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    View,
 } from "react-native";
 
 function generateId() {
@@ -90,6 +92,13 @@ export default function AddDocumentScreen() {
       style={[styles.container, { backgroundColor: c.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <IconSymbol name="xmark" size={22} color={c.tint} />
+        </TouchableOpacity>
+        <Text style={[styles.pageTitle, { color: c.text }]}>Add Document</Text>
+        <View style={{ width: 22 }} />
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
@@ -232,6 +241,14 @@ export default function AddDocumentScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  pageTitle: { fontSize: 20, fontWeight: "700" },
   scroll: { padding: 16, gap: 4, paddingBottom: 40 },
   label: { fontSize: 13, fontWeight: "600", marginTop: 12, marginBottom: 4 },
   input: {

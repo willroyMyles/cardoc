@@ -1,30 +1,34 @@
 import { LicenseCard } from "@/components/license/license-card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { ImageViewerModal } from "@/components/ui/image-viewer-modal";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { DynamicDriverLicense } from "@/models";
 import {
-  getDriverLicenseSpec,
-  type DriverLicenseSpec,
+    getDriverLicenseSpec,
+    type DriverLicenseSpec,
 } from "@/services/docs-registry";
-import { extractLicenseFieldsWithAI } from "@/services/firebase/ai-license";
+import { uriToInlineDataPart } from "@/services/firebase/ai-document";
+import { extractLicenseFieldsFromParts } from "@/services/firebase/ai-license";
 import { useLicenseStore, useSettingsStore } from "@/store";
+import { InlineDataPart } from "@react-native-firebase/ai";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 function generateId() {
@@ -64,6 +68,35 @@ export default function LicenseScreen() {
 
   const [frontUri, setFrontUri] = useState(license?.imageUriFront ?? "");
   const [backUri, setBackUri] = useState(license?.imageUriBack ?? "");
+  const [frontPart, setFrontPart] = useState<InlineDataPart | null>(null);
+  const [backPart, setBackPart] = useState<InlineDataPart | null>(null);
+  const [frontConverting, setFrontConverting] = useState(false);
+  const [backConverting, setBackConverting] = useState(false);
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
+
+  function setFrontImage(uri: string) {
+    setFrontUri(uri);
+    setFrontPart(null);
+    setFrontConverting(true);
+    uriToInlineDataPart(uri)
+      .then((p) => {
+        setFrontPart(p);
+        setFrontConverting(false);
+      })
+      .catch(() => setFrontConverting(false));
+  }
+
+  function setBackImage(uri: string) {
+    setBackUri(uri);
+    setBackPart(null);
+    setBackConverting(true);
+    uriToInlineDataPart(uri)
+      .then((p) => {
+        setBackPart(p);
+        setBackConverting(false);
+      })
+      .catch(() => setBackConverting(false));
+  }
   const [fields, setFields] = useState<Record<string, string>>(() =>
     initFields(spec, license),
   );
@@ -85,8 +118,8 @@ export default function LicenseScreen() {
       quality: 1,
     });
     if (!result.canceled && result.assets[0]) {
-      if (side === "front") setFrontUri(result.assets[0].uri);
-      else setBackUri(result.assets[0].uri);
+      if (side === "front") setFrontImage(result.assets[0].uri);
+      else setBackImage(result.assets[0].uri);
     }
   }
 
@@ -104,8 +137,8 @@ export default function LicenseScreen() {
       quality: 1,
     });
     if (!result.canceled && result.assets[0]) {
-      if (side === "front") setFrontUri(result.assets[0].uri);
-      else setBackUri(result.assets[0].uri);
+      if (side === "front") setFrontImage(result.assets[0].uri);
+      else setBackImage(result.assets[0].uri);
     }
   }
 
@@ -128,11 +161,12 @@ export default function LicenseScreen() {
     }
     setAiProcessing(true);
     try {
-      const parsed = await extractLicenseFieldsWithAI(
-        country,
-        frontUri || undefined,
-        backUri || undefined,
-      );
+      // Use pre-converted parts when available for faster processing
+      const parts: InlineDataPart[] = [];
+      if (frontUri)
+        parts.push(frontPart ?? (await uriToInlineDataPart(frontUri)));
+      if (backUri) parts.push(backPart ?? (await uriToInlineDataPart(backUri)));
+      const parsed = await extractLicenseFieldsFromParts(country, parts);
       setFields((prev) => {
         const next = { ...prev };
         for (const [k, v] of Object.entries(parsed)) {
@@ -267,6 +301,11 @@ export default function LicenseScreen() {
       <SafeAreaView
         style={[styles.container, { backgroundColor: c.background }]}
       >
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <IconSymbol name="xmark" size={22} color={c.tint} />
+          </TouchableOpacity>
+        </View>
         <ScrollView contentContainerStyle={styles.scroll}>
           <LicenseCard license={license} spec={spec} />
 
@@ -311,6 +350,11 @@ export default function LicenseScreen() {
       style={[styles.container, { backgroundColor: c.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <IconSymbol name="xmark" size={22} color={c.tint} />
+        </TouchableOpacity>
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
@@ -326,7 +370,9 @@ export default function LicenseScreen() {
               styles.imageSlot,
               { backgroundColor: c.card, borderColor: c.border },
             ]}
-            onPress={() => showImageOptions("front")}
+            onPress={() =>
+              frontUri ? setViewerUri(frontUri) : showImageOptions("front")
+            }
             activeOpacity={0.7}
           >
             {frontUri ? (
@@ -345,6 +391,20 @@ export default function LicenseScreen() {
                 </Text>
               </View>
             )}
+            {frontConverting && (
+              <View style={styles.imageConvertingOverlay}>
+                <ActivityIndicator color="#fff" size="small" />
+              </View>
+            )}
+            {frontUri && (
+              <TouchableOpacity
+                style={styles.changeImageBtn}
+                onPress={() => showImageOptions("front")}
+                hitSlop={4}
+              >
+                <IconSymbol name="camera.fill" size={14} color="#fff" />
+              </TouchableOpacity>
+            )}
             <View style={[styles.imageLabel, { backgroundColor: c.tint }]}>
               <Text style={styles.imageLabelText}>FRONT</Text>
             </View>
@@ -356,7 +416,9 @@ export default function LicenseScreen() {
               styles.imageSlot,
               { backgroundColor: c.card, borderColor: c.border },
             ]}
-            onPress={() => showImageOptions("back")}
+            onPress={() =>
+              backUri ? setViewerUri(backUri) : showImageOptions("back")
+            }
             activeOpacity={0.7}
           >
             {backUri ? (
@@ -374,6 +436,20 @@ export default function LicenseScreen() {
                   Back
                 </Text>
               </View>
+            )}
+            {backConverting && (
+              <View style={styles.imageConvertingOverlay}>
+                <ActivityIndicator color="#fff" size="small" />
+              </View>
+            )}
+            {backUri && (
+              <TouchableOpacity
+                style={styles.changeImageBtn}
+                onPress={() => showImageOptions("back")}
+                hitSlop={4}
+              >
+                <IconSymbol name="camera.fill" size={14} color="#fff" />
+              </TouchableOpacity>
             )}
             <View
               style={[
@@ -434,13 +510,21 @@ export default function LicenseScreen() {
                 backgroundColor: frontUri || backUri ? "#8B5CF6" : c.card,
                 borderColor: c.border,
               },
-              aiProcessing && styles.mlBtnDisabled,
+              (aiProcessing || frontConverting || backConverting) &&
+                styles.mlBtnDisabled,
             ]}
             onPress={handleProcessWithAI}
-            disabled={processing || aiProcessing}
+            disabled={
+              processing || aiProcessing || frontConverting || backConverting
+            }
           >
             {aiProcessing ? (
               <ActivityIndicator color="#fff" size="small" />
+            ) : frontConverting || backConverting ? (
+              <ActivityIndicator
+                color={frontUri || backUri ? "#fff" : c.subtext}
+                size="small"
+              />
             ) : (
               <IconSymbol
                 name="sparkles"
@@ -454,7 +538,11 @@ export default function LicenseScreen() {
                 { color: frontUri || backUri ? "#fff" : c.subtext },
               ]}
             >
-              {aiProcessing ? "Processing…" : "Enhance with AI"}
+              {aiProcessing
+                ? "Processing…"
+                : frontConverting || backConverting
+                  ? "Preparing…"
+                  : "Enhance with AI"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -536,12 +624,24 @@ export default function LicenseScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <ImageViewerModal
+        visible={!!viewerUri}
+        uri={viewerUri}
+        onClose={() => setViewerUri(null)}
+      />
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   scroll: { padding: 16, gap: 4, paddingBottom: 40 },
   sectionTitle: {
     fontSize: 15,
@@ -559,6 +659,23 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   imagePreview: { width: "100%", height: "100%" },
+  imageConvertingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  changeImageBtn: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: 14,
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   imagePlaceholder: {
     flex: 1,
     alignItems: "center",

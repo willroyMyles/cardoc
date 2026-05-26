@@ -20,8 +20,7 @@ function makeLogoUrl(make: string) {
 export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
   const scheme = useColorScheme() ?? "light";
   const logoUrl = makeLogoUrl(vehicle.make);
-  const bgColor = vehicle.color || Colors[scheme].border;
-  console.log(bgColor, vehicle);
+  const bgColor = vehicle.color.toLowerCase() || Colors[scheme].border;
 
   return (
     <TouchableOpacity
@@ -40,9 +39,7 @@ export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
           {vehicle.imageUri ? (
             <Image source={{ uri: vehicle.imageUri }} style={styles.image} />
           ) : (
-            <View
-              style={[styles.imagePlaceholder, { backgroundColor: bgColor }]}
-            >
+            <View style={[styles.imagePlaceholder]}>
               <Image
                 source={{ uri: logoUrl }}
                 style={styles.logo}

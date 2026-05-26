@@ -5,10 +5,19 @@ import {
 } from "@react-navigation/native";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { configureGoogleSignIn } from "@/services/firebase/auth-service";
+import { syncAllStores } from "@/services/firebase/sync-manager";
+import { useAuthStore, useSettingsStore } from "@/store";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect, useRef } from "react";
 import "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+// Replace with your Firebase Web Client ID (from Firebase Console →
+// Authentication → Sign-in method → Google → Web SDK configuration)
+const GOOGLE_WEB_CLIENT_ID =
+  "988380567626-6bi2i7c0h7dvv3gl022n0huorestkegc.apps.googleusercontent.com";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -16,6 +25,25 @@ export const unstable_settings = {
 
 export default function Layout() {
   const colorScheme = useColorScheme();
+  const initialize = useAuthStore((s) => s.initialize);
+  const initialized = useAuthStore((s) => s.initialized);
+  const user = useAuthStore((s) => s.user);
+  const syncMode = useSettingsStore((s) => s.syncMode);
+  const hasSynced = useRef(false);
+
+  useEffect(() => {
+    configureGoogleSignIn(GOOGLE_WEB_CLIENT_ID);
+    const unsubscribe = initialize();
+    return unsubscribe;
+  }, [initialize]);
+
+  // Auto-sync on startup once auth is ready and online mode is selected
+  useEffect(() => {
+    if (initialized && user && syncMode === "online" && !hasSynced.current) {
+      hasSynced.current = true;
+      syncAllStores().catch(() => {});
+    }
+  }, [initialized, user, syncMode]);
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <SafeAreaView style={{ flex: 1 }}>
@@ -28,11 +56,27 @@ export default function Layout() {
           {/* Vehicle */}
           <Stack.Screen
             name="vehicle/add"
-            options={{ title: "Add Vehicle", headerBackTitle: "Back" }}
+            options={{
+              title: "Add Vehicle",
+              headerBackTitle: "Back",
+              headerShown: false,
+            }}
           />
           <Stack.Screen
             name="vehicle/[id]"
-            options={{ title: "Vehicle", headerBackTitle: "Back" }}
+            options={{
+              title: "Vehicle",
+              headerBackTitle: "Back",
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="vehicle/[id]/related"
+            options={{
+              title: "Vehicle",
+              headerBackTitle: "Back",
+              headerShown: false,
+            }}
           />
           <Stack.Screen
             name="vehicle/edit/[id]"
@@ -49,25 +93,33 @@ export default function Layout() {
           />
           {/* Ticket */}
           <Stack.Screen
-            name="ticket/add"
-            options={{ title: "Add Ticket", headerBackTitle: "Back" }}
-          />
-          <Stack.Screen
             name="ticket/[id]"
             options={{ title: "Ticket", headerBackTitle: "Back" }}
           />
           <Stack.Screen
             name="ticket/lookup"
-            options={{ title: "Ticket Lookup", headerBackTitle: "Back" }}
+            options={{
+              title: "Ticket Lookup",
+              headerBackTitle: "Back",
+              headerBackVisible: false,
+              headerShown: false,
+            }}
           />
           {/* Misc */}
           <Stack.Screen
             name="license"
-            options={{ title: "Driver's License", headerBackTitle: "Back" }}
+            options={{
+              title: "Driver's License",
+              headerBackTitle: "Back",
+            }}
           />
           <Stack.Screen
             name="scan"
-            options={{ presentation: "modal", title: "Scan Document" }}
+            options={{
+              presentation: "modal",
+              title: "Scan Document",
+              headerShown: false,
+            }}
           />
           <Stack.Screen
             name="scan-review"

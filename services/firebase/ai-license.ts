@@ -3,8 +3,8 @@ import {
   type CountryCode,
   getDriverLicenseSpec,
 } from "@/services/docs-registry";
+import { uriToInlineDataPart } from "@/services/firebase/ai-document";
 import { InlineDataPart, TextPart } from "@react-native-firebase/ai";
-import { File } from "expo-file-system";
 import { getModel } from "./index";
 
 function buildPrompt(country: CountryCode): string {
@@ -21,21 +21,6 @@ function buildPrompt(country: CountryCode): string {
   return `Extract structured data from image/s of a ${spec.label}.\nReturn ONLY a valid JSON object.\nFields:\n${fieldLines}`;
 }
 
-async function uriToInlineDataPart(uri: string): Promise<InlineDataPart> {
-  let buffer: ArrayBuffer;
-  if (uri.startsWith("http://") || uri.startsWith("https://")) {
-    buffer = await (await fetch(uri)).arrayBuffer();
-  } else {
-    buffer = await new File(uri).arrayBuffer();
-  }
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return { inlineData: { mimeType: "image/jpeg", data: btoa(binary) } };
-}
-
 /**
  * Uses Firebase AI Logic (Gemini) to extract structured fields from licence
  * images. The prompt is built dynamically from the country's field spec.
@@ -50,17 +35,30 @@ export async function extractLicenseFieldsWithAI(
   frontUri?: string,
   backUri?: string,
 ): Promise<DynamicDriverLicense["fields"]> {
-  const model = getModel("gemini-2.5-flash");
-  const spec = getDriverLicenseSpec(country);
-
   const uris = [frontUri, backUri].filter(Boolean) as string[];
-  const imageParts = await Promise.all(uris.map(uriToInlineDataPart));
+  const imageParts = await Promise.all(uris.map((u) => uriToInlineDataPart(u)));
+  return runExtraction(country, imageParts);
+}
+
+function normalizeToISO(value: string): string {
+  try {
+    return new Date(value).toISOString();
+  } catch {
+    return value;
+  }
+}
+
+async function runExtraction(
+  country: CountryCode,
+  imageParts: InlineDataPart[],
+): Promise<DynamicDriverLicense["fields"]> {
+  const model = getModel();
+  const spec = getDriverLicenseSpec(country);
   const textPart: TextPart = { text: buildPrompt(country) };
 
   const result = await model.generateContent([...imageParts, textPart]);
   const raw = result.response.text().trim();
 
-  // Strip markdown code fences if the model wraps the JSON
   const jsonString = raw
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/```\s*$/, "");
@@ -76,10 +74,13 @@ export async function extractLicenseFieldsWithAI(
   return out;
 }
 
-function normalizeToISO(value: string): string {
-  try {
-    return new Date(value).toISOString();
-  } catch {
-    return value;
-  }
+/**
+ * Same as extractLicenseFieldsWithAI but accepts pre-converted InlineDataParts,
+ * skipping the URI-to-base64 conversion step.
+ */
+export async function extractLicenseFieldsFromParts(
+  country: CountryCode,
+  parts: InlineDataPart[],
+): Promise<DynamicDriverLicense["fields"]> {
+  return runExtraction(country, parts);
 }

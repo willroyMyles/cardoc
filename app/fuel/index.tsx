@@ -94,7 +94,7 @@ export default function FuelListScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="chevron.left" size={22} color={c.tint} />
+          <IconSymbol name="xmark" size={22} color={c.tint} />
         </TouchableOpacity>
         <Text style={[styles.pageTitle, { color: c.text }]}>Fuel Log</Text>
         <TouchableOpacity onPress={() => router.push("/fuel/add")}>
@@ -137,7 +137,9 @@ export default function FuelListScreen() {
         data={entries}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={
+          entries.length === 0 ? styles.emptyList : styles.list
+        }
         ListEmptyComponent={
           <EmptyState
             icon="fuelpump.fill"
@@ -177,6 +179,7 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 11, fontWeight: "600" },
   statDesc: { fontSize: 11, marginTop: 2 },
   list: { padding: 16, gap: 12, paddingBottom: 40 },
+  emptyList: { flex: 1, padding: 16 },
   card: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 6 },
   cardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   icon: {

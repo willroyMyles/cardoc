@@ -1,3 +1,4 @@
+export * from "./auth-store";
 export * from "./documents-store";
 export * from "./fuel-store";
 export * from "./license-store";

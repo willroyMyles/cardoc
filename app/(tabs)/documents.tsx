@@ -1,12 +1,10 @@
 import { DocumentCard } from "@/components/documents/document-card";
 import { ThemedText } from "@/components/themed-text";
 import { EmptyState } from "@/components/ui/empty-state";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CarDocumentType } from "@/models";
 import { useDocumentsStore, useVehiclesStore } from "@/store";
-import { router } from "expo-router";
 import React, { useState } from "react";
 import {
     FlatList,
@@ -40,12 +38,6 @@ export default function DocumentsTab() {
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <View style={styles.header}>
         <ThemedText type="title">Documents</ThemedText>
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: c.tint }]}
-          onPress={() => router.push("/document/add")}
-        >
-          <IconSymbol name="plus" size={20} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       {/* Filter chips */}
@@ -107,20 +99,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 40,
     paddingTop: 16,
     paddingBottom: 8,
   },
-  addBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   chipRow: {
     flexDirection: "row",
-    paddingHorizontal: 16,
+    paddingHorizontal: 40,
     gap: 8,
     marginBottom: 8,
     flexWrap: "wrap",

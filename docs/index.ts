@@ -21,6 +21,4 @@ export const countries: Record<
   }),
 );
 
-console.log(countries);
-
 export type CountryCode = string;

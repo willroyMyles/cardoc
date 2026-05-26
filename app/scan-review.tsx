@@ -23,40 +23,41 @@ function isSameVehicleByVinChassis(
     return true;
   return false;
 }
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
-  CAR_DOCUMENT_TYPE_LABELS,
-  CarDocument,
-  CarDocumentType,
-  DynamicDriverLicense,
-  Vehicle,
+    CAR_DOCUMENT_TYPE_LABELS,
+    CarDocument,
+    CarDocumentType,
+    DynamicDriverLicense,
+    Vehicle,
 } from "@/models";
 import {
-  getDocumentSpecs,
-  getDriverLicenseSpec,
-  type DocSpec,
+    getDocumentSpecs,
+    getDriverLicenseSpec,
+    type DocSpec,
 } from "@/services/docs-registry";
 import { scheduleDocumentExpiryReminders } from "@/services/notifications/expiry-reminders";
 import {
-  useDocumentsStore,
-  useLicenseStore,
-  useSettingsStore,
-  useVehiclesStore,
+    useDocumentsStore,
+    useLicenseStore,
+    useSettingsStore,
+    useVehiclesStore,
 } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 function generateId() {
@@ -118,23 +119,19 @@ export default function ScanReviewScreen() {
   }>();
 
   useEffect(() => {
-    // create new vehicle from fields if no vehicles exist — this ensures we have a vehicle to link documents to, and saves the user from having to manually create one first
-    if (category === "document" && vehicles.length === 0) {
-      const vehicleId = createVehicleFromFields();
-      setSelectedVehicleId(vehicleId);
-    }
+    if (category !== "document") return;
 
-    //create new vicheile if fields dont match
-    if (category === "document" && vehicles.length > 0) {
-      const matchedVehicle = vehicles.find((v) =>
-        isSameVehicleByVinChassis(v, fields),
-      );
-      if (matchedVehicle) {
-        setSelectedVehicleId(matchedVehicle.id);
-      } else {
-        const vehicleId = createVehicleFromFields();
-        setSelectedVehicleId(vehicleId);
-      }
+    const matchedVehicle = vehicles.find((v) =>
+      isSameVehicleByVinChassis(v, fields),
+    );
+    if (matchedVehicle) {
+      setSelectedVehicleId(matchedVehicle.id);
+      setPendingVehicle(null);
+    } else {
+      // No existing vehicle matches — stage one to be created on save
+      const v = buildVehicleFromFields();
+      setPendingVehicle(v);
+      setSelectedVehicleId(v.id);
     }
   }, [category, specType]);
 
@@ -162,14 +159,15 @@ export default function ScanReviewScreen() {
   const [selectedVehicleId, setSelectedVehicleId] = useState(
     vehicles[0]?.id ?? "",
   );
+  const [pendingVehicle, setPendingVehicle] = useState<Vehicle | null>(null);
   const [saving, setSaving] = useState(false);
 
   function setField(key: string, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }));
   }
 
-  /** Lifts make/model/year out of scanned fields to create a minimal vehicle. */
-  function createVehicleFromFields(): string {
+  /** Builds a vehicle from scanned fields without persisting it. */
+  function buildVehicleFromFields(): Vehicle {
     const make = fields.make ?? "";
     const model = fields.model ?? fields["model_mfg_type"] ?? "";
     const yearRaw = fields.year ?? fields.year_of_manufacture ?? "";
@@ -177,7 +175,7 @@ export default function ScanReviewScreen() {
     const color = fields.color ?? fields.colour ?? "";
     const vin = fields.chassis_number ?? fields.vin ?? "";
     const plate = fields.registration_number ?? "";
-    const vehicle: Vehicle = {
+    return {
       id: generateId(),
       make: make || "Unknown",
       model: model || "Unknown",
@@ -190,8 +188,6 @@ export default function ScanReviewScreen() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    addVehicle(vehicle);
-    return vehicle.id;
   }
 
   async function handleSave() {
@@ -226,12 +222,22 @@ export default function ScanReviewScreen() {
         const matchedVehicle = vehicles.find((v) =>
           isSameVehicleByVinChassis(v, fields),
         );
-        if (matchedVehicle) {
-          setSelectedVehicleId(matchedVehicle.id);
-        }
 
-        // No vehicle selected — lift vehicle info from document fields
-        const vehicleId = selectedVehicleId || createVehicleFromFields();
+        let vehicleId: string;
+        if (matchedVehicle) {
+          vehicleId = matchedVehicle.id;
+        } else if (
+          selectedVehicleId &&
+          selectedVehicleId !== pendingVehicle?.id
+        ) {
+          // User selected an existing vehicle from the picker
+          vehicleId = selectedVehicleId;
+        } else {
+          // Save the pending vehicle that was staged from scanned fields
+          const v = pendingVehicle ?? buildVehicleFromFields();
+          addVehicle(v);
+          vehicleId = v.id;
+        }
 
         const doc: CarDocument = {
           id: generateId(),
@@ -272,6 +278,11 @@ export default function ScanReviewScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <IconSymbol name="xmark" size={22} color={c.tint} />
+        </TouchableOpacity>
+      </View>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -397,6 +408,12 @@ export default function ScanReviewScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   scroll: { padding: 16, paddingBottom: 24 },
   docTypeCard: {
     borderRadius: 14,

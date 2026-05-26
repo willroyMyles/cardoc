@@ -49,7 +49,7 @@ export function DocumentCard({ document, vehicleName }: DocumentCardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: { marginHorizontal: 16, marginVertical: 6, overflow: "hidden" },
+  card: { marginHorizontal: 16, marginVertical: 6 },
   row: { flexDirection: "row", gap: 12 },
   typeAccent: { width: 4, borderRadius: 2, alignSelf: "stretch" },
   info: { flex: 1, gap: 2 },

@@ -108,7 +108,7 @@ export default function InsuranceScanScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <IconSymbol name="chevron.left" size={20} color={c.tint} />
+          <IconSymbol name="xmark" size={20} color={c.tint} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: c.text }]}>
           Scan Insurance Document

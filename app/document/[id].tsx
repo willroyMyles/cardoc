@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { ImageViewerModal } from "@/components/ui/image-viewer-modal";
 import { DocTypeColors, Colors as ThemeColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CAR_DOCUMENT_TYPE_LABELS as LABELS } from "@/models";
@@ -11,13 +12,13 @@ import { useDocumentsStore, useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function DocumentDetailScreen() {
@@ -29,6 +30,7 @@ export default function DocumentDetailScreen() {
   const deleteDocument = useDocumentsStore((s) => s.deleteDocument);
   const getVehicle = useVehiclesStore((s) => s.getVehicle);
   const [showDelete, setShowDelete] = useState(false);
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   if (!doc) {
     return (
@@ -52,8 +54,15 @@ export default function DocumentDetailScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header accent */}
+        {/* Back button + type bar */}
         <View style={[styles.typeBar, { backgroundColor: accentColor }]}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <IconSymbol name="xmark" size={20} color="#fff" />
+          </TouchableOpacity>
           <Text style={styles.typeBarText}>{LABELS[doc.type]}</Text>
         </View>
 
@@ -126,11 +135,16 @@ export default function DocumentDetailScreen() {
 
         {/* Document image */}
         {doc.imageUri ? (
-          <Image
-            source={{ uri: doc.imageUri }}
-            style={styles.docImage}
-            resizeMode="contain"
-          />
+          <TouchableOpacity
+            onPress={() => setViewerUri(doc.imageUri!)}
+            activeOpacity={0.85}
+          >
+            <Image
+              source={{ uri: doc.imageUri }}
+              style={styles.docImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
         ) : null}
 
         {/* Actions */}
@@ -154,6 +168,12 @@ export default function DocumentDetailScreen() {
         onConfirm={handleDelete}
         onCancel={() => setShowDelete(false)}
       />
+
+      <ImageViewerModal
+        visible={!!viewerUri}
+        uri={viewerUri}
+        onClose={() => setViewerUri(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -161,7 +181,16 @@ export default function DocumentDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingBottom: 40 },
-  typeBar: { paddingHorizontal: 20, paddingVertical: 10 },
+  typeBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  backBtn: {
+    padding: 2,
+  },
   typeBarText: {
     color: "#fff",
     fontWeight: "700",

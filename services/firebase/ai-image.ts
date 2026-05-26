@@ -22,7 +22,7 @@ export async function processImagesWithAI(
   prompt: string,
   modelName = "gemini-2.5-flash-lite",
 ): Promise<string> {
-  const model = getModel(modelName);
+  const model = getModel();
 
   const imageParts: InlineDataPart[] = await Promise.all(
     images.map(async ({ uri, mimeType = "image/jpeg" }) => {

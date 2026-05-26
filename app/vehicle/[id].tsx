@@ -3,6 +3,7 @@ import { ThemedText } from "@/components/themed-text";
 import { TicketCard } from "@/components/tickets/ticket-card";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -10,12 +11,12 @@ import { useDocumentsStore, useTicketsStore, useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function VehicleDetailScreen() {
@@ -25,6 +26,9 @@ export default function VehicleDetailScreen() {
 
   const vehicle = useVehiclesStore((s) => s.vehicles.find((v) => v.id === id));
   const deleteVehicle = useVehiclesStore((s) => s.deleteVehicle);
+  const deleteDocumentsForVehicle = useDocumentsStore(
+    (s) => s.deleteDocumentsForVehicle,
+  );
   const allDocs = useDocumentsStore((s) => s.documents);
   const allTickets = useTicketsStore((s) => s.tickets);
   const docs = useMemo(
@@ -49,12 +53,18 @@ export default function VehicleDetailScreen() {
   }
 
   function handleDelete() {
+    deleteDocumentsForVehicle(id);
     deleteVehicle(id);
     router.back();
   }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <IconSymbol name="xmark" size={22} color={c.tint} />
+        </TouchableOpacity>
+      </View>
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Vehicle Info */}
         <Card style={styles.infoCard}>
@@ -147,6 +157,13 @@ export default function VehicleDetailScreen() {
         {docs.map((d) => (
           <DocumentCard key={d.id} document={d} />
         ))}
+        {docs.length === 0 && (
+          <EmptyState
+            icon="doc.fill"
+            title="No documents"
+            subtitle="Tap + to add a document for this vehicle"
+          />
+        )}
 
         {/* Tickets */}
         <View style={styles.sectionHeader}>
@@ -160,6 +177,13 @@ export default function VehicleDetailScreen() {
         {tickets.map((t) => (
           <TicketCard key={t.id} ticket={t} />
         ))}
+        {tickets.length === 0 && (
+          <EmptyState
+            icon="exclamationmark.circle.fill"
+            title="No tickets"
+            subtitle="No traffic tickets linked to this vehicle"
+          />
+        )}
       </ScrollView>
 
       <ConfirmDialog
@@ -177,6 +201,12 @@ export default function VehicleDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   scroll: { padding: 16, gap: 4, paddingBottom: 40 },
   infoCard: { marginBottom: 12, gap: 6 },
   detailRow: {

@@ -25,6 +25,8 @@ const MAPPING = {
   "exclamationmark.circle.fill": "report-problem",
   ellipsis: "more-horiz",
   "person.crop.card.fill": "badge",
+  "person.crop.circle.fill": "account-circle",
+  "person.text.rectangle": "badge",
   "wrench.and.screwdriver.fill": "build",
   "fuelpump.fill": "local-gas-station",
   "gearshape.fill": "settings",
