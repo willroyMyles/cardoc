@@ -7,7 +7,7 @@ import {
     type DriverLicenseSpec,
 } from "@/services/docs-registry";
 import React, { useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface LicenseCardProps {
   license: DynamicDriverLicense;
@@ -52,6 +52,11 @@ export function LicenseCard({
     );
   }
 
+  const canPreviewFront =
+    license.imageUriFront &&
+    (license.imageMimeTypeFront?.startsWith("image/") ||
+      /\.(jpe?g|png|webp|gif)$/i.test(license.imageUriFront));
+
   return (
     <>
       <TouchableOpacity onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
@@ -67,13 +72,26 @@ export function LicenseCard({
           <View style={styles.body}>
             {license.imageUriFront ? (
               <TouchableOpacity
-                onPress={() => setViewerUri(license.imageUriFront!)}
+                onPress={() =>
+                  canPreviewFront
+                    ? setViewerUri(license.imageUriFront!)
+                    : Alert.alert(
+                        "Cannot preview",
+                        "This license file cannot be previewed here.",
+                      )
+                }
                 activeOpacity={0.8}
               >
-                <Image
-                  source={{ uri: license.imageUriFront }}
-                  style={styles.photo}
-                />
+                {canPreviewFront ? (
+                  <Image
+                    source={{ uri: license.imageUriFront }}
+                    style={styles.photo}
+                  />
+                ) : (
+                  <View style={[styles.photo, styles.photoPlaceholder]}>
+                    <Text style={styles.photoPlaceholderText}>📄</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             ) : (
               <View style={[styles.photo, styles.photoPlaceholder]}>

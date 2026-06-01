@@ -23,7 +23,7 @@ function isSameVehicleByVinChassis(
     return true;
   return false;
 }
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Header } from "@/components/ui/header";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
@@ -278,11 +278,7 @@ export default function ScanReviewScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="xmark" size={22} color={c.tint} />
-        </TouchableOpacity>
-      </View>
+      <Header title="Review Scan" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}

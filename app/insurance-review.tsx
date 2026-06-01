@@ -1,3 +1,4 @@
+import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -292,19 +293,7 @@ export default function InsuranceReviewScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: c.border }]}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backBtn}
-          >
-            <IconSymbol name="xmark" size={20} color={c.tint} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: c.text }]}>
-            Review Insurance
-          </Text>
-          <View style={{ width: 36 }} />
-        </View>
+        <Header title="Review Insurance" onBack={() => router.back()} />
 
         <ScrollView
           contentContainerStyle={styles.scroll}

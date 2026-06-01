@@ -1,4 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Header } from "@/components/ui/header";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Vehicle } from "@/models";
@@ -93,13 +94,7 @@ export default function AddVehicleScreen() {
       style={[styles.container, { backgroundColor: c.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="xmark" size={22} color={c.tint} />
-        </TouchableOpacity>
-        <Text style={[styles.pageTitle, { color: c.text }]}>Add Vehicle</Text>
-        <View style={{ width: 22 }} />
-      </View>
+      <Header title="Add Vehicle" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"

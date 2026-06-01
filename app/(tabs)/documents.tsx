@@ -1,18 +1,18 @@
 import { DocumentCard } from "@/components/documents/document-card";
-import { ThemedText } from "@/components/themed-text";
-import { EmptyState } from "@/components/ui/empty-state";
+import { Header } from "@/components/ui/header";
+import { ScanPromptCard } from "@/components/ui/scan-prompt-card";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CarDocumentType } from "@/models";
 import { useDocumentsStore, useVehiclesStore } from "@/store";
 import React, { useState } from "react";
 import {
-    FlatList,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const FILTERS: Array<{ key: CarDocumentType | "all"; label: string }> = [
@@ -36,9 +36,7 @@ export default function DocumentsTab() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <View style={styles.header}>
-        <ThemedText type="title">Documents</ThemedText>
-      </View>
+      <Header title="Documents" showBackButton={false} />
 
       {/* Filter chips */}
       <View style={styles.chipRow}>
@@ -82,10 +80,9 @@ export default function DocumentsTab() {
           filtered.length === 0 ? styles.emptyList : styles.list
         }
         ListEmptyComponent={
-          <EmptyState
-            icon="doc.fill"
-            title="No documents"
-            subtitle="Tap + to add a document"
+          <ScanPromptCard
+            header="Documents"
+            subtitle="Scan a vehicle document — registration, insurance, inspection, or title — to get started."
           />
         }
       />
@@ -105,18 +102,18 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: "row",
-    paddingHorizontal: 40,
+    paddingHorizontal: 16,
     gap: 8,
     marginBottom: 8,
     flexWrap: "wrap",
   },
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 99,
     borderWidth: 1,
   },
-  chipText: { fontSize: 12, fontWeight: "600" },
-  list: { paddingBottom: 24 },
+  chipText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },
+  list: { paddingTop: 8, paddingBottom: 100 },
   emptyList: { flex: 1 },
 });

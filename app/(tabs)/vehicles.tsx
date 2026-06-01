@@ -1,5 +1,5 @@
-import { ThemedText } from "@/components/themed-text";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { Colors } from "@/constants/theme";
@@ -11,8 +11,7 @@ import {
     FlatList,
     SafeAreaView,
     StyleSheet,
-    TouchableOpacity,
-    View,
+    TouchableOpacity
 } from "react-native";
 
 export default function VehiclesTab() {
@@ -23,15 +22,18 @@ export default function VehiclesTab() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: Colors[scheme].background }]}
     >
-      <View style={styles.header}>
-        <ThemedText type="title">Vehicles</ThemedText>
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: Colors[scheme].tint }]}
-          onPress={() => router.push("/vehicle/add")}
-        >
-          <IconSymbol name="plus" size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      <Header
+        title="Vehicles"
+        showBackButton={false}
+        right={
+          <TouchableOpacity
+            style={[styles.addBtn, { backgroundColor: Colors[scheme].tint }]}
+            onPress={() => router.push("/vehicle/add")}
+          >
+            <IconSymbol name="plus" size={20} color="#fff" />
+          </TouchableOpacity>
+        }
+      />
 
       <FlatList
         data={vehicles}
@@ -69,6 +71,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  list: { paddingBottom: 24 },
+  list: { paddingTop: 8, paddingBottom: 100 },
   emptyList: { flex: 1 },
 });

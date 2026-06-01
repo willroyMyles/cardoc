@@ -1,4 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Header } from "@/components/ui/header";
 import { Colors, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLicenseStore, useVehiclesStore } from "@/store";
@@ -23,20 +24,7 @@ export default function EmergencyScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: "#0f172a" }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header */}
-        <View style={styles.topRow}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <IconSymbol name="xmark" size={22} color="#fff" />
-          </TouchableOpacity>
-          <View style={styles.sosLabel}>
-            <IconSymbol
-              name="heart.fill"
-              size={18}
-              color={StatusColors.danger}
-            />
-            <Text style={styles.sosText}>Emergency Card</Text>
-          </View>
-          <View style={{ width: 22 }} />
-        </View>
+        <Header title="Emergency Card" onBack={() => router.back()} />
 
         {/* Driver info */}
         <View style={[styles.card, { backgroundColor: "#1e293b" }]}>

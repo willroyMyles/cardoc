@@ -1,4 +1,5 @@
 import { EmptyState } from "@/components/ui/empty-state";
+import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -92,15 +93,15 @@ export default function FuelListScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="xmark" size={22} color={c.tint} />
-        </TouchableOpacity>
-        <Text style={[styles.pageTitle, { color: c.text }]}>Fuel Log</Text>
-        <TouchableOpacity onPress={() => router.push("/fuel/add")}>
-          <IconSymbol name="plus" size={22} color={c.tint} />
-        </TouchableOpacity>
-      </View>
+      <Header
+        title="Fuel Log"
+        onBack={() => router.back()}
+        right={
+          <TouchableOpacity onPress={() => router.push("/fuel/add")}>
+            <IconSymbol name="plus" size={22} color={c.tint} />
+          </TouchableOpacity>
+        }
+      />
 
       {/* Avg consumption cards */}
       {Object.entries(avgConsumptionMap).length > 0 && (
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
   statDesc: { fontSize: 11, marginTop: 2 },
   list: { padding: 16, gap: 12, paddingBottom: 40 },
   emptyList: { flex: 1, padding: 16 },
-  card: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 6 },
+  card: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 6 },
   cardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   icon: {
     width: 36,

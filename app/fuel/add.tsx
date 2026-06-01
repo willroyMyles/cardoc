@@ -1,4 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Header } from "@/components/ui/header";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
@@ -83,17 +84,15 @@ export default function AddFuelScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="xmark" size={22} color={c.tint} />
-        </TouchableOpacity>
-        <Text style={[styles.pageTitle, { color: c.text }]}>
-          Add Fuel Entry
-        </Text>
-        <TouchableOpacity onPress={handleSave}>
-          <Text style={[styles.saveBtn, { color: c.tint }]}>Save</Text>
-        </TouchableOpacity>
-      </View>
+      <Header
+        title="Add Fuel Entry"
+        onBack={() => router.back()}
+        right={
+          <TouchableOpacity onPress={handleSave}>
+            <Text style={[styles.saveBtn, { color: c.tint }]}>Save</Text>
+          </TouchableOpacity>
+        }
+      />
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Vehicle */}
         <Label text="Vehicle" c={c} />

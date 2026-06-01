@@ -60,6 +60,7 @@ const MAPPING = {
   "barcode.viewfinder": "qr-code-scanner",
   "photo.fill": "photo",
   "mappin.and.ellipse": "location-on",
+  "ticket.fill": "confirmation-number",
   speedometer: "speed",
 } as IconMapping;
 

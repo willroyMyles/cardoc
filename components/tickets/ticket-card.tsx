@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { StatusBadge, StatusType } from "@/components/ui/status-badge";
-import { Colors } from "@/constants/theme";
+import { AccentColor, Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Ticket, TICKET_STATUS_LABELS, TicketStatus } from "@/models";
 import { router } from "expo-router";
@@ -32,6 +33,9 @@ export function TicketCard({ ticket, vehicleName }: TicketCardProps) {
     >
       <Card style={styles.card}>
         <View style={styles.row}>
+          <View style={[styles.iconTile, { backgroundColor: "#1A1A1A" }]}>
+            <IconSymbol name="exclamationmark.triangle.fill" size={20} color={AccentColor} />
+          </View>
           <View style={styles.info}>
             <Text style={[styles.number, { color: Colors[scheme].subtext }]}>
               #{ticket.ticketNumber}
@@ -62,11 +66,19 @@ export function TicketCard({ ticket, vehicleName }: TicketCardProps) {
 
 const styles = StyleSheet.create({
   card: { marginHorizontal: 16, marginVertical: 6 },
-  row: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  row: { flexDirection: "row", alignItems: "center", gap: 14 },
+  iconTile: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
   info: { flex: 1, gap: 2 },
-  number: { fontSize: 11, fontWeight: "600", textTransform: "uppercase" },
-  violation: { fontSize: 15, fontWeight: "600" },
-  sub: { fontSize: 13 },
+  number: { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1.2 },
+  violation: { fontSize: 14, fontWeight: "700" },
+  sub: { fontSize: 11 },
   right: { alignItems: "flex-end", gap: 6 },
-  amount: { fontSize: 16, fontWeight: "700" },
+  amount: { fontSize: 15, fontWeight: "700" },
 });

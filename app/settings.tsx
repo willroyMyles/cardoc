@@ -1,27 +1,36 @@
+import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
+import { SectionHeader } from "@/components/ui/section-header";
+import { AccentColor, Colors, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COUNTRY_LABELS, type CountryCode } from "@/services/docs-registry";
+import {
+  signInWithApple,
+  signInWithGoogle,
+  signOutUser,
+} from "@/services/firebase/auth-service";
 import { syncAllStores } from "@/services/firebase/sync-manager";
 import { requestNotificationPermissions } from "@/services/notifications/expiry-reminders";
-import { useAuthStore, useSettingsStore } from "@/store";
+import { useAuthStore, useLicenseStore, useSettingsStore } from "@/store";
 import { type SyncMode } from "@/store/settings-store";
 import { useCameraPermissions } from "expo-camera";
+import { Image } from "expo-image";
 import { useMediaLibraryPermissions } from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActionSheetIOS,
-    Alert,
-    Linking,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  ActionSheetIOS,
+  Alert,
+  Linking,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const COUNTRIES = Object.entries(COUNTRY_LABELS) as [CountryCode, string][];
@@ -39,6 +48,27 @@ const SYNC_MODES: { value: SyncMode; label: string; description: string }[] = [
   },
 ];
 
+const QUICK_LINKS = [
+  {
+    label: "Documents",
+    route: "/(tabs)/documents",
+    description: "All your vehicle documents",
+    icon: "doc.fill",
+  },
+  {
+    label: "Driver's License",
+    route: "/license",
+    description: "View & scan your license",
+    icon: "person.text.rectangle",
+  },
+  {
+    label: "Emergency Card",
+    route: "/emergency",
+    description: "Quick-access emergency info",
+    icon: "heart.fill",
+  },
+];
+
 export default function SettingsScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
@@ -53,7 +83,10 @@ export default function SettingsScreen() {
   } = useSettingsStore();
 
   const user = useAuthStore((s) => s.user);
-
+  const authLoading = useAuthStore((s) => s.loading);
+  const setLoading = useAuthStore((s) => s.setLoading);
+  const license = useLicenseStore((s) => s.license);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
   const currentCountryLabel = COUNTRY_LABELS[country] ?? country;
@@ -131,6 +164,70 @@ export default function SettingsScreen() {
     setNotificationsEnabled(val);
   };
 
+  function handleSignIn() {
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: "Sign In",
+          message: "Choose a sign-in method",
+          options: ["Cancel", "Continue with Google", "Continue with Apple"],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) doGoogleSignIn();
+          if (buttonIndex === 2) doAppleSignIn();
+        },
+      );
+    } else {
+      Alert.alert("Sign In", "Choose a sign-in method", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Continue with Google", onPress: doGoogleSignIn },
+      ]);
+    }
+  }
+
+  async function doGoogleSignIn() {
+    setAuthError(null);
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (e: any) {
+      if (e.message !== "Sign-in cancelled.") setAuthError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function doAppleSignIn() {
+    setAuthError(null);
+    setLoading(true);
+    try {
+      await signInWithApple();
+    } catch (e: any) {
+      if (e.message !== "Sign-in cancelled.") setAuthError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSignOut() {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          setLoading(true);
+          try {
+            await signOutUser();
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]);
+  }
+
   const handleCameraToggle = async (val: boolean) => {
     if (!val) {
       Alert.alert(
@@ -186,16 +283,119 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.topRow}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <IconSymbol name="xmark" size={22} color={c.tint} />
-          </TouchableOpacity>
-          <Text style={[styles.pageTitle, { color: c.text }]}>Settings</Text>
-          <View style={{ width: 22 }} />
+        <Header title="Settings" onBack={() => router.back()} />
+
+        <View
+          style={[
+            styles.accountCard,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
+        >
+          {user ? (
+            <>
+              <View style={styles.accountRow}>
+                {user.photoURL ? (
+                  <Image
+                    source={{ uri: user.photoURL }}
+                    style={styles.avatar}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.avatarPlaceholder,
+                      { backgroundColor: "#1A1A1A" },
+                    ]}
+                  >
+                    <IconSymbol
+                      name="person.crop.circle.fill"
+                      size={28}
+                      color={AccentColor}
+                    />
+                  </View>
+                )}
+                <View style={styles.accountInfo}>
+                  <Text style={[styles.accountName, { color: c.text }]} numberOfLines={1}>
+                    {user.displayName ?? "Signed In"}
+                  </Text>
+                  {user.email ? (
+                    <Text style={[styles.accountEmail, { color: c.subtext }]} numberOfLines={1}>
+                      {user.email}
+                    </Text>
+                  ) : null}
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.signOutBtn,
+                    { borderColor: StatusColors.danger + "55" },
+                  ]}
+                  onPress={handleSignOut}
+                  disabled={authLoading}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.signOutBtnText, { color: StatusColors.danger }]}>Sign Out</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <View style={styles.signInPrompt}>
+              <View style={styles.signInTextBlock}>
+                <Text style={[styles.signInTitle, { color: c.text }]}>Sync your data</Text>
+                <Text style={[styles.signInSubtitle, { color: c.subtext }]}>Sign in to back up and sync across devices</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.signInBtn, { backgroundColor: c.tint }]}
+                onPress={handleSignIn}
+                disabled={authLoading}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.signInBtnText}>
+                  {authLoading ? "Signing in…" : "Sign In"}
+                </Text>
+              </TouchableOpacity>
+              {authError ? (
+                <Text style={[styles.authError, { color: StatusColors.danger }]}>
+                  {authError}
+                </Text>
+              ) : null}
+            </View>
+          )}
+        </View>
+
+        <SectionHeader title="Quick Access" />
+        <View
+          style={[
+            styles.group,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
+        >
+          {QUICK_LINKS.map((item, index) => (
+            <TouchableOpacity
+              key={item.route}
+              style={[
+                styles.menuRow,
+                index < QUICK_LINKS.length - 1 && {
+                  borderBottomColor: c.border,
+                  borderBottomWidth: 1,
+                },
+              ]}
+              onPress={() => router.push(item.route as any)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: "#1A1A1A" }]}> 
+                <IconSymbol name={item.icon as any} size={20} color={AccentColor} />
+              </View>
+              <View style={styles.menuText}>
+                <Text style={[styles.menuLabel, { color: c.text }]}> {item.label}</Text>
+                <Text style={[styles.menuDesc, { color: c.subtext }]}> {item.description}</Text>
+              </View>
+              <IconSymbol name="chevron.right" size={16} color={c.subtext} />
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* Country */}
-        <SectionHeader title="Country" c={c} />
+        <SectionHeader title="Country" />
         <View
           style={[
             styles.group,
@@ -215,7 +415,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Notifications */}
-        <SectionHeader title="Notifications" c={c} />
+        <SectionHeader title="Notifications" />
         <View
           style={[
             styles.group,
@@ -234,7 +434,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Permissions */}
-        <SectionHeader title="Permissions" c={c} />
+        <SectionHeader title="Permissions" />
         <View
           style={[
             styles.group,
@@ -273,7 +473,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Cloud Sync */}
-        <SectionHeader title="Cloud Sync" c={c} />
+        <SectionHeader title="Cloud Sync" />
         <View
           style={[
             styles.group,
@@ -336,13 +536,6 @@ export default function SettingsScreen() {
   );
 }
 
-function SectionHeader({ title, c }: { title: string; c: any }) {
-  return (
-    <Text style={[styles.sectionHeader, { color: c.subtext }]}>
-      {title.toUpperCase()}
-    </Text>
-  );
-}
 
 function LabeledInput({
   label,
@@ -388,7 +581,10 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 2,
   },
-  group: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
+  labeledInput: { gap: 4, marginBottom: 8 },
+  inputLabel: { fontSize: 13, fontWeight: "600" },
+  input: { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 14 },
+  group: { borderRadius: 20, borderWidth: 1, overflow: "hidden" },
   optionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -425,4 +621,67 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   syncBtnText: { color: "#fff", fontSize: 15, fontWeight: "600" },
+  accountCard: {
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 20,
+    marginBottom: 12,
+    gap: 12,
+  },
+  accountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  avatarPlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  accountInfo: { flex: 1 },
+  accountName: { fontSize: 15, fontWeight: "700" },
+  accountEmail: { fontSize: 12, marginTop: 2 },
+  signOutBtn: {
+    borderWidth: 1,
+    borderRadius: 99,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  signOutBtnText: { fontSize: 13, fontWeight: "600" },
+  signInPrompt: { gap: 12 },
+  signInTextBlock: { gap: 3 },
+  signInTitle: { fontSize: 16, fontWeight: "700" },
+  signInSubtitle: { fontSize: 13 },
+  signInBtn: {
+    borderRadius: 99,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  signInBtnText: { color: "#fff", fontSize: 13, fontWeight: "700", letterSpacing: 1 },
+  authError: { fontSize: 12, marginTop: 4 },
+  menuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 14,
+  },
+  menuIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuText: { flex: 1 },
+  menuLabel: { fontSize: 15, fontWeight: "600" },
+  menuDesc: { fontSize: 12, marginTop: 1 },
 });

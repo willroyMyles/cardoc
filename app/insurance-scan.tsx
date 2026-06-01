@@ -6,6 +6,7 @@ import { useSettingsStore } from "@/store";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
+import { Header } from "@/components/ui/header";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
@@ -105,16 +106,7 @@ export default function InsuranceScanScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <IconSymbol name="xmark" size={20} color={c.tint} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: c.text }]}>
-          Scan Insurance Document
-        </Text>
-        <View style={{ width: 36 }} />
-      </View>
+      <Header title="Scan Insurance Document" onBack={() => router.back()} />
 
       <View style={styles.body}>
         {/* Icon */}

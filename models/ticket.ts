@@ -18,6 +18,7 @@ export interface Ticket {
   currency: string;
   status: TicketStatus;
   issuingAuthority?: string;
+  demeritPoints?: number;
   region?: string;
   notes?: string;
   imageUri?: string;

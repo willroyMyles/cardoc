@@ -1,26 +1,26 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import {
-    detectAndExtractDocumentFromParts,
-    uriToInlineDataPart,
+  detectAndExtractDocumentFromParts,
+  uriToInlineDataPart,
 } from "@/services/firebase/ai-document";
 import { useSettingsStore } from "@/store";
 import { InlineDataPart } from "@react-native-firebase/ai";
 import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type InputMode = "chooser" | "camera" | "preview";
@@ -43,7 +43,9 @@ export default function ScanScreen() {
   const [mode, setMode] = useState<InputMode>("chooser");
   const [items, setItems] = useState<CapturedItem[]>([]);
   const [processing, setProcessing] = useState(false);
+  const [pickerTriggered, setPickerTriggered] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const params = useLocalSearchParams();
 
   // ── Eagerly convert a URI to InlineDataPart and update state ───────────────
   const startConversion = useCallback(
@@ -134,6 +136,21 @@ export default function ScanScreen() {
     );
     setMode("preview");
   };
+
+  useEffect(() => {
+    if (pickerTriggered) return;
+    const source = params.source as string | undefined;
+    if (!source) return;
+    const runPicker = async () => {
+      setPickerTriggered(true);
+      if (source === "gallery") {
+        await handlePickPhoto();
+      } else if (source === "files") {
+        await handlePickFile();
+      }
+    };
+    runPicker();
+  }, [params.source, pickerTriggered, handlePickFile, handlePickPhoto]);
 
   // ── Camera capture (adds to list, stays in camera mode) ───────────────────
   const handleCapture = async () => {

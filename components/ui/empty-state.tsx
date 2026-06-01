@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/theme";
+import { AccentColor, Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -18,7 +18,9 @@ export function EmptyState({
   const scheme = useColorScheme() ?? "light";
   return (
     <View style={styles.container}>
-      <IconSymbol name={icon as any} size={48} color={Colors[scheme].icon} />
+      <View style={styles.iconTile}>
+        <IconSymbol name={icon as any} size={28} color={AccentColor} />
+      </View>
       <Text style={[styles.title, { color: Colors[scheme].text }]}>
         {title}
       </Text>
@@ -37,16 +39,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 32,
-    gap: 8,
+    gap: 12,
+  },
+  iconTile: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: "#1A1A1A",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
   },
   title: {
-    fontSize: 17,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
     textAlign: "center",
-    marginTop: 8,
+    letterSpacing: 0.2,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     textAlign: "center",
     lineHeight: 20,
   },

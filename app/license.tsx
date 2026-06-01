@@ -1,34 +1,40 @@
 import { LicenseCard } from "@/components/license/license-card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ImageViewerModal } from "@/components/ui/image-viewer-modal";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { DynamicDriverLicense } from "@/models";
 import {
-    getDriverLicenseSpec,
-    type DriverLicenseSpec,
+  getDriverLicenseSpec,
+  type DriverLicenseSpec,
 } from "@/services/docs-registry";
 import { uriToInlineDataPart } from "@/services/firebase/ai-document";
 import { extractLicenseFieldsFromParts } from "@/services/firebase/ai-license";
 import { useLicenseStore, useSettingsStore } from "@/store";
+import {
+  BottomSheetModal,
+  BottomSheetView,
+} from "@gorhom/bottom-sheet";
 import { InlineDataPart } from "@react-native-firebase/ai";
+import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 function generateId() {
@@ -51,11 +57,26 @@ function initFields(
   return out;
 }
 
+function getFileNameFromUri(uri: string) {
+  return uri.split("/").pop() ?? uri;
+}
+
+function isImageMimeType(mime?: string) {
+  return !!mime?.startsWith("image/");
+}
+
+function isImageUri(uri: string) {
+  return /\.(jpe?g|png|webp|gif)$/i.test(uri.split("?")[0]);
+}
+
 export default function LicenseScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const { license, setLicense, deleteLicense } = useLicenseStore();
   const country = useSettingsStore((s) => s.country);
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const [selectedImageSide, setSelectedImageSide] = useState<"front" | "back" | null>(null);
+  const snapPoints = useMemo(() => ["45%"], []);
   const spec: DriverLicenseSpec = useMemo(
     () => getDriverLicenseSpec(country),
     [country],
@@ -68,17 +89,24 @@ export default function LicenseScreen() {
 
   const [frontUri, setFrontUri] = useState(license?.imageUriFront ?? "");
   const [backUri, setBackUri] = useState(license?.imageUriBack ?? "");
+  const [frontMimeType, setFrontMimeType] = useState<string | undefined>(
+    license?.imageMimeTypeFront,
+  );
+  const [backMimeType, setBackMimeType] = useState<string | undefined>(
+    license?.imageMimeTypeBack,
+  );
   const [frontPart, setFrontPart] = useState<InlineDataPart | null>(null);
   const [backPart, setBackPart] = useState<InlineDataPart | null>(null);
   const [frontConverting, setFrontConverting] = useState(false);
   const [backConverting, setBackConverting] = useState(false);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
 
-  function setFrontImage(uri: string) {
+  function setFrontImage(uri: string, mimeType?: string) {
     setFrontUri(uri);
+    setFrontMimeType(mimeType);
     setFrontPart(null);
     setFrontConverting(true);
-    uriToInlineDataPart(uri)
+    uriToInlineDataPart(uri, mimeType)
       .then((p) => {
         setFrontPart(p);
         setFrontConverting(false);
@@ -86,11 +114,12 @@ export default function LicenseScreen() {
       .catch(() => setFrontConverting(false));
   }
 
-  function setBackImage(uri: string) {
+  function setBackImage(uri: string, mimeType?: string) {
     setBackUri(uri);
+    setBackMimeType(mimeType);
     setBackPart(null);
     setBackConverting(true);
-    uriToInlineDataPart(uri)
+    uriToInlineDataPart(uri, mimeType)
       .then((p) => {
         setBackPart(p);
         setBackConverting(false);
@@ -113,14 +142,30 @@ export default function LicenseScreen() {
 
   async function pickImage(side: "front" | "back") {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
     });
     if (!result.canceled && result.assets[0]) {
-      if (side === "front") setFrontImage(result.assets[0].uri);
-      else setBackImage(result.assets[0].uri);
+      const mimeType =
+        result.assets[0].type === "image"
+          ? "image/jpeg"
+          : result.assets[0].type ?? "image/jpeg";
+      if (side === "front") setFrontImage(result.assets[0].uri, mimeType);
+      else setBackImage(result.assets[0].uri, mimeType);
     }
+  }
+
+  async function pickFile(side: "front" | "back") {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ["application/pdf", "image/*"],
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+    if (result.canceled || !result.assets?.length) return;
+    const asset = result.assets[0];
+    if (side === "front") setFrontImage(asset.uri, asset.mimeType ?? undefined);
+    else setBackImage(asset.uri, asset.mimeType ?? undefined);
   }
 
   async function captureImage(side: "front" | "back") {
@@ -142,17 +187,23 @@ export default function LicenseScreen() {
     }
   }
 
-  function showImageOptions(side: "front" | "back") {
-    Alert.alert(
-      side === "front" ? "License Front" : "License Back",
-      "Choose image source",
-      [
-        { text: "Camera", onPress: () => captureImage(side) },
-        { text: "Photo Library", onPress: () => pickImage(side) },
-        { text: "Cancel", style: "cancel" },
-      ],
-    );
-  }
+  const showImageOptions = useCallback((side: "front" | "back") => {
+    setSelectedImageSide(side);
+    bottomSheetModalRef.current?.present();
+  }, []);
+
+  const handleImageOption = useCallback(
+    async (action: "camera" | "library" | "file") => {
+      const side = selectedImageSide;
+      if (!side) return;
+      bottomSheetModalRef.current?.dismiss();
+      if (action === "camera") await captureImage(side);
+      if (action === "library") await pickImage(side);
+      if (action === "file") await pickFile(side);
+      setSelectedImageSide(null);
+    },
+    [selectedImageSide],
+  );
 
   async function handleProcessWithAI() {
     if (!frontUri && !backUri) {
@@ -248,12 +299,24 @@ export default function LicenseScreen() {
   //   }
   // }
 
+  const isFormFilled = Object.entries(spec.fields).every(
+    ([key, fieldSpec]) => !fieldSpec.required || Boolean(fields[key]),
+  );
+
   function handleSave() {
-    const missingRequired = Object.entries(spec.fields)
-      .filter(([key, fs]) => fs.required && !fields[key])
-      .map(([, fs]) => fs.label ?? "");
-    if (missingRequired.length > 0) {
-      Alert.alert("Missing Fields", `Required: ${missingRequired.join(", ")}`);
+    if (!frontUri && !backUri) {
+      Alert.alert(
+        "No License Images",
+        "Please add at least one license photo or file before saving.",
+      );
+      return;
+    }
+
+    if (!isFormFilled) {
+      Alert.alert(
+        "Incomplete Form",
+        "Please fill all required license fields before saving.",
+      );
       return;
     }
 
@@ -281,6 +344,8 @@ export default function LicenseScreen() {
       fields: normalized,
       imageUriFront: frontUri || undefined,
       imageUriBack: backUri || undefined,
+      imageMimeTypeFront: frontMimeType,
+      imageMimeTypeBack: backMimeType,
       createdAt: license?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -293,6 +358,8 @@ export default function LicenseScreen() {
     setEditing(true);
     setFrontUri("");
     setBackUri("");
+    setFrontMimeType(undefined);
+    setBackMimeType(undefined);
     setFields(initFields(spec, null));
   }
 
@@ -301,11 +368,7 @@ export default function LicenseScreen() {
       <SafeAreaView
         style={[styles.container, { backgroundColor: c.background }]}
       >
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <IconSymbol name="xmark" size={22} color={c.tint} />
-          </TouchableOpacity>
-        </View>
+        <Header title="Driver's License" onBack={() => router.back()} />
         <ScrollView contentContainerStyle={styles.scroll}>
           <LicenseCard license={license} spec={spec} />
 
@@ -350,11 +413,7 @@ export default function LicenseScreen() {
       style={[styles.container, { backgroundColor: c.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="xmark" size={22} color={c.tint} />
-        </TouchableOpacity>
-      </View>
+      <Header title="Driver's License" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
@@ -371,16 +430,30 @@ export default function LicenseScreen() {
               { backgroundColor: c.card, borderColor: c.border },
             ]}
             onPress={() =>
-              frontUri ? setViewerUri(frontUri) : showImageOptions("front")
+              frontUri
+                ? isImageMimeType(frontMimeType) || isImageUri(frontUri)
+                  ? setViewerUri(frontUri)
+                  : Alert.alert(
+                      "Cannot preview",
+                      "This file cannot be previewed here. Tap the camera icon to replace it or save it for later.",
+                    )
+                : showImageOptions("front")
             }
             activeOpacity={0.7}
           >
-            {frontUri ? (
+            {frontUri && (isImageMimeType(frontMimeType) || isImageUri(frontUri)) ? (
               <Image
                 source={{ uri: frontUri }}
                 style={styles.imagePreview}
                 resizeMode="cover"
               />
+            ) : frontUri ? (
+              <View style={styles.filePreview}>
+                <IconSymbol name="doc.text" size={28} color={c.subtext} />
+                <Text style={[styles.filePreviewText, { color: c.subtext }]}> 
+                  {getFileNameFromUri(frontUri)}
+                </Text>
+              </View>
             ) : (
               <View style={styles.imagePlaceholder}>
                 <IconSymbol name="camera" size={28} color={c.subtext} />
@@ -417,16 +490,30 @@ export default function LicenseScreen() {
               { backgroundColor: c.card, borderColor: c.border },
             ]}
             onPress={() =>
-              backUri ? setViewerUri(backUri) : showImageOptions("back")
+              backUri
+                ? isImageMimeType(backMimeType) || isImageUri(backUri)
+                  ? setViewerUri(backUri)
+                  : Alert.alert(
+                      "Cannot preview",
+                      "This file cannot be previewed here. Tap the camera icon to replace it or save it for later.",
+                    )
+                : showImageOptions("back")
             }
             activeOpacity={0.7}
           >
-            {backUri ? (
+            {backUri && (isImageMimeType(backMimeType) || isImageUri(backUri)) ? (
               <Image
                 source={{ uri: backUri }}
                 style={styles.imagePreview}
                 resizeMode="cover"
               />
+            ) : backUri ? (
+              <View style={styles.filePreview}>
+                <IconSymbol name="doc.text" size={28} color={c.subtext} />
+                <Text style={[styles.filePreviewText, { color: c.subtext }]}> 
+                  {getFileNameFromUri(backUri)}
+                </Text>
+              </View>
             ) : (
               <View style={styles.imagePlaceholder}>
                 <IconSymbol name="camera" size={28} color={c.subtext} />
@@ -515,7 +602,7 @@ export default function LicenseScreen() {
             ]}
             onPress={handleProcessWithAI}
             disabled={
-              processing || aiProcessing || frontConverting || backConverting
+              !frontUri && !backUri || processing || aiProcessing || frontConverting || backConverting
             }
           >
             {aiProcessing ? (
@@ -542,68 +629,76 @@ export default function LicenseScreen() {
                 ? "Processing…"
                 : frontConverting || backConverting
                   ? "Preparing…"
-                  : "Enhance with AI"}
+                  : frontUri || backUri
+                    ? "Continue"
+                    : "Continue"}
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Dynamic Fields ─────────────────────────────────────────── */}
-        {Object.entries(spec.fields).map(([key, fieldSpec]) => {
-          const fieldLabel =
-            (fieldSpec.label ?? key) + (fieldSpec.required ? " *" : "");
+        {Object.values(fields).some(Boolean) ? (
+          Object.entries(spec.fields).map(([key, fieldSpec]) => {
+            const fieldLabel =
+              (fieldSpec.label ?? key) + (fieldSpec.required ? " *" : "");
 
-          if (fieldSpec.type === "enum" && fieldSpec.values) {
+            if (fieldSpec.type === "enum" && fieldSpec.values) {
+              return (
+                <React.Fragment key={key}>
+                  <Text style={labelStyle}>{fieldLabel}</Text>
+                  <View style={styles.segmentRow}>
+                    {fieldSpec.values.map((val) => (
+                      <TouchableOpacity
+                        key={val}
+                        style={[
+                          styles.segmentBtn,
+                          { borderColor: c.border, backgroundColor: c.card },
+                          fields[key] === val && {
+                            backgroundColor: c.tint,
+                            borderColor: c.tint,
+                          },
+                        ]}
+                        onPress={() => setField(key, val)}
+                      >
+                        <Text
+                          style={[
+                            styles.segmentBtnText,
+                            { color: c.subtext },
+                            fields[key] === val && { color: "#fff" },
+                          ]}
+                        >
+                          {val}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </React.Fragment>
+              );
+            }
+
             return (
               <React.Fragment key={key}>
                 <Text style={labelStyle}>{fieldLabel}</Text>
-                <View style={styles.segmentRow}>
-                  {fieldSpec.values.map((val) => (
-                    <TouchableOpacity
-                      key={val}
-                      style={[
-                        styles.segmentBtn,
-                        { borderColor: c.border, backgroundColor: c.card },
-                        fields[key] === val && {
-                          backgroundColor: c.tint,
-                          borderColor: c.tint,
-                        },
-                      ]}
-                      onPress={() => setField(key, val)}
-                    >
-                      <Text
-                        style={[
-                          styles.segmentBtnText,
-                          { color: c.subtext },
-                          fields[key] === val && { color: "#fff" },
-                        ]}
-                      >
-                        {val}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                <TextInput
+                  style={inputStyle}
+                  value={fields[key] ?? ""}
+                  onChangeText={(v) => setField(key, v)}
+                  placeholder={fieldSpec.type === "date" ? "YYYY-MM-DD" : ""}
+                  placeholderTextColor={c.subtext}
+                  keyboardType={
+                    fieldSpec.type === "date"
+                      ? "numbers-and-punctuation"
+                      : "default"
+                  }
+                />
               </React.Fragment>
             );
-          }
-
-          return (
-            <React.Fragment key={key}>
-              <Text style={labelStyle}>{fieldLabel}</Text>
-              <TextInput
-                style={inputStyle}
-                value={fields[key] ?? ""}
-                onChangeText={(v) => setField(key, v)}
-                placeholder={fieldSpec.type === "date" ? "YYYY-MM-DD" : ""}
-                placeholderTextColor={c.subtext}
-                keyboardType={
-                  fieldSpec.type === "date"
-                    ? "numbers-and-punctuation"
-                    : "default"
-                }
-              />
-            </React.Fragment>
-          );
-        })}
+          })
+        ) : (
+          <Text style={[styles.hintText, { color: c.subtext }]}> 
+            Upload one or two license photos or files, then tap Continue to populate the form.
+          </Text>
+        )}
 
         <View style={styles.formActions}>
           {license ? (
@@ -617,8 +712,13 @@ export default function LicenseScreen() {
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity
-            style={[styles.saveBtn, { backgroundColor: c.tint }]}
+            style={[
+              styles.saveBtn,
+              { backgroundColor: c.tint },
+              !isFormFilled && styles.saveBtnDisabled,
+            ]}
             onPress={handleSave}
+            disabled={!isFormFilled}
           >
             <Text style={styles.saveBtnText}>Save License</Text>
           </TouchableOpacity>
@@ -630,6 +730,63 @@ export default function LicenseScreen() {
         uri={viewerUri}
         onClose={() => setViewerUri(null)}
       />
+
+      <BottomSheetModal
+        ref={bottomSheetModalRef}
+        index={0}
+        snapPoints={snapPoints}
+        onDismiss={() => setSelectedImageSide(null)}
+      >
+        <BottomSheetView style={styles.bottomSheetContent}>
+          <View style={styles.sheetHeader}>
+            <Text style={[styles.sheetTitle, { color: c.text }]}>Choose source</Text>
+            <TouchableOpacity
+              style={styles.sheetCloseButton}
+              onPress={() => bottomSheetModalRef.current?.dismiss()}
+            >
+              <IconSymbol name="xmark" size={24} color={c.text} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sheetButtonRow}>
+            <TouchableOpacity
+              style={[
+                styles.sheetButton,
+                { backgroundColor: c.card, borderColor: c.border },
+              ]}
+              onPress={() => handleImageOption("camera")}
+            >
+              <IconSymbol name="camera.fill" size={28}  color={c.text} />
+              <Text style={[styles.sheetButtonLabel, { color: c.text }]}>Camera</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.sheetButton,
+                { backgroundColor: c.card, borderColor: c.border },
+              ]}
+              onPress={() => handleImageOption("library")}
+            >
+              <IconSymbol name="photo.fill" size={28} color={c.text} />
+              <Text style={[styles.sheetButtonLabel, { color: c.text }]}>Photo Library</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.sheetButton,
+                { backgroundColor: c.card, borderColor: c.border },
+              ]}
+              onPress={() => handleImageOption("file")}
+            >
+              <IconSymbol name="doc.text.viewfinder" size={28} color={c.text} />
+              <Text style={[styles.sheetButtonLabel, { color: c.text }]}>Choose File</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={[styles.sheetCancelButton, { backgroundColor: c.border, borderColor: c.border }]}
+            onPress={() => bottomSheetModalRef.current?.dismiss()}
+          >
+            <Text style={[styles.sheetCancelText, { color: c.text }]}>Cancel</Text>
+          </TouchableOpacity>
+        </BottomSheetView>
+      </BottomSheetModal>
     </KeyboardAvoidingView>
   );
 }
@@ -753,11 +910,83 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cancelBtnText: { fontWeight: "600", fontSize: 15 },
+  filePreview: {
+    flex: 1,
+    padding: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  filePreviewText: {
+    fontSize: 12,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  hintText: {
+    marginTop: 12,
+    fontSize: 14,
+    lineHeight: 20,
+  },
   saveBtn: {
     flex: 2,
     alignItems: "center",
     paddingVertical: 14,
     borderRadius: 12,
   },
+  saveBtnDisabled: {
+    opacity: 0.5,
+  },
   saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  bottomSheetContent: {
+    padding: 16,
+    gap: 12,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  sheetTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 0,
+  },
+  sheetCloseButton: {
+    padding: 8,
+    borderRadius: 999,
+  },
+  sheetButtonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  sheetButton: {
+    width: "30%",
+    aspectRatio: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 10,
+  },
+  sheetButtonLabel: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  sheetCancelButton: {
+    marginTop: 12,
+    marginBottom: 20,
+    width: "100%",
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetCancelText: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
 });

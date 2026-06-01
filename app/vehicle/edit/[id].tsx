@@ -1,3 +1,4 @@
+import { Header } from "@/components/ui/header";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useVehiclesStore } from "@/store";
@@ -72,6 +73,7 @@ export default function EditVehicleScreen() {
       style={[styles.container, { backgroundColor: c.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <Header title="Edit Vehicle" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"

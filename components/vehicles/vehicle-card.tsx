@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
+import { AccentColor, Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Vehicle } from "@/models";
 import { router } from "expo-router";
@@ -39,7 +39,7 @@ export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
           {vehicle.imageUri ? (
             <Image source={{ uri: vehicle.imageUri }} style={styles.image} />
           ) : (
-            <View style={[styles.imagePlaceholder]}>
+            <View style={styles.imagePlaceholder}>
               <Image
                 source={{ uri: logoUrl }}
                 style={styles.logo}
@@ -88,19 +88,20 @@ export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
 
 const styles = StyleSheet.create({
   card: { marginHorizontal: 16, marginVertical: 6 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12 },
-  image: { width: 60, height: 60, borderRadius: 8 },
+  row: { flexDirection: "row", alignItems: "center", gap: 14 },
+  image: { width: 56, height: 56, borderRadius: 14 },
   imagePlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: "#1A1A1A",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
-  logo: { width: 44, height: 44 },
-  info: { flex: 1 },
-  title: { fontSize: 16, fontWeight: "600" },
-  sub: { fontSize: 13, marginTop: 2 },
-  vin: { fontSize: 11, marginTop: 2 },
+  logo: { width: 36, height: 36, tintColor: AccentColor },
+  info: { flex: 1, gap: 3 },
+  title: { fontSize: 14, fontWeight: "700" },
+  sub: { fontSize: 11, marginTop: 0 },
+  vin: { fontSize: 10, marginTop: 0 },
 });

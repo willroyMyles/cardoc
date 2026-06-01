@@ -3,6 +3,7 @@ import {
   TicketAggregator,
 } from "@/components/tickets/ticket-aggregator";
 import { Card } from "@/components/ui/card";
+import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Colors, StatusColors } from "@/constants/theme";
@@ -234,10 +235,17 @@ export default function TicketLookupScreen() {
   const allTicketsInStore = useTicketsStore((s) => s.tickets);
 
   const providers = getProvidersByRegion(country);
+  const apiProvider = providers.find((p) => p.apiLookup) ?? providers[0] ?? null;
 
   const [currentView, setCurrentView] = useState<ScreenView>("list");
   const [selectedProvider, setSelectedProvider] =
     useState<TicketLookupProvider | null>(null);
+
+  function openManualLookup() {
+    if (!apiProvider) return;
+    setInputMode("manual");
+    selectProvider(apiProvider);
+  }
 
   const [inputMode, setInputMode] = useState<InputMode>("license");
   const [input, setInput] = useState<LookupInput>({
@@ -382,25 +390,15 @@ export default function TicketLookupScreen() {
       <SafeAreaView
         style={[styles.container, { backgroundColor: c.background }]}
       >
-        <View
-          style={[
-            styles.topBar,
-            { backgroundColor: c.card, borderBottomColor: c.border },
-          ]}
-        >
-          <TouchableOpacity onPress={goBack}>
-            <IconSymbol name="xmark" size={20} color={c.tint} />
-          </TouchableOpacity>
-          <Text
-            style={[styles.topBarTitle, { color: c.text }]}
-            numberOfLines={1}
-          >
-            {selectedProvider.displayName}
-          </Text>
-          <TouchableOpacity onPress={() => Linking.openURL(url)}>
-            <IconSymbol name="square.and.arrow.up" size={20} color={c.tint} />
-          </TouchableOpacity>
-        </View>
+        <Header
+          title={selectedProvider.displayName}
+          onBack={goBack}
+          right={
+            <TouchableOpacity onPress={() => Linking.openURL(url)}>
+              <IconSymbol name="square.and.arrow.up" size={20} color={c.tint} />
+            </TouchableOpacity>
+          }
+        />
         <WebView source={{ uri: url }} style={styles.webview} />
       </SafeAreaView>
     );
@@ -428,18 +426,7 @@ export default function TicketLookupScreen() {
       <SafeAreaView
         style={[styles.container, { backgroundColor: c.background }]}
       >
-        <View
-          style={[
-            styles.topBar,
-            { backgroundColor: c.card, borderBottomColor: c.border },
-          ]}
-        >
-          <TouchableOpacity onPress={goBack}>
-            <IconSymbol name="xmark" size={20} color={c.tint} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }} />
-          <View style={{ width: 20 }} />
-        </View>
+        <Header title="Ticket Lookup" onBack={goBack} />
 
         <KeyboardAvoidingView
           style={{ flex: 1 }}
@@ -450,9 +437,9 @@ export default function TicketLookupScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <Text style={[styles.formIntro, { color: c.subtext }]}>
-              {inputMode === "license"
-                ? "Using your saved driver's licence to look up traffic tickets on the official Jamaica government portal."
-                : "Enter your driver's licence details to look up traffic tickets on the official Jamaica government portal."}
+              {inputMode === "license" && hasLicense
+                ? 'Using your saved driver\'s licence to look up traffic tickets on the official Jamaica government portal.'
+                : 'Enter your driver\'s licence number, control number (FO), issue date and date of birth to look up tickets, or add your driver\'s licence to save time.'}
             </Text>
 
             {/* View Saved Tickets Button */}
@@ -597,7 +584,7 @@ export default function TicketLookupScreen() {
                       { color: StatusColors.info },
                     ]}
                   >
-                    Using Driver's Licence #{license?.fields.licenseNumber}
+                    {`Using Driver's Licence #${license?.fields.licenseNumber}`}
                   </Text>
                   <Text
                     style={[
@@ -605,7 +592,7 @@ export default function TicketLookupScreen() {
                       { color: StatusColors.info },
                     ]}
                   >
-                    We'll use your saved licence information for the lookup.
+                    {"We'll use your saved licence information for the lookup."}
                   </Text>
                 </View>
               </View>
@@ -668,41 +655,66 @@ export default function TicketLookupScreen() {
               </View>
             )}
 
-            {!hasLicense && inputMode === "license" && (
-              <View
-                style={[
-                  styles.noLicenseCard,
-                  {
-                    backgroundColor: StatusColors.warningBg,
-                    borderColor: StatusColors.warning,
-                  },
-                ]}
-              >
-                <IconSymbol
-                  name="exclamationmark.triangle"
-                  size={20}
-                  color={StatusColors.warning}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      styles.noLicenseTitle,
-                      { color: StatusColors.warning },
-                    ]}
-                  >
-                    No Driver's Licence Found
-                  </Text>
-                  <Text
-                    style={[
-                      styles.noLicenseText,
-                      { color: StatusColors.warning },
-                    ]}
-                  >
-                    Add your driver's licence in the app to use this feature, or
-                    enter your details manually below.
-                  </Text>
+            {!hasLicense && (
+              <>
+                <View
+                  style={[
+                    styles.noLicenseCard,
+                    {
+                      backgroundColor: StatusColors.warningBg,
+                      borderColor: StatusColors.warning,
+                    },
+                  ]}
+                >
+                  <IconSymbol
+                    name="exclamationmark.triangle"
+                    size={20}
+                    color={StatusColors.warning}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.noLicenseTitle,
+                        { color: StatusColors.warning },
+                      ]}
+                    >
+                      {"No Driver's Licence Found"}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.noLicenseText,
+                        { color: StatusColors.warning },
+                      ]}
+                    >
+                      {"Add your driver's licence in the app to use this feature, or enter your licence number, FO/control number, issue date, and date of birth manually."}
+                    </Text>
+                  </View>
                 </View>
-              </View>
+                <View style={styles.noLicenseActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeButton,
+                      {
+                        backgroundColor: c.card,
+                        borderColor: c.border,
+                        borderWidth: 1,
+                      },
+                    ]}
+                    onPress={() => router.push("/license")}
+                  >
+                    <Text style={[styles.modeButtonText, { color: c.tint }]}>{"Add driver's licence"}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeButton,
+                      { backgroundColor: c.tint },
+                    ]}
+                    onPress={switchToManualMode}
+                  >
+                    <Text style={[styles.modeButtonText, { color: "#fff" }]}>Enter licence details</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             )}
 
             {(inputMode === "manual" || !hasLicense) &&
@@ -834,21 +846,7 @@ export default function TicketLookupScreen() {
       <SafeAreaView
         style={[styles.container, { backgroundColor: c.background }]}
       >
-        {/* Back bar */}
-        <View
-          style={[
-            styles.topBar,
-            { backgroundColor: c.card, borderBottomColor: c.border },
-          ]}
-        >
-          <TouchableOpacity onPress={goBack}>
-            <IconSymbol name="xmark" size={20} color={c.tint} />
-          </TouchableOpacity>
-          <Text style={[styles.topBarTitle, { color: c.text }]}>
-            Tickets Results
-          </Text>
-          <View style={{ width: 20 }} />
-        </View>
+        <Header title="Ticket Results" onBack={goBack} />
 
         <View
           style={[
@@ -946,24 +944,39 @@ export default function TicketLookupScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <View
-        style={[
-          styles.topBar,
-          { backgroundColor: c.card, borderBottomColor: c.border },
-        ]}
-      >
-        <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="xmark" size={20} color={c.tint} />
-        </TouchableOpacity>
-        <Text style={[styles.topBarTitle, { color: c.text }]}>
-          Ticket Lookup
-        </Text>
-        <View style={{ width: 20 }} />
-      </View>
+      <Header title="Ticket Lookup" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[styles.intro, { color: c.subtext }]}>
           Select a service to look up traffic fines and infringement notices.
         </Text>
+
+        {!license ? (
+          <View
+            style={[
+              styles.actionCard,
+              { backgroundColor: c.card, borderColor: c.border },
+            ]}
+          >
+            <Text style={[styles.actionTitle, { color: c.text }]}>{"No driver's licence on file"}</Text>
+            <Text style={[styles.actionText, { color: c.subtext }]}>{"Add your licence in the app for faster ticket lookup, or enter your licence details and FO manually to search now."}</Text>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={[styles.actionButton, { borderColor: c.border }]}
+                onPress={() => router.push("/license")}
+              >
+                <Text style={[styles.actionButtonText, { color: c.tint }]}>Add Licence</Text>
+              </TouchableOpacity>
+              {apiProvider ? (
+                <TouchableOpacity
+                  style={[styles.actionButton, { backgroundColor: c.tint }]}
+                  onPress={openManualLookup}
+                >
+                  <Text style={[styles.actionButtonText, { color: "#fff" }]}>Lookup Manually</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
 
         {/* View Saved Tickets Button */}
         {totalSavedTickets > 0 && (
@@ -1293,6 +1306,43 @@ const styles = StyleSheet.create({
   modeButtonText: {
     fontSize: 13,
     fontWeight: "600",
+  },
+  actionCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginTop: 12,
+    gap: 10,
+  },
+  actionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  actionText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  actionButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  noLicenseActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
   },
   label: { fontSize: 13, fontWeight: "600", marginBottom: 4, marginTop: 8 },
   input: {

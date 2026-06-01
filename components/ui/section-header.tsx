@@ -23,12 +23,12 @@ export function SectionHeader({ title }: SectionHeaderProps) {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 6,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
   title: {
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 0.5,
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1.8,
   },
 });

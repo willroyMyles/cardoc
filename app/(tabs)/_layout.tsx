@@ -18,6 +18,7 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[scheme].tint,
         tabBarInactiveTintColor: Colors[scheme].icon,
+        
         tabBarStyle: {
           position: "absolute",
           bottom: 28,
@@ -29,9 +30,10 @@ export default function TabLayout() {
           backgroundColor: "transparent",
           elevation: 0,
           shadowColor: "#000",
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: isDark ? 0.4 : 0.12,
-          shadowRadius: 24,
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: isDark ? 0.35 : 0.1,
+          shadowRadius: 28,
+          display: "none"
         },
         tabBarBackground: () => (
           <BlurView
@@ -39,11 +41,12 @@ export default function TabLayout() {
             tint={isDark ? "dark" : "light"}
             style={[StyleSheet.absoluteFill, styles.blurPill]}
             experimentalBlurMethod="dimezisBlurView"
+            
           />
         ),
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "500" },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
         tabBarItemStyle: { paddingVertical: 8 },
       }}
     >
@@ -71,7 +74,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="tickets"
         options={{
-          href: null,
+          title: "Tickets",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="ticket.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen

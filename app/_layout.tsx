@@ -1,8 +1,10 @@
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider,
 } from "@react-navigation/native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { configureGoogleSignIn } from "@/services/firebase/auth-service";
@@ -11,6 +13,7 @@ import { useAuthStore, useSettingsStore } from "@/store";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
+import "react-native-get-random-values";
 import "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -46,12 +49,14 @@ export default function Layout() {
   }, [initialized, user, syncMode]);
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <Stack>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <BottomSheetModalProvider>
+          <SafeAreaView style={{ flex: 1 }}>
+            <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
+            options={{ presentation: "modal", headerShown: false }}
           />
           {/* Vehicle */}
           <Stack.Screen
@@ -80,21 +85,21 @@ export default function Layout() {
           />
           <Stack.Screen
             name="vehicle/edit/[id]"
-            options={{ title: "Edit Vehicle", headerBackTitle: "Back" }}
+            options={{ headerShown: false }}
           />
           {/* Document */}
           <Stack.Screen
             name="document/add"
-            options={{ title: "Add Document", headerBackTitle: "Back" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="document/[id]"
-            options={{ title: "Document", headerBackTitle: "Back" }}
+            options={{ headerShown: false }}
           />
           {/* Ticket */}
           <Stack.Screen
             name="ticket/[id]"
-            options={{ title: "Ticket", headerBackTitle: "Back" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="ticket/lookup"
@@ -108,10 +113,7 @@ export default function Layout() {
           {/* Misc */}
           <Stack.Screen
             name="license"
-            options={{
-              title: "Driver's License",
-              headerBackTitle: "Back",
-            }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="scan"
@@ -123,7 +125,7 @@ export default function Layout() {
           />
           <Stack.Screen
             name="scan-review"
-            options={{ title: "Review Scan", headerBackTitle: "Back" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="insurance-scan"
@@ -139,33 +141,35 @@ export default function Layout() {
           />
           <Stack.Screen
             name="settings"
-            options={{ title: "Settings", headerBackTitle: "Back" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="emergency"
-            options={{ presentation: "modal", title: "Emergency Card" }}
+            options={{ presentation: "modal", headerShown: false }}
           />
           {/* Maintenance */}
           <Stack.Screen
             name="maintenance/index"
-            options={{ title: "Maintenance Log", headerBackTitle: "Back" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="maintenance/add"
-            options={{ title: "Add Service Entry", headerBackTitle: "Back" }}
+            options={{ headerShown: false }}
           />
           {/* Fuel */}
           <Stack.Screen
             name="fuel/index"
-            options={{ title: "Fuel Log", headerBackTitle: "Back" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="fuel/add"
-            options={{ title: "Add Fuel Entry", headerBackTitle: "Back" }}
+            options={{ headerShown: false }}
           />
         </Stack>
         <StatusBar style="auto" />
-      </SafeAreaView>
+          </SafeAreaView>
+        </BottomSheetModalProvider>
+      </GestureHandlerRootView>
     </ThemeProvider>
   );
 }

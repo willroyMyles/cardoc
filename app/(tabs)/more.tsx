@@ -1,26 +1,26 @@
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors, StatusColors } from "@/constants/theme";
+import { AccentColor, Colors, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
-  signInWithApple,
-  signInWithGoogle,
-  signOutUser,
+    signInWithApple,
+    signInWithGoogle,
+    signOutUser,
 } from "@/services/firebase/auth-service";
 import { useAuthStore, useLicenseStore } from "@/store";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActionSheetIOS,
-  Alert,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActionSheetIOS,
+    Alert,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 type MenuItem = {
@@ -154,13 +154,13 @@ export default function MoreScreen() {
                   <View
                     style={[
                       styles.avatarPlaceholder,
-                      { backgroundColor: c.tint + "22" },
+                      { backgroundColor: "#1A1A1A" },
                     ]}
                   >
                     <IconSymbol
                       name="person.crop.circle.fill"
                       size={28}
-                      color={c.tint}
+                      color={AccentColor}
                     />
                   </View>
                 )}
@@ -213,13 +213,13 @@ export default function MoreScreen() {
                     <View
                       style={[
                         styles.menuIcon,
-                        { backgroundColor: c.tint + "18" },
+                        { backgroundColor: "#1A1A1A" },
                       ]}
                     >
                       <IconSymbol
                         name="person.text.rectangle"
                         size={20}
-                        color={c.tint}
+                        color={AccentColor}
                       />
                     </View>
                     <View style={styles.licenseInCardInfo}>
@@ -287,13 +287,13 @@ export default function MoreScreen() {
                     <View
                       style={[
                         styles.menuIcon,
-                        { backgroundColor: c.tint + "18" },
+                        { backgroundColor: "#1A1A1A" },
                       ]}
                     >
                       <IconSymbol
                         name="person.text.rectangle"
                         size={20}
-                        color={c.tint}
+                        color={AccentColor}
                       />
                     </View>
                     <View style={styles.licenseInCardInfo}>
@@ -323,47 +323,39 @@ export default function MoreScreen() {
           )}
         </View>
 
-        {/* Menu items */}
-        <View
-          style={[
-            styles.menuGroup,
-            { backgroundColor: c.card, borderColor: c.border },
-          ]}
-        >
-          {MENU_ITEMS.map((item, index) => (
-            <React.Fragment key={item.route}>
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => router.push(item.route as any)}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[styles.menuIcon, { backgroundColor: c.tint + "18" }]}
-                >
-                  <IconSymbol
-                    name={item.icon as any}
-                    size={20}
-                    color={c.tint}
-                  />
-                </View>
-                <View style={styles.menuText}>
-                  <Text style={[styles.menuLabel, { color: c.text }]}>
-                    {item.label}
-                  </Text>
-                  {item.description ? (
-                    <Text style={[styles.menuDesc, { color: c.subtext }]}>
-                      {item.description}
-                    </Text>
-                  ) : null}
-                </View>
-                <IconSymbol name="chevron.right" size={16} color={c.subtext} />
-              </TouchableOpacity>
-              {index < MENU_ITEMS.length - 1 && (
-                <View style={[styles.divider, { backgroundColor: c.border }]} />
-              )}
-            </React.Fragment>
-          ))}
-        </View>
+        {/* Menu items — each as its own card */}
+        {MENU_ITEMS.map((item) => (
+          <TouchableOpacity
+            key={item.route}
+            style={[
+              styles.menuItem,
+              { backgroundColor: c.card, borderColor: c.border },
+            ]}
+            onPress={() => router.push(item.route as any)}
+            activeOpacity={0.75}
+          >
+            <View
+              style={[styles.menuIcon, { backgroundColor: "#1A1A1A" }]}
+            >
+              <IconSymbol
+                name={item.icon as any}
+                size={20}
+                color={AccentColor}
+              />
+            </View>
+            <View style={styles.menuText}>
+              <Text style={[styles.menuLabel, { color: c.text }]}>
+                {item.label}
+              </Text>
+              {item.description ? (
+                <Text style={[styles.menuDesc, { color: c.subtext }]}>
+                  {item.description}
+                </Text>
+              ) : null}
+            </View>
+            <IconSymbol name="chevron.right" size={16} color={c.subtext} />
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -371,12 +363,12 @@ export default function MoreScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 12, paddingBottom: 120, gap: 16 },
+  scroll: { padding: 16, paddingBottom: 120, gap: 12 },
   // Account card
   accountCard: {
-    borderRadius: 14,
+    borderRadius: 24,
     borderWidth: 1,
-    padding: 16,
+    padding: 20,
     gap: 0,
   },
   accountRow: {
@@ -401,8 +393,8 @@ const styles = StyleSheet.create({
   accountEmail: { fontSize: 12, marginTop: 2 },
   signOutBtn: {
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderRadius: 99,
+    paddingHorizontal: 14,
     paddingVertical: 6,
   },
   signOutBtnText: { fontSize: 13, fontWeight: "600" },
@@ -411,11 +403,11 @@ const styles = StyleSheet.create({
   signInTitle: { fontSize: 16, fontWeight: "700" },
   signInSubtitle: { fontSize: 13 },
   signInBtn: {
-    borderRadius: 10,
-    paddingVertical: 12,
+    borderRadius: 99,
+    paddingVertical: 14,
     alignItems: "center",
   },
-  signInBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  signInBtnText: { color: "#fff", fontSize: 13, fontWeight: "700", letterSpacing: 1 },
   authError: { fontSize: 12, marginTop: 4 },
   cardDivider: { height: 1, marginVertical: 14 },
   licenseInCard: {
@@ -427,23 +419,27 @@ const styles = StyleSheet.create({
   licenseInCardName: { fontSize: 14, fontWeight: "600" },
   licenseInCardSub: { fontSize: 12, marginTop: 1 },
   // Menu
-  menuGroup: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
+    padding: 16,
+    gap: 14,
+    borderRadius: 24,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 16,
+    elevation: 1,
   },
   menuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   menuText: { flex: 1 },
-  menuLabel: { fontSize: 16, fontWeight: "600" },
+  menuLabel: { fontSize: 15, fontWeight: "600" },
   menuDesc: { fontSize: 12, marginTop: 1 },
-  divider: { height: 1, marginLeft: 64 },
 });

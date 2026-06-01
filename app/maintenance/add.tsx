@@ -1,27 +1,27 @@
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Header } from "@/components/ui/header";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
-    MAINTENANCE_TYPE_LABELS,
-    type MaintenanceEntry,
-    type MaintenanceType,
+  MAINTENANCE_TYPE_LABELS,
+  type MaintenanceEntry,
+  type MaintenanceType,
 } from "@/models/maintenance";
 import {
-    useMaintenanceStore,
-    useSettingsStore,
-    useVehiclesStore,
+  useMaintenanceStore,
+  useSettingsStore,
+  useVehiclesStore,
 } from "@/store";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { v4 as uuidv4 } from "uuid";
 
@@ -70,17 +70,15 @@ export default function AddMaintenanceScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="xmark" size={22} color={c.tint} />
-        </TouchableOpacity>
-        <Text style={[styles.pageTitle, { color: c.text }]}>
-          Add Maintenance
-        </Text>
-        <TouchableOpacity onPress={handleSave}>
-          <Text style={[styles.saveBtn, { color: c.tint }]}>Save</Text>
-        </TouchableOpacity>
-      </View>
+      <Header
+        title="Add Maintenance"
+        onBack={() => router.back()}
+        right={
+          <TouchableOpacity onPress={handleSave}>
+            <Text style={[styles.saveBtn, { color: c.tint }]}>Save</Text>
+          </TouchableOpacity>
+        }
+      />
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Vehicle */}
         <Label text="Vehicle" c={c} />

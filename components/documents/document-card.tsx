@@ -1,11 +1,22 @@
 import { Card } from "@/components/ui/card";
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, DocTypeColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CAR_DOCUMENT_TYPE_LABELS, CarDocument } from "@/models";
 import { router } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+const DOC_TYPE_ICONS: Record<string, string> = {
+  registration: "doc.text.fill",
+  insurance: "shield.fill",
+  inspection: "checkmark.seal.fill",
+  title: "doc.badge.plus",
+  roadworthy: "car.fill",
+  emission: "leaf.fill",
+  other: "doc.fill",
+};
 
 interface DocumentCardProps {
   document: CarDocument;
@@ -25,7 +36,13 @@ export function DocumentCard({ document, vehicleName }: DocumentCardProps) {
     >
       <Card style={styles.card}>
         <View style={styles.row}>
-          <View style={[styles.typeAccent, { backgroundColor: accentColor }]} />
+          <View style={[styles.iconTile, { backgroundColor: "#1A1A1A" }]}>
+            <IconSymbol
+              name={(DOC_TYPE_ICONS[document.type] ?? "doc.fill") as any}
+              size={20}
+              color={accentColor}
+            />
+          </View>
           <View style={styles.info}>
             <Text style={[styles.type, { color: Colors[scheme].subtext }]}>
               {CAR_DOCUMENT_TYPE_LABELS[document.type]}
@@ -42,6 +59,7 @@ export function DocumentCard({ document, vehicleName }: DocumentCardProps) {
               <ExpiryIndicator expiryDate={document.expiryDate} />
             </View>
           </View>
+          <IconSymbol name="chevron.right" size={16} color={Colors[scheme].icon} />
         </View>
       </Card>
     </TouchableOpacity>
@@ -50,16 +68,23 @@ export function DocumentCard({ document, vehicleName }: DocumentCardProps) {
 
 const styles = StyleSheet.create({
   card: { marginHorizontal: 16, marginVertical: 6 },
-  row: { flexDirection: "row", gap: 12 },
-  typeAccent: { width: 4, borderRadius: 2, alignSelf: "stretch" },
+  row: { flexDirection: "row", alignItems: "center", gap: 14 },
+  iconTile: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
   info: { flex: 1, gap: 2 },
   type: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 10,
+    fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1.2,
   },
-  title: { fontSize: 16, fontWeight: "600" },
-  vehicle: { fontSize: 13 },
-  footer: { marginTop: 8 },
+  title: { fontSize: 14, fontWeight: "700" },
+  vehicle: { fontSize: 11 },
+  footer: { marginTop: 6 },
 });

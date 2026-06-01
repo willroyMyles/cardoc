@@ -9,7 +9,7 @@ interface CardProps {
   padding?: number;
 }
 
-export function Card({ children, style, padding = 16 }: CardProps) {
+export function Card({ children, style, padding = 20 }: CardProps) {
   const scheme = useColorScheme() ?? "light";
   return (
     <View
@@ -30,12 +30,12 @@ export function Card({ children, style, padding = 16 }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: 24,
     borderWidth: 1,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 16,
+    elevation: 1,
   },
 });

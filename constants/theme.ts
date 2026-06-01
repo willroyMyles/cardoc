@@ -5,20 +5,24 @@
 
 import { Platform } from "react-native";
 
-const tintColorLight = "#1A6FE8";
-const tintColorDark = "#4093F4";
+const tintColorLight = "#1A1A1A";
+const tintColorDark = "#F0F0F0";
+
+/** Amber brand accent — used for icons inside dark tiles */
+export const AccentColor = "#f59e0b";
 
 export const Colors = {
   light: {
-    text: "#11181C",
-    background: "#F5F6FA",
+    text: "#171717",
+    background: "#F2F3F5",
     card: "#FFFFFF",
     tint: tintColorLight,
-    icon: "#687076",
-    tabIconDefault: "#687076",
+    icon: "#A3A3A3",
+    tabIconDefault: "#A3A3A3",
     tabIconSelected: tintColorLight,
-    border: "#E5E7EB",
-    subtext: "#6B7280",
+    border: "#E8E9ED",
+    subtext: "#A3A3A3",
+    white: "#FFFFFF",
   },
   dark: {
     text: "#ECEDEE",
@@ -30,6 +34,7 @@ export const Colors = {
     tabIconSelected: tintColorDark,
     border: "#2D3748",
     subtext: "#9BA1A6",
+    white: "#000",
   },
 };
 
@@ -83,3 +88,17 @@ export const Fonts = Platform.select({
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });
+
+/** Consistent border-radius scale used across the app */
+export const Radius = {
+  /** Pills, chips, status badges */
+  pill: 99,
+  /** Large section cards, account card */
+  card: 24,
+  /** Hero cards, modals */
+  hero: 24,
+  /** Icon tiles inside cards */
+  tile: 14,
+  /** Small UI elements */
+  sm: 8,
+} as const;

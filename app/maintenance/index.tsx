@@ -1,28 +1,28 @@
+import { MaintenanceCard } from "@/components/maintenance/maintenance-card";
+import { MaintenanceDetailSheet } from "@/components/maintenance/maintenance-detail-sheet";
 import { EmptyState } from "@/components/ui/empty-state";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Header } from "@/components/ui/header";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import {
-    MAINTENANCE_TYPE_LABELS,
-    type MaintenanceEntry,
-} from "@/models/maintenance";
+import type { MaintenanceEntry } from "@/models/maintenance";
 import { useMaintenanceStore, useVehiclesStore } from "@/store";
 import { router } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
-    FlatList,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
 } from "react-native";
 
 export default function MaintenanceListScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const entries = useMaintenanceStore((s) => s.entries);
+  const deleteEntry = useMaintenanceStore((s) => s.deleteEntry);
   const vehicles = useVehiclesStore((s) => s.vehicles);
+  const [selectedEntry, setSelectedEntry] = useState<MaintenanceEntry | null>(null);
 
   const getVehicleName = (id: string) => {
     const v = vehicles.find((v) => v.id === id);
@@ -30,69 +30,30 @@ export default function MaintenanceListScreen() {
   };
 
   const renderItem = ({ item }: { item: MaintenanceEntry }) => (
-    <View
-      style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-    >
-      <View style={styles.cardHeader}>
-        <View style={[styles.typeIcon, { backgroundColor: c.tint + "18" }]}>
-          <IconSymbol
-            name="wrench.and.screwdriver.fill"
-            size={18}
-            color={c.tint}
-          />
-        </View>
-        <View style={styles.cardInfo}>
-          <Text style={[styles.typeLabel, { color: c.text }]}>
-            {MAINTENANCE_TYPE_LABELS[item.type]}
-          </Text>
-          <Text style={[styles.vehicleName, { color: c.subtext }]}>
-            {getVehicleName(item.vehicleId)}
-          </Text>
-        </View>
-        <View style={styles.cardRight}>
-          {item.cost != null && (
-            <Text style={[styles.cost, { color: c.text }]}>
-              {item.currency}
-              {item.cost.toFixed(2)}
-            </Text>
-          )}
-          <Text style={[styles.date, { color: c.subtext }]}>{item.date}</Text>
-        </View>
-      </View>
-      {item.description ? (
-        <Text style={[styles.description, { color: c.subtext }]}>
-          {item.description}
-        </Text>
-      ) : null}
-      {item.mileage != null ? (
-        <Text style={[styles.mileage, { color: c.subtext }]}>
-          <IconSymbol name="speedometer" size={12} color={c.subtext} />{" "}
-          {item.mileage.toLocaleString()} km
-        </Text>
-      ) : null}
-      {item.workshop ? (
-        <Text style={[styles.mileage, { color: c.subtext }]}>
-          @ {item.workshop}
-        </Text>
-      ) : null}
-    </View>
+    <MaintenanceCard
+      entry={item}
+      vehicleName={getVehicleName(item.vehicleId)}
+      onPress={() => setSelectedEntry(item)}
+    />
   );
 
   return (
     <SafeAreaView
       style={[styles.container, { flex: 1, backgroundColor: c.background }]}
     >
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="xmark" size={22} color={c.tint} />
-        </TouchableOpacity>
-        <Text style={[styles.pageTitle, { color: c.text }]}>
-          Maintenance Log
-        </Text>
-        <TouchableOpacity onPress={() => router.push("/maintenance/add")}>
-          <IconSymbol name="plus" size={22} color={c.tint} />
-        </TouchableOpacity>
-      </View>
+      <Header
+        title={`Services Ledger${entries.length > 0 ? ` (${entries.length})` : ""}`}
+        onBack={() => router.back()}
+        right={
+          <TouchableOpacity
+            style={[styles.logBtn, { backgroundColor: c.text }]}
+            onPress={() => router.push("/maintenance/add")}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.logBtnText, { color: c.background }]}>Log Record</Text>
+          </TouchableOpacity>
+        }
+      />
       <FlatList
         data={entries}
         keyExtractor={(item) => item.id}
@@ -104,9 +65,16 @@ export default function MaintenanceListScreen() {
           <EmptyState
             icon="wrench.and.screwdriver.fill"
             title="No Maintenance Records"
-            subtitle="Track your service history by tapping +"
+            subtitle="Track your service history by tapping Log Record"
           />
         }
+      />
+      <MaintenanceDetailSheet
+        entry={selectedEntry}
+        vehicleName={selectedEntry ? getVehicleName(selectedEntry.vehicleId) : ""}
+        visible={selectedEntry !== null}
+        onClose={() => setSelectedEntry(null)}
+        onDelete={deleteEntry}
       />
     </SafeAreaView>
   );
@@ -114,31 +82,17 @@ export default function MaintenanceListScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  pageTitle: { fontSize: 20, fontWeight: "700" },
   list: { padding: 16, gap: 12, paddingBottom: 40 },
   emptyList: { flex: 1, padding: 16 },
-  card: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 6 },
-  cardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  typeIcon: {
-    width: 36,
-    height: 36,
+  logBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
   },
-  cardInfo: { flex: 1 },
-  cardRight: { alignItems: "flex-end" },
-  typeLabel: { fontSize: 15, fontWeight: "600" },
-  vehicleName: { fontSize: 12, marginTop: 2 },
-  cost: { fontSize: 15, fontWeight: "700" },
-  date: { fontSize: 12, marginTop: 2 },
-  description: { fontSize: 13, lineHeight: 18 },
-  mileage: { fontSize: 12 },
+  logBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
 });

@@ -2,6 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Header } from "@/components/ui/header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -60,11 +61,7 @@ export default function TicketDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="xmark" size={22} color={c.tint} />
-        </TouchableOpacity>
-      </View>
+      <Header title={`#${ticket.ticketNumber}`} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Card style={styles.card}>
           <View style={styles.headerRow}>

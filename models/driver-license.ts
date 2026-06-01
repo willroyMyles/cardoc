@@ -6,6 +6,8 @@ export interface DynamicDriverLicense {
   fields: Record<string, string | undefined>;
   imageUriFront?: string;
   imageUriBack?: string;
+  imageMimeTypeFront?: string;
+  imageMimeTypeBack?: string;
   createdAt: string;
   updatedAt: string;
 }

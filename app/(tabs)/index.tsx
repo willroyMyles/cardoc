@@ -1,26 +1,47 @@
-import { EmptyState } from "@/components/ui/empty-state";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { VehicleCard } from "@/components/vehicles/vehicle-card";
+import { AppointmentsTabContent } from "@/components/appointments/appointments-tab-content";
+import DashboardOverview from "@/components/dashboard/dashboard";
+import { DocVaultScreen } from "@/components/documents/doc-vault-screen";
+import { FuelTabContent } from "@/components/fuel/fuel-tab-content";
+import { MaintenanceTabContent } from "@/components/maintenance/maintenance-tab-content";
+import { TicketTabContent } from "@/components/tickets/ticket-tab-content";
+import { CarHeader, CarHeaderTab } from "@/components/vehicles/car-header";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useVehiclesStore } from "@/store";
-import { router } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  RefreshControl,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  View
 } from "react-native";
+
+function TabPlaceholder({
+  title,
+  description,
+  style,
+  titleColor,
+  textColor,
+}: {
+  title: string;
+  description: string;
+  style?: object;
+  titleColor?: string;
+  textColor?: string;
+}) {
+  return (
+    <View style={[styles.placeholderContainer, style]}>
+      <Text style={[styles.placeholderTitle, { color: titleColor ?? "#000" }]}>{title}</Text>
+      <Text style={[styles.placeholderText, { color: textColor ?? "#666" }]}>{description}</Text>
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const [refreshing, setRefreshing] = useState(false);
-
+  const [activeTab, setActiveTab] = useState<CarHeaderTab>("dashboard");
   const vehicles = useVehiclesStore((s) => s.vehicles);
 
   const onRefresh = useCallback(() => {
@@ -28,120 +49,60 @@ export default function HomeScreen() {
     setTimeout(() => setRefreshing(false), 600);
   }, []);
 
+  const renderTabContent = () => {
+    if (activeTab === "fuel") {
+      return <FuelTabContent />;
+    }
+
+    if (activeTab === "tickets") {
+      return <TicketTabContent />;
+    }
+
+    return (
+      <View style={styles.contentContainer}>
+        {activeTab === "dashboard" && <DashboardOverview />}
+        {activeTab === "doc vault" && <DocVaultScreen />}
+        {activeTab === "maintenance" && <MaintenanceTabContent />}
+        {activeTab === "appointments" && <AppointmentsTabContent />}
+      </View>
+    );
+  };
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={c.tint}
-          />
-        }
-      >
-        <View style={styles.content}>
-          <View style={styles.heroRow}>
-            <TouchableOpacity
-              style={[styles.heroCard, { backgroundColor: c.tint }]}
-              onPress={() => router.push("/scan")}
-              activeOpacity={0.85}
-            >
-              <IconSymbol name="doc.text.viewfinder" size={34} color="#fff" />
-              <Text style={styles.heroCardLabelPrimary}>Scan to begin</Text>
-            </TouchableOpacity>
+    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}> 
+      <CarHeader
+        vehicles={vehicles}
+        activeIndex={0}
+        onPrev={() => {}}
+        onNext={() => {}}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
-            <TouchableOpacity
-              style={[
-                styles.heroCard,
-                styles.heroCardOutlined,
-                { backgroundColor: c.card, borderColor: c.tint + "66" },
-              ]}
-              onPress={() => router.push("/ticket/lookup")}
-              activeOpacity={0.75}
-            >
-              <IconSymbol name="magnifyingglass" size={34} color={c.tint} />
-              <Text style={[styles.heroCardLabelSecondary, { color: c.tint }]}>
-                Ticket Lookup
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {vehicles.length > 0 ? (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: c.text }]}>
-                  My Vehicles
-                </Text>
-                <TouchableOpacity
-                  onPress={() => router.push("/(tabs)/vehicles")}
-                >
-                  <Text style={[styles.sectionAction, { color: c.tint }]}>
-                    See all
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              {vehicles.map((v) => (
-                <VehicleCard key={v.id} vehicle={v} />
-              ))}
-            </View>
-          ) : (
-            <EmptyState
-              icon="car.fill"
-              title="No vehicles yet"
-              subtitle="Scan a document or add a vehicle to get started."
-            />
-          )}
-        </View>
-      </ScrollView>
+      {renderTabContent()}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { paddingBottom: 40 },
-  content: {
-    paddingHorizontal: 14,
-    paddingTop: 20,
-    gap: 16,
+  contentContainer: { flex: 1 },
+  scroll: { paddingBottom: 48 },
+  placeholderContainer: {
+    marginTop: 24,
+    marginHorizontal: 20,
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
   },
-  heroRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  heroCard: {
-    flex: 1,
-    paddingVertical: 28,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  heroCardOutlined: {
-    borderWidth: 1.5,
-  },
-  heroCardLabelPrimary: {
-    color: "#fff",
-    fontSize: 14,
+  placeholderTitle: {
+    fontSize: 24,
     fontWeight: "700",
-    textAlign: "center",
+    marginBottom: 12,
   },
-  heroCardLabelSecondary: {
-    fontSize: 14,
-    fontWeight: "700",
-    textAlign: "center",
+  placeholderText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: "#666",
   },
-  section: {
-    gap: 0,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    marginBottom: 6,
-  },
-  sectionTitle: { fontSize: 17, fontWeight: "700" },
-  sectionAction: { fontSize: 14, fontWeight: "600" },
 });

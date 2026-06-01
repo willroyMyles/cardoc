@@ -10,6 +10,7 @@ import { CAR_DOCUMENT_TYPE_LABELS as LABELS } from "@/models";
 import { cancelDocumentExpiryReminders } from "@/services/notifications/expiry-reminders";
 import { useDocumentsStore, useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
+import { Header } from "@/components/ui/header";
 import React, { useState } from "react";
 import {
   Image,
@@ -54,15 +55,8 @@ export default function DocumentDetailScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Back button + type bar */}
+        <Header title={doc.title ?? LABELS[doc.type]} onBack={() => router.back()} />
         <View style={[styles.typeBar, { backgroundColor: accentColor }]}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => router.back()}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <IconSymbol name="xmark" size={20} color="#fff" />
-          </TouchableOpacity>
           <Text style={styles.typeBarText}>{LABELS[doc.type]}</Text>
         </View>
 
