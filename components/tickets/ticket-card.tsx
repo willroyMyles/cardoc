@@ -1,7 +1,5 @@
-import { Card } from "@/components/ui/card";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { StatusBadge, StatusType } from "@/components/ui/status-badge";
-import { AccentColor, Colors } from "@/constants/theme";
+import { Colors, Spacing, StatusColors, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Ticket, TICKET_STATUS_LABELS, TicketStatus } from "@/models";
 import { router } from "expo-router";
@@ -15,70 +13,126 @@ const statusMap: Record<TicketStatus, StatusType> = {
   dismissed: "neutral",
 };
 
+const accentMap: Record<TicketStatus, string> = {
+  unpaid: StatusColors.danger,
+  paid: StatusColors.success,
+  disputed: StatusColors.warning,
+  dismissed: StatusColors.neutral,
+};
+
 interface TicketCardProps {
   ticket: Ticket;
   vehicleName?: string;
+  onPress?: () => void;
 }
 
-export function TicketCard({ ticket, vehicleName }: TicketCardProps) {
+export function TicketCard({ ticket, vehicleName, onPress }: TicketCardProps) {
   const scheme = useColorScheme() ?? "light";
+  const c = Colors[scheme];
   const badgeStatus = statusMap[ticket.status];
+  const issuedDate = new Date(ticket.date.split(" ")[0]);
+  const dateLabel = isNaN(issuedDate.getTime())
+    ? ticket.date
+    : issuedDate.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
 
   return (
     <TouchableOpacity
-      onPress={() =>
-        router.push({ pathname: "/ticket/[id]", params: { id: ticket.id } })
+      onPress={
+        onPress ??
+        (() =>
+          router.push({ pathname: "/ticket/[id]", params: { id: ticket.id } }))
       }
       activeOpacity={0.75}
+      style={[
+        styles.card,
+        { backgroundColor: c.card, borderColor: c.border },
+      ]}
     >
-      <Card style={styles.card}>
-        <View style={styles.row}>
-          <View style={[styles.iconTile, { backgroundColor: "#1A1A1A" }]}>
-            <IconSymbol name="exclamationmark.triangle.fill" size={20} color={AccentColor} />
-          </View>
-          <View style={styles.info}>
-            <Text style={[styles.number, { color: Colors[scheme].subtext }]}>
-              #{ticket.ticketNumber}
-            </Text>
-            <Text style={[styles.violation, { color: Colors[scheme].text }]}>
-              {ticket.violation}
-            </Text>
-            {vehicleName ? (
-              <Text style={[styles.sub, { color: Colors[scheme].subtext }]}>
-                {vehicleName}
-              </Text>
-            ) : null}
-          </View>
-          <View style={styles.right}>
-            <Text style={[styles.amount, { color: Colors[scheme].text }]}>
-              {ticket.currency} {ticket.amount.toFixed(2)}
-            </Text>
-            <StatusBadge
-              label={TICKET_STATUS_LABELS[ticket.status]}
-              status={badgeStatus}
-            />
-          </View>
+      <View
+        style={[
+          styles.statusRail,
+          { backgroundColor: accentMap[ticket.status] },
+        ]}
+      />
+      <View style={styles.topRow}>
+        <Text style={[styles.number, { color: c.subtext }]} numberOfLines={1}>
+          #{ticket.ticketNumber}
+        </Text>
+        <StatusBadge
+          label={TICKET_STATUS_LABELS[ticket.status]}
+          status={badgeStatus}
+        />
+      </View>
+
+      <View style={styles.mainRow}>
+        <View style={styles.info}>
+          <Text style={[styles.violation, { color: c.text }]} numberOfLines={2}>
+            {ticket.violation}
+          </Text>
         </View>
-      </Card>
+        <Text
+          style={[styles.amount, { color: c.text }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          {ticket.currency} {ticket.amount.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </Text>
+      </View>
+
+      <Text style={[styles.sub, { color: c.subtext }]} numberOfLines={1}>
+        {vehicleName ? `${vehicleName} / ${dateLabel}` : dateLabel}
+      </Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { marginHorizontal: 16, marginVertical: 6 },
-  row: { flexDirection: "row", alignItems: "center", gap: 14 },
-  iconTile: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
+  card: {
+    marginHorizontal: Spacing.page,
+    marginVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    overflow: "hidden",
   },
-  info: { flex: 1, gap: 2 },
-  number: { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1.2 },
-  violation: { fontSize: 14, fontWeight: "700" },
-  sub: { fontSize: 11 },
-  right: { alignItems: "flex-end", gap: 6 },
-  amount: { fontSize: 15, fontWeight: "700" },
+  statusRail: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+  },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 5,
+  },
+  mainRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  info: { flex: 1, gap: 2, minWidth: 0 },
+  number: {
+    flex: 1,
+    fontSize: 10,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  violation: { fontSize: 13, lineHeight: 17, fontWeight: "700" },
+  sub: Type.caption,
+  amount: {
+    maxWidth: 106,
+    minWidth: 66,
+    fontSize: 14,
+    fontWeight: "800",
+    textAlign: "right",
+  },
 });

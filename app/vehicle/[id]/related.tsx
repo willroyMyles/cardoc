@@ -1,8 +1,9 @@
 import { DocumentCard } from "@/components/documents/document-card";
 import { LicenseCard } from "@/components/license/license-card";
 import { ThemedText } from "@/components/themed-text";
+import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useDocumentsStore, useLicenseStore, useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
@@ -36,52 +37,35 @@ export default function RelatedDocumentsScreen() {
       <SafeAreaView
         style={[styles.container, { backgroundColor: c.background }]}
       >
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <IconSymbol name="chevron.left" size={20} color={c.tint} />
-          <Text style={[styles.backLabel, { color: c.tint }]}>Back</Text>
-        </TouchableOpacity>
-        <ThemedText style={{ padding: 16 }}>Vehicle not found.</ThemedText>
+        <Header title="Related Documents" />
+        <ThemedText style={{ padding: Spacing.page }}>Vehicle not found.</ThemedText>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              justifyContent: "space-between",
-            }}
+      <Header
+        title="Related Documents"
+        right={
+          <TouchableOpacity
+            style={[styles.iconBtn, { backgroundColor: c.border }]}
+            onPress={() =>
+              router.push({
+                pathname: "/vehicle/edit/[id]",
+                params: { id },
+              })
+            }
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Edit vehicle"
           >
-            <TouchableOpacity
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <IconSymbol name="chevron.left" size={20} color={c.tint} />
-
-              <Text style={[styles.backLabel, { color: c.tint }]}>Back</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.addDocBtn, { backgroundColor: c.border }]}
-              onPress={() =>
-                router.push({
-                  pathname: "/vehicle/edit/[id]",
-                  params: { id },
-                })
-              }
-              activeOpacity={0.8}
-            >
-              <IconSymbol name="pencil" size={16} color={c.tint} />
-              <Text style={[styles.addDocLabel, { color: c.tint }]}>
-                Edit Vehicle
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <IconSymbol name="pencil" size={16} color={c.tint} />
+          </TouchableOpacity>
+        }
+      />
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.header}>
           <View style={styles.titleBlock}>
             <ThemedText type="title">
               {vehicle.year} {vehicle.make} {vehicle.model}
@@ -103,40 +87,16 @@ export default function RelatedDocumentsScreen() {
               {vehicle.color ? vehicle.color : "No color specified"}
             </Text>
           </View>
-          <View
-            className="row flex-row"
-            style={{
-              gap: 6,
-              flex: 1,
-              justifyContent: "flex-start",
-              flexDirection: "row",
-            }}
-          >
-            {/* <TouchableOpacity
-              style={[styles.addDocBtn, { backgroundColor: c.tint }]}
-              onPress={() =>
-                router.push({
-                  pathname: "/document/add",
-                  params: { vehicleId: id },
-                })
-              }
-              activeOpacity={0.8}
-            >
-              <IconSymbol name="plus" size={16} color="#fff" />
-              <Text style={styles.addDocLabel}>Add Document</Text>
-            </TouchableOpacity> */}
-            {/* Edit Vehicle Button */}
-          </View>
         </View>
 
         {!hasRelated ? (
           <View style={styles.empty}>
-            <IconSymbol name="doc.text" size={40} color={c.subtext} />
+            <IconSymbol name="doc.fill" size={40} color={c.subtext} />
             <Text style={[styles.emptyText, { color: c.subtext }]}>
               No related documents yet
             </Text>
             <Text style={[styles.emptyHint, { color: c.subtext }]}>
-              Add a document or driver's license to see them here.
+              {"Add a document or driver's license to see them here."}
             </Text>
           </View>
         ) : null}
@@ -145,7 +105,7 @@ export default function RelatedDocumentsScreen() {
         {license ? (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: c.subtext }]}>
-              DRIVER'S LICENSE
+              {"DRIVER'S LICENSE"}
             </Text>
             <View style={styles.licenseWrap}>
               <LicenseCard
@@ -176,45 +136,33 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingBottom: 40 },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: Spacing.page,
+    paddingTop: Spacing.stackGap,
     paddingBottom: 8,
     gap: 12,
   },
-  backBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    alignSelf: "flex-start",
-  },
-  backLabel: { fontSize: 16 },
   titleBlock: { gap: 2 },
-  plate: { fontSize: 14 },
-  addDocBtn: {
-    flexDirection: "row",
+  plate: Type.body,
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.pill,
     alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    justifyContent: "center",
   },
-  addDocLabel: { color: "#fff", fontSize: 14, fontWeight: "600" },
   section: { marginTop: 24 },
   sectionTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginHorizontal: 16,
+    ...Type.sectionLabel,
+    marginHorizontal: Spacing.page,
     marginBottom: 8,
   },
-  licenseWrap: { paddingHorizontal: 16 },
+  licenseWrap: { paddingHorizontal: Spacing.page },
   empty: {
     alignItems: "center",
     paddingTop: 60,
     gap: 8,
     paddingHorizontal: 32,
   },
-  emptyText: { fontSize: 17, fontWeight: "600", textAlign: "center" },
-  emptyHint: { fontSize: 14, textAlign: "center", lineHeight: 20 },
+  emptyText: { ...Type.title, textAlign: "center" },
+  emptyHint: { ...Type.body, textAlign: "center" },
 });

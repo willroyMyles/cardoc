@@ -1,4 +1,4 @@
-import { AccentColor, Colors } from "@/constants/theme";
+import { AccentColor, Colors, Radius, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -44,21 +44,19 @@ const styles = StyleSheet.create({
   iconTile: {
     width: 64,
     height: 64,
-    borderRadius: 20,
+    borderRadius: Radius.surface,
     backgroundColor: "#1A1A1A",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   title: {
-    fontSize: 16,
-    fontWeight: "700",
+    ...Type.title,
     textAlign: "center",
     letterSpacing: 0.2,
   },
   subtitle: {
-    fontSize: 13,
+    ...Type.body,
     textAlign: "center",
-    lineHeight: 20,
   },
 });

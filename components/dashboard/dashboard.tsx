@@ -10,7 +10,10 @@ import {
 } from "@/store";
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { BarChart, LineChart, ProgressChart, StackedBarChart } from "react-native-chart-kit";
+
+const HIDDEN_FEATURE_WIDGETS_VISIBLE = false;
 
 function computeAvgEfficiency(entries: FuelEntry[]): number | null {
   const sorted = [...entries].sort(
@@ -54,20 +57,88 @@ function fmtDate(iso: string) {
   });
 }
 
-function computeBarHeights(entries: FuelEntry[]) {
+function monthKey(date: string) {
+  const parsed = new Date(date);
+  return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthLabel(key: string) {
+  const [year, month] = key.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "short" });
+}
+
+function computeFuelQuantityChart(entries: FuelEntry[]) {
   const recent = [...entries]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 7)
     .reverse();
-  if (recent.length === 0) return [0.45, 0.6, 0.5, 0.85, 0.65, 0.95, 0.4];
-  const max = Math.max(...recent.map((entry) => entry.quantity));
-  const heights = recent.map((entry) => (max > 0 ? entry.quantity / max : 0.5));
-  while (heights.length < 7) heights.unshift(0.45);
-  return heights;
+  return {
+    labels: recent.map((entry) =>
+      new Date(entry.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    ),
+    values: recent.map((entry) => Math.max(entry.quantity, 0)),
+  };
+}
+
+function computeEfficiencyTrend(entries: FuelEntry[]) {
+  const sorted = [...entries].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
+  const points: { label: string; value: number }[] = [];
+
+  for (let i = 1; i < sorted.length; i++) {
+    const miles = sorted[i].mileageAtFill - sorted[i - 1].mileageAtFill;
+    const gallons =
+      sorted[i].unit === "gallons"
+        ? sorted[i].quantity
+        : sorted[i].quantity * 0.264172;
+    if (miles <= 0 || gallons <= 0) continue;
+    points.push({
+      label: new Date(sorted[i].date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      value: Math.round((miles / gallons) * 10) / 10,
+    });
+  }
+
+  return points.slice(-7);
+}
+
+function computeMonthlySpend(fuelEntries: FuelEntry[], maintenanceEntries: MaintenanceEntry[]) {
+  const monthTotals = new Map<string, { fuel: number; maintenance: number }>();
+  const allDates = [
+    ...fuelEntries.map((entry) => entry.date),
+    ...maintenanceEntries.map((entry) => entry.date),
+  ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  const latestDate = allDates.length > 0 ? new Date(allDates[allDates.length - 1]) : new Date();
+  const start = new Date(latestDate.getFullYear(), latestDate.getMonth() - 4, 1);
+
+  for (let index = 0; index < 5; index++) {
+    const date = new Date(start.getFullYear(), start.getMonth() + index, 1);
+    monthTotals.set(monthKey(date.toISOString()), { fuel: 0, maintenance: 0 });
+  }
+
+  fuelEntries.forEach((entry) => {
+    const key = monthKey(entry.date);
+    const current = monthTotals.get(key);
+    if (current) current.fuel += entry.totalCost ?? 0;
+  });
+
+  maintenanceEntries.forEach((entry) => {
+    const key = monthKey(entry.date);
+    const current = monthTotals.get(key);
+    if (current) current.maintenance += entry.cost ?? 0;
+  });
+
+  const months = Array.from(monthTotals.entries());
+  return {
+    labels: months.map(([key]) => monthLabel(key)),
+    data: months.map(([, totals]) => [totals.fuel, totals.maintenance]),
+    hasSpend: months.some(([, totals]) => totals.fuel > 0 || totals.maintenance > 0),
+  };
 }
 
 export default function DashboardOverview() {
   const scheme = useColorScheme() ?? "light";
+  const { width } = useWindowDimensions();
   const c = Colors[scheme];
   const fuelEntries = useFuelStore((state) => state.entries);
   const maintenanceEntries = useMaintenanceStore((state) => state.entries);
@@ -75,7 +146,12 @@ export default function DashboardOverview() {
 
   const avgMPG = useMemo(() => computeAvgEfficiency(fuelEntries), [fuelEntries]);
   const nextService = useMemo(() => getNextService(maintenanceEntries), [maintenanceEntries]);
-  const barHeights = useMemo(() => computeBarHeights(fuelEntries), [fuelEntries]);
+  const fuelQuantityChart = useMemo(() => computeFuelQuantityChart(fuelEntries), [fuelEntries]);
+  const efficiencyTrend = useMemo(() => computeEfficiencyTrend(fuelEntries), [fuelEntries]);
+  const monthlySpend = useMemo(
+    () => computeMonthlySpend(fuelEntries, maintenanceEntries),
+    [fuelEntries, maintenanceEntries],
+  );
   const insuranceDocs = useMemo(
     () => documents.filter((doc) => doc.type === "insurance"),
     [documents],
@@ -99,7 +175,7 @@ export default function DashboardOverview() {
   );
 
   const vehicles = useVehiclesStore((state) => state.vehicles);
-  const [bannerVisible, setBannerVisible] = useState(true);
+  const [bannerVisible, setBannerVisible] = useState(false);
   const [uploadSheetVisible, setUploadSheetVisible] = useState(false);
   const pulse = useRef(new Animated.Value(1)).current;
 
@@ -109,6 +185,8 @@ export default function DashboardOverview() {
   };
 
   useEffect(() => {
+    if (!HIDDEN_FEATURE_WIDGETS_VISIBLE) return;
+
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
@@ -137,6 +215,83 @@ export default function DashboardOverview() {
         }
       : { fuel: 0.5, maintenance: 0.5 };
   }, [totalFuelSpend, totalMaintenanceSpend]);
+
+  const chartWidth = Math.max(width - 72, 260);
+  const compactChartWidth = Math.max(width - 88, 244);
+  const chartConfig = useMemo(
+    () => ({
+      backgroundGradientFrom: c.card,
+      backgroundGradientFromOpacity: 0,
+      backgroundGradientTo: c.card,
+      backgroundGradientToOpacity: 0,
+      color: (opacity = 1) =>
+        scheme === "dark"
+          ? `rgba(240, 240, 240, ${opacity})`
+          : `rgba(26, 26, 26, ${opacity})`,
+      labelColor: (opacity = 1) =>
+        scheme === "dark"
+          ? `rgba(155, 161, 166, ${opacity})`
+          : `rgba(115, 115, 115, ${opacity})`,
+      decimalPlaces: 0,
+      propsForBackgroundLines: {
+        stroke: c.border,
+        strokeDasharray: "4 6",
+      },
+      propsForLabels: {
+        fontSize: 9,
+        fontWeight: "600",
+      },
+      barPercentage: 0.58,
+      fillShadowGradient: c.tint,
+      fillShadowGradientOpacity: 1,
+      strokeWidth: 2,
+    }),
+    [c.border, c.card, c.tint, scheme],
+  );
+
+  const fuelQuantityData = useMemo(
+    () => ({
+      labels: fuelQuantityChart.labels.length > 0 ? fuelQuantityChart.labels : [""],
+      datasets: [{ data: fuelQuantityChart.values.length > 0 ? fuelQuantityChart.values : [0] }],
+    }),
+    [fuelQuantityChart],
+  );
+
+  const efficiencyTrendData = useMemo(
+    () => ({
+      labels: efficiencyTrend.length > 0 ? efficiencyTrend.map((point) => point.label) : [""],
+      datasets: [
+        {
+          data: efficiencyTrend.length > 0 ? efficiencyTrend.map((point) => point.value) : [0],
+          color: (opacity = 1) =>
+            scheme === "dark"
+              ? `rgba(240, 240, 240, ${opacity})`
+              : `rgba(26, 26, 26, ${opacity})`,
+          strokeWidth: 2,
+        },
+      ],
+    }),
+    [efficiencyTrend, scheme],
+  );
+
+  const monthlySpendData = useMemo(
+    () => ({
+      labels: monthlySpend.labels,
+      legend: ["Fuel", "Maintenance"],
+      data: monthlySpend.data,
+      barColors: ["#f59e0b", "#0ea5e9"],
+    }),
+    [monthlySpend],
+  );
+
+  const allocationData = useMemo(
+    () => ({
+      labels: ["Fuel", "Maintenance"],
+      data: [budgetRatio.fuel, budgetRatio.maintenance],
+      colors: ["#f59e0b", "#0ea5e9"],
+    }),
+    [budgetRatio],
+  );
 
   const upcomingReminder = nextService
     ? `Reminder for your upcoming service: "${nextService.type.replace(/_/g, " ").toUpperCase()}" scheduled for ${fmtDate(
@@ -214,8 +369,8 @@ export default function DashboardOverview() {
   }
 
   return (
-    <View style={styles.content}>
-      {bannerVisible && (
+    <ScrollView contentContainerStyle={styles.content}>
+      {HIDDEN_FEATURE_WIDGETS_VISIBLE && bannerVisible && (
         <Animated.View
           style={[
             styles.banner,
@@ -239,54 +394,60 @@ export default function DashboardOverview() {
         </Animated.View>
       )}
 
-      <View style={[styles.efficiencyCard, { backgroundColor: c.card, borderColor: c.border }]}> 
-          <Text style={[styles.cardLabel, { color: c.subtext }]}>CORE EFFICIENCY</Text>
-          <View style={styles.metricRow}>
-            <Text style={[styles.metricValue, { color: c.text }]}> {avgMPG !== null ? String(avgMPG) : "—"} </Text>
-            <Text style={[styles.metricUnit, { color: c.subtext }]}> {avgMPG !== null ? "MPGe" : "No data"} </Text>
-          </View>
-          <Text style={[styles.metricSub, { color: c.subtext }]}>+4.2% from last cycle</Text>
-          <View style={styles.miniChart}>
-            {barHeights.map((height, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.bar,
-                  {
-                    height: `${Math.round(height * 100)}%` as any,
-                    backgroundColor: index === barHeights.length - 1 ? c.tint : c.border,
-                  },
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={[styles.serviceCard, { backgroundColor: c.tint }]}> 
-          <Text style={styles.serviceLabel}>UPCOMING SERVICE FOCUS</Text>
-          <Text style={styles.serviceTitle} numberOfLines={2}>
-            {nextService ? nextService.type.replace(/_/g, " ").toUpperCase() : "No service scheduled yet."}
-          </Text>
-          {nextService ? (
-            <Text style={styles.serviceDescription} numberOfLines={3}>
-              {nextService.description ?? "Simulated alerts trigger."}
-            </Text>
-          ) : null}
-          <View style={styles.serviceFooter}>
-            <View>
-              <Text style={styles.serviceFooterLabel}>SCHEDULED ON</Text>
-              <Text style={styles.serviceFooterValue}>
-                {nextService ? fmtDate(nextService.date) : "—"}
-              </Text>
+      {HIDDEN_FEATURE_WIDGETS_VISIBLE && (
+        <>
+          <View style={[styles.efficiencyCard, { backgroundColor: c.card, borderColor: c.border }]}> 
+            <Text style={[styles.cardLabel, { color: c.subtext }]}>CORE EFFICIENCY</Text>
+            <View style={styles.metricRow}>
+              <Text style={[styles.metricValue, { color: c.text }]}> {avgMPG !== null ? String(avgMPG) : "—"} </Text>
+              <Text style={[styles.metricUnit, { color: c.subtext }]}> {avgMPG !== null ? "MPGe" : "No data"} </Text>
             </View>
-            <TouchableOpacity
-              style={styles.serviceButton}
-              onPress={() => router.push("/maintenance")}
-            >
-              <Text style={styles.serviceButtonText}>PLANNER</Text>
-            </TouchableOpacity>
+            <Text style={[styles.metricSub, { color: c.subtext }]}>+4.2% from last cycle</Text>
+            <View style={styles.miniChart}>
+              <BarChart
+                data={fuelQuantityData}
+                width={compactChartWidth}
+                height={70}
+                chartConfig={chartConfig}
+                fromZero
+                showBarTops={false}
+                withHorizontalLabels={false}
+                withVerticalLabels={false}
+                withInnerLines={false}
+                yAxisLabel=""
+                yAxisSuffix=""
+                style={styles.chart}
+              />
+            </View>
           </View>
-        </View>
+
+          <View style={[styles.serviceCard, { backgroundColor: c.tint }]}> 
+            <Text style={styles.serviceLabel}>UPCOMING SERVICE FOCUS</Text>
+            <Text style={styles.serviceTitle} numberOfLines={2}>
+              {nextService ? nextService.type.replace(/_/g, " ").toUpperCase() : "No service scheduled yet."}
+            </Text>
+            {nextService ? (
+              <Text style={styles.serviceDescription} numberOfLines={3}>
+                {nextService.description ?? "Simulated alerts trigger."}
+              </Text>
+            ) : null}
+            <View style={styles.serviceFooter}>
+              <View>
+                <Text style={styles.serviceFooterLabel}>SCHEDULED ON</Text>
+                <Text style={styles.serviceFooterValue}>
+                  {nextService ? fmtDate(nextService.date) : "—"}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.serviceButton}
+                onPress={() => router.push("/maintenance")}
+              >
+                <Text style={styles.serviceButtonText}>PLANNER</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </>
+      )}
 
       <View style={[styles.vaultCard, { backgroundColor: c.card, borderColor: c.border }]}> 
         <View style={styles.vaultHeader}>
@@ -317,75 +478,121 @@ export default function DashboardOverview() {
         )}
       </View>
 
-      <View style={[styles.analyticsCard, { backgroundColor: c.card, borderColor: c.border }]}> 
-        <Text style={[styles.cardLabel, { color: c.subtext }]}>ANALYTICS ENGINE</Text>
-        <View style={styles.sectionBlock}>
-          <View style={styles.statsRow}>
-            <View style={[styles.statsCard, { backgroundColor: c.background, borderColor: c.border }]}> 
-              <Text style={[styles.statsLabel, { color: c.subtext }]}>TOTAL SPEND</Text>
-              <Text style={[styles.statsValue, { color: c.text }]}>${totalSpend.toFixed(2)}</Text>
-              <Text style={[styles.statsMeta, { color: c.subtext }]}>Synced logs</Text>
-            </View>
-            <View style={[styles.statsCard, { backgroundColor: c.background, borderColor: c.border }]}> 
-              <Text style={[styles.statsLabel, { color: c.subtext }]}>AVG ECONOMY</Text>
-              <Text style={[styles.statsValue, { color: c.text }]}>{avgEconomy ? `${avgEconomy} MPG` : "N/A"}</Text>
-              <Text style={[styles.statsMeta, { color: c.subtext }]}>{fuelEntries.length} fillups logged</Text>
+      {HIDDEN_FEATURE_WIDGETS_VISIBLE && (
+        <>
+          <View style={[styles.analyticsCard, { backgroundColor: c.card, borderColor: c.border }]}> 
+            <Text style={[styles.cardLabel, { color: c.subtext }]}>ANALYTICS ENGINE</Text>
+            <View style={styles.sectionBlock}>
+              <View style={styles.statsRow}>
+                <View style={[styles.statsCard, { backgroundColor: c.background, borderColor: c.border }]}> 
+                  <Text style={[styles.statsLabel, { color: c.subtext }]}>TOTAL SPEND</Text>
+                  <Text style={[styles.statsValue, { color: c.text }]}>${totalSpend.toFixed(2)}</Text>
+                  <Text style={[styles.statsMeta, { color: c.subtext }]}>Synced logs</Text>
+                </View>
+                <View style={[styles.statsCard, { backgroundColor: c.background, borderColor: c.border }]}> 
+                  <Text style={[styles.statsLabel, { color: c.subtext }]}>AVG ECONOMY</Text>
+                  <Text style={[styles.statsValue, { color: c.text }]}>{avgEconomy ? `${avgEconomy} MPG` : "N/A"}</Text>
+                  <Text style={[styles.statsMeta, { color: c.subtext }]}>{fuelEntries.length} fillups logged</Text>
+                </View>
+              </View>
             </View>
           </View>
-        </View>
-      </View>
 
-      <View style={[styles.trendCard, { backgroundColor: c.card, borderColor: c.border }]}> 
-        <Text style={[styles.cardLabel, { color: c.subtext }]}>FUEL EFFICIENCY</Text>
-        <View style={styles.sectionBlock}>
-          <Text style={[styles.graphTitle, { color: c.text }]}>Fuel Efficiency Trend</Text>
-          <Text style={[styles.graphSubtitle, { color: c.subtext }]}>Real-time calculations between sequential tank fills</Text>
-          <View style={styles.trendChart}>
-            {barHeights.map((height, index) => (
-              <View key={index} style={[styles.trendBar, { height: `${Math.round(height * 100)}%` as any, backgroundColor: index === barHeights.length - 1 ? c.tint : c.border }]} />
-            ))}
+          <View style={[styles.trendCard, { backgroundColor: c.card, borderColor: c.border }]}> 
+            <Text style={[styles.cardLabel, { color: c.subtext }]}>FUEL EFFICIENCY</Text>
+            <View style={styles.sectionBlock}>
+              <Text style={[styles.graphTitle, { color: c.text }]}>Fuel Efficiency Trend</Text>
+              <Text style={[styles.graphSubtitle, { color: c.subtext }]}>Real-time calculations between sequential tank fills</Text>
+              <View style={styles.trendChart}>
+                <LineChart
+                  data={efficiencyTrendData}
+                  width={chartWidth}
+                  height={150}
+                  chartConfig={chartConfig}
+                  bezier
+                  fromZero
+                  withDots={efficiencyTrend.length > 1}
+                  withShadow={false}
+                  withInnerLines
+                  withOuterLines={false}
+                  yAxisLabel=""
+                  yAxisSuffix=""
+                  style={styles.chart}
+                />
+              </View>
+              {efficiencyTrend.length === 0 ? (
+                <Text style={[styles.emptyChartText, { color: c.subtext }]}>
+                  Add two sequential fuel logs with mileage to draw the trend.
+                </Text>
+              ) : null}
+            </View>
           </View>
-        </View>
-      </View>
 
-      <View style={[styles.budgetCard, { backgroundColor: c.card, borderColor: c.border }]}> 
-        <Text style={[styles.cardLabel, { color: c.subtext }]}>SPENDING & BUDGET</Text>
-        <View style={styles.sectionBlock}>
-          <Text style={[styles.graphTitle, { color: c.text }]}>Monthly Spending Profile</Text>
-          <View style={styles.stackChart}> 
-            <View style={[styles.stackBar, { flex: budgetRatio.fuel, backgroundColor: "#f59e0b" }]} />
-            <View style={[styles.stackBar, { flex: budgetRatio.maintenance, backgroundColor: "#0ea5e9" }]} />
-          </View>
-          <View style={styles.budgetLegendRow}> 
-            <View style={styles.budgetLegendItem}> 
-              <View style={[styles.legendDot, { backgroundColor: "#f59e0b" }]} />
-              <Text style={[styles.legendLabel, { color: c.text }]}>Fuel</Text>
+          <View style={[styles.budgetCard, { backgroundColor: c.card, borderColor: c.border }]}> 
+            <Text style={[styles.cardLabel, { color: c.subtext }]}>SPENDING & BUDGET</Text>
+            <View style={styles.sectionBlock}>
+              <Text style={[styles.graphTitle, { color: c.text }]}>Monthly Spending Profile</Text>
+              <View style={styles.stackChart}>
+                <StackedBarChart
+                  data={monthlySpendData}
+                  width={chartWidth}
+                  height={142}
+                  chartConfig={chartConfig}
+                  hideLegend
+                  fromZero
+                  segments={3}
+                  decimalPlaces={0}
+                  withHorizontalLabels={monthlySpend.hasSpend}
+                  withVerticalLabels
+                  style={styles.chart}
+                />
+              </View>
+              {!monthlySpend.hasSpend ? (
+                <Text style={[styles.emptyChartText, { color: c.subtext }]}>
+                  Fuel and maintenance costs will appear here as logs are added.
+                </Text>
+              ) : null}
+              <View style={styles.budgetLegendRow}> 
+                <View style={styles.budgetLegendItem}> 
+                  <View style={[styles.legendDot, { backgroundColor: "#f59e0b" }]} />
+                  <Text style={[styles.legendLabel, { color: c.text }]}>Fuel</Text>
+                </View>
+                <View style={styles.budgetLegendItem}> 
+                  <View style={[styles.legendDot, { backgroundColor: "#0ea5e9" }]} />
+                  <Text style={[styles.legendLabel, { color: c.text }]}>Maintenance</Text>
+                </View>
+              </View>
             </View>
-            <View style={styles.budgetLegendItem}> 
-              <View style={[styles.legendDot, { backgroundColor: "#0ea5e9" }]} />
-              <Text style={[styles.legendLabel, { color: c.text }]}>Maintenance</Text>
-            </View>
-          </View>
-        </View>
 
-        <View style={styles.sectionBlock}>
-          <Text style={[styles.graphTitle, { color: c.text }]}>Budget Allocation</Text>
-          <View style={styles.budgetRow}> 
-            <View style={[styles.donut, { borderColor: c.border }]}> 
-              <View style={[styles.donutSegment, { backgroundColor: "#f59e0b", flex: budgetRatio.fuel }]} />
-              <View style={[styles.donutSegment, { backgroundColor: "#0ea5e9", flex: budgetRatio.maintenance }]} />
-            </View>
-            <View style={styles.budgetText}> 
-              <Text style={[styles.budgetHeading, { color: c.text }]}>Budget Allocation</Text>
-              <Text style={[styles.budgetDetail, { color: c.subtext }]}>Fueling Expenses</Text>
-              <Text style={[styles.budgetAmount, { color: c.text }]}>${totalFuelSpend.toFixed(2)}</Text>
-              <Text style={[styles.budgetDetail, { color: c.subtext, marginTop: 8 }]}>Vehicle Maintenance</Text>
-              <Text style={[styles.budgetAmount, { color: c.text }]}>${totalMaintenanceSpend.toFixed(2)}</Text>
+            <View style={styles.sectionBlock}>
+              <Text style={[styles.graphTitle, { color: c.text }]}>Budget Allocation</Text>
+              <View style={styles.budgetRow}> 
+                <View style={styles.progressChart}>
+                  <ProgressChart
+                    data={allocationData}
+                    width={112}
+                    height={112}
+                    chartConfig={chartConfig}
+                    hideLegend
+                    strokeWidth={10}
+                    radius={28}
+                    withCustomBarColorFromData
+                    style={styles.chart}
+                  />
+                </View>
+                <View style={styles.budgetText}> 
+                  <Text style={[styles.budgetHeading, { color: c.text }]}>Budget Allocation</Text>
+                  <Text style={[styles.budgetDetail, { color: c.subtext }]}>Fueling Expenses</Text>
+                  <Text style={[styles.budgetAmount, { color: c.text }]}>${totalFuelSpend.toFixed(2)}</Text>
+                  <Text style={[styles.budgetDetail, { color: c.subtext, marginTop: 8 }]}>Vehicle Maintenance</Text>
+                  <Text style={[styles.budgetAmount, { color: c.text }]}>${totalMaintenanceSpend.toFixed(2)}</Text>
+                </View>
+              </View>
             </View>
           </View>
-        </View>
-      </View>
-    </View>
+        </>
+      )}
+    </ScrollView>
   );
 }
 
@@ -418,7 +625,7 @@ const styles = StyleSheet.create({
   metricValue: { fontSize: 48, fontWeight: "300", lineHeight: 52 },
   metricUnit: { fontSize: 14, fontWeight: "300", marginBottom: 6 },
   metricSub: { fontSize: 10, fontWeight: "500" },
-  miniChart: { flexDirection: "row", alignItems: "flex-end", height: 52, gap: 4, marginTop: 16 },
+  miniChart: { height: 70, marginTop: 12, marginLeft: -18, overflow: "hidden" },
   bar: { flex: 1, borderRadius: 4, minHeight: 6 },
   serviceLabel: { fontSize: 9, fontWeight: "700", letterSpacing: 2, color: "rgba(255,255,255,0.65)", textTransform: "uppercase" },
   serviceTitle: { fontSize: 18, fontWeight: "300", color: "#fff", marginTop: 10, lineHeight: 24, textTransform: "capitalize" },
@@ -572,15 +779,18 @@ const styles = StyleSheet.create({
   },
   graphTitle: { fontSize: 12, fontWeight: "700" },
   graphSubtitle: { fontSize: 10, lineHeight: 14 },
-  trendChart: { flexDirection: "row", alignItems: "flex-end", height: 96, gap: 6, paddingHorizontal: 4 },
+  chart: { marginLeft: -16, borderRadius: 16 },
+  emptyChartText: { fontSize: 10, lineHeight: 15, marginTop: -2 },
+  trendChart: { height: 150, marginLeft: -6, overflow: "hidden" },
   trendBar: { flex: 1, borderRadius: 6, minHeight: 10 },
-  stackChart: { flexDirection: "row", height: 18, borderRadius: 12, overflow: "hidden", marginTop: 10 },
+  stackChart: { height: 142, marginLeft: -6, overflow: "hidden", marginTop: 4 },
   stackBar: { minHeight: 18 },
   budgetLegendRow: { flexDirection: "row", gap: 10, marginTop: 10 },
   budgetLegendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: 99 },
   legendLabel: { fontSize: 11, fontWeight: "600" },
   budgetRow: { flexDirection: "row", gap: 16, alignItems: "center", marginTop: 14 },
+  progressChart: { width: 96, height: 96, overflow: "hidden", justifyContent: "center", alignItems: "center" },
   donut: { width: 84, height: 84, borderRadius: 42, borderWidth: 6, overflow: "hidden", flexDirection: "row" },
   donutSegment: { minHeight: 84 },
   budgetText: { flex: 1, gap: 8 },

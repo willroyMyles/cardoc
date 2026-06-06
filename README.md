@@ -25,6 +25,38 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Firebase Hosting
+
+This repo includes a static one-page website in **site** and Firebase Hosting configuration for the `car-doc-1666e` Firebase project.
+
+Preview the hosted site locally:
+
+```bash
+npm run hosting:serve
+```
+
+Deploy to Firebase Hosting:
+
+```bash
+npm run hosting:deploy
+```
+
+Create a temporary preview channel:
+
+```bash
+npm run hosting:preview
+```
+
+## Firebase Functions
+
+Cloud Functions live in **functions**. The `deleteUserOnlineData` callable function lets an authenticated user permanently delete their Firestore sync data at `users/{uid}`. Pass `deleteAuthAccount: true` to also remove the caller's Firebase Auth account.
+
+Deploy the functions:
+
+```bash
+npm run functions:deploy
+```
+
 ## Get a fresh project
 
 When you're ready, run:

@@ -1,8 +1,4 @@
-import { AppointmentsTabContent } from "@/components/appointments/appointments-tab-content";
-import DashboardOverview from "@/components/dashboard/dashboard";
 import { DocVaultScreen } from "@/components/documents/doc-vault-screen";
-import { FuelTabContent } from "@/components/fuel/fuel-tab-content";
-import { MaintenanceTabContent } from "@/components/maintenance/maintenance-tab-content";
 import { TicketTabContent } from "@/components/tickets/ticket-tab-content";
 import { CarHeader, CarHeaderTab } from "@/components/vehicles/car-header";
 import { Colors } from "@/constants/theme";
@@ -41,7 +37,7 @@ export default function HomeScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<CarHeaderTab>("dashboard");
+  const [activeTab, setActiveTab] = useState<CarHeaderTab>("doc vault");
   const vehicles = useVehiclesStore((s) => s.vehicles);
 
   const onRefresh = useCallback(() => {
@@ -50,20 +46,14 @@ export default function HomeScreen() {
   }, []);
 
   const renderTabContent = () => {
-    if (activeTab === "fuel") {
-      return <FuelTabContent />;
-    }
-
-    if (activeTab === "tickets") {
-      return <TicketTabContent />;
-    }
-
     return (
       <View style={styles.contentContainer}>
-        {activeTab === "dashboard" && <DashboardOverview />}
         {activeTab === "doc vault" && <DocVaultScreen />}
-        {activeTab === "maintenance" && <MaintenanceTabContent />}
+        {/* {activeTab === "maintenance" && <MaintenanceTabContent />}
         {activeTab === "appointments" && <AppointmentsTabContent />}
+        {activeTab === "fuel" && <FuelTabContent />} */}
+        {activeTab === "tickets" && <TicketTabContent />}
+
       </View>
     );
   };

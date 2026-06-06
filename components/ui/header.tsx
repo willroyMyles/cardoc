@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { type Href, router } from "expo-router";
 import React, { type ReactNode } from "react";
 import {
     StyleSheet,
@@ -9,13 +9,14 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
+import { Colors, Spacing } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface HeaderProps {
   title: string;
   onBack?: () => void;
   showBackButton?: boolean;
+  fallbackHref?: Href;
   right?: ReactNode;
   style?: ViewStyle;
 }
@@ -24,6 +25,7 @@ export function Header({
   title,
   onBack,
   showBackButton = true,
+  fallbackHref = "/(tabs)",
   right,
   style,
 }: HeaderProps) {
@@ -36,7 +38,12 @@ export function Header({
       return;
     }
 
-    router.back();
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace(fallbackHref);
   }
 
   return (
@@ -60,7 +67,12 @@ export function Header({
         <View style={styles.spacer} />
       )}
 
-      <ThemedText type="subtitle" style={[styles.title, { color: c.text }]}> 
+      <ThemedText
+        type="subtitle"
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={[styles.title, { color: c.text }]}
+      >
         {title}
       </ThemedText>
 
@@ -75,7 +87,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    paddingHorizontal: Spacing.page,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
@@ -95,10 +107,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: {
+    flex: 1,
     fontSize: 15,
     fontWeight: "300",
     textAlign: "center",
     textTransform: "uppercase",
     letterSpacing: 1.5,
+    marginHorizontal: 8,
   },
 });

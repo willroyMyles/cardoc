@@ -1,6 +1,6 @@
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors, StatusColors } from "@/constants/theme";
+import { Colors, Radius, Spacing, StatusColors, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CarDocument, Vehicle } from "@/models";
 import { getDocumentSpecs } from "@/services/docs-registry";
@@ -300,7 +300,7 @@ export default function InsuranceReviewScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Document type badge */}
-          <View style={[styles.badge, { backgroundColor: "#8B5CF6" }]}>
+          <View style={[styles.badge, { backgroundColor: c.tint }]}>
             <IconSymbol name="shield.fill" size={16} color="#fff" />
             <View>
               <Text style={styles.badgeTitle}>
@@ -466,7 +466,7 @@ export default function InsuranceReviewScreen() {
         {/* Footer */}
         <View style={[styles.footer, { borderTopColor: c.border }]}>
           <TouchableOpacity
-            style={[styles.saveBtn, { backgroundColor: "#8B5CF6" }]}
+            style={[styles.saveBtn, { backgroundColor: c.tint }]}
             onPress={handleSave}
             disabled={saving}
           >
@@ -484,70 +484,57 @@ export default function InsuranceReviewScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  backBtn: { width: 36, alignItems: "flex-start" },
-  title: { fontSize: 17, fontWeight: "600" },
-  scroll: { padding: 16, paddingBottom: 32 },
+  scroll: { padding: Spacing.page, paddingBottom: 32 },
   badge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    borderRadius: 14,
+    borderRadius: Radius.card,
     padding: 14,
     marginBottom: 20,
   },
-  badgeTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  badgeIssuer: { color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 1 },
+  badgeTitle: { color: "#fff", ...Type.title },
+  badgeIssuer: { color: "rgba(255,255,255,0.8)", ...Type.caption, marginTop: 1 },
   section: { marginBottom: 24 },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: "700",
+    ...Type.sectionLabel,
     marginBottom: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   matchCard: {
-    borderRadius: 12,
+    borderRadius: Radius.surface,
     borderWidth: 1,
     padding: 14,
     gap: 6,
   },
   matchCardRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  matchVehicleName: { fontSize: 15, fontWeight: "600" },
-  matchSource: { fontSize: 12, marginTop: 1 },
-  helperText: { fontSize: 13, lineHeight: 18 },
+  matchVehicleName: Type.title,
+  matchSource: { ...Type.caption, marginTop: 1 },
+  helperText: Type.body,
   vehiclePickerList: { gap: 8 },
   vehicleChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: Radius.pill,
     borderWidth: 1,
     marginRight: 8,
   },
   fieldRow: { marginBottom: 14 },
-  fieldLabel: { fontSize: 13, fontWeight: "500", marginBottom: 4 },
+  fieldLabel: { ...Type.sectionLabel, marginBottom: 4 },
   input: {
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: Radius.sm,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === "ios" ? 12 : 9,
     fontSize: 15,
   },
   footer: {
-    padding: 16,
+    padding: Spacing.page,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   saveBtn: {
-    borderRadius: 14,
+    borderRadius: Radius.pill,
     paddingVertical: 15,
     alignItems: "center",
   },
-  saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  saveBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 });

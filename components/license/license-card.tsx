@@ -1,5 +1,6 @@
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
 import { ImageViewerModal } from "@/components/ui/image-viewer-modal";
+import { AccentColor, Colors, Radius, Shadows, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { DynamicDriverLicense } from "@/models";
 import {
@@ -21,7 +22,7 @@ export function LicenseCard({
   onPress,
 }: LicenseCardProps) {
   const scheme = useColorScheme() ?? "light";
-  const isDark = scheme === "dark";
+  const c = Colors[scheme];
   const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   let spec: DriverLicenseSpec | null = specProp ?? null;
@@ -33,14 +34,15 @@ export function LicenseCard({
     }
   }
 
+  const cardBackground = c.card;
+  const borderColor = c.border;
+
   if (!spec) {
     return (
       <TouchableOpacity onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
-        <View
-          style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}
-        >
-          <Text style={styles.headerLabel}>DRIVER'S LICENSE</Text>
-          <Text style={styles.field}>
+        <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}> 
+          <Text style={[styles.headerLabel, { color: c.subtext }]}>{"DRIVER'S LICENSE"}</Text>
+          <Text style={[styles.field, { color: c.text }]}>
             {Object.entries(license.fields)
               .filter(([, v]) => v)
               .slice(0, 4)
@@ -60,60 +62,77 @@ export function LicenseCard({
   return (
     <>
       <TouchableOpacity onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
-        <View
-          style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}
-        >
-          {/* Header */}
+        <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}> 
           <View style={styles.header}>
-            <Text style={styles.headerLabel}>{spec.label.toUpperCase()}</Text>
-            <Text style={styles.issuer}>{spec.issuing_authority}</Text>
+            <View style={styles.headerTextGroup}>
+              <Text style={[styles.headerLabel, { color: c.subtext }]}>
+                {spec.label.toUpperCase()}
+              </Text>
+              <Text style={[styles.issuer, { color: c.text }]}>{spec.issuing_authority}</Text>
+            </View>
+            <View style={[styles.badge, { backgroundColor: c.tint }]}>
+              <Text style={styles.badgeText}>{"Driver's licence"}</Text>
+            </View>
           </View>
-          {/* Body */}
-          <View style={styles.body}>
-            {license.imageUriFront ? (
-              <TouchableOpacity
-                onPress={() =>
-                  canPreviewFront
-                    ? setViewerUri(license.imageUriFront!)
-                    : Alert.alert(
-                        "Cannot preview",
-                        "This license file cannot be previewed here.",
-                      )
-                }
-                activeOpacity={0.8}
-              >
-                {canPreviewFront ? (
-                  <Image
-                    source={{ uri: license.imageUriFront }}
-                    style={styles.photo}
-                  />
-                ) : (
-                  <View style={[styles.photo, styles.photoPlaceholder]}>
-                    <Text style={styles.photoPlaceholderText}>📄</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <View style={[styles.photo, styles.photoPlaceholder]}>
-                <Text style={styles.photoPlaceholderText}>📷</Text>
-              </View>
-            )}
-            <View style={styles.details}>
+
+          <View style={styles.body}> 
+            <View style={styles.photoContainer}>
+              {license.imageUriFront ? (
+                <TouchableOpacity
+                  onPress={() =>
+                    canPreviewFront
+                      ? setViewerUri(license.imageUriFront!)
+                      : Alert.alert(
+                          "Cannot preview",
+                          "This license file cannot be previewed here.",
+                        )
+                  }
+                  activeOpacity={0.8}
+                >
+                  {canPreviewFront ? (
+                    <Image
+                      source={{ uri: license.imageUriFront }}
+                      style={[styles.photo, { borderColor: c.border }]}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.photo,
+                        styles.photoPlaceholder,
+                        { backgroundColor: c.background, borderColor: c.border },
+                      ]}
+                    >
+                      <Text style={[styles.photoPlaceholderText, { color: c.subtext }]}>Doc</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <View
+                  style={[
+                    styles.photo,
+                    styles.photoPlaceholder,
+                    { backgroundColor: c.background, borderColor: c.border },
+                  ]}
+                >
+                  <Text style={[styles.photoPlaceholderText, { color: AccentColor }]}>Photo</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.details}> 
               {Object.entries(spec.fields).map(([key, fieldSpec]) => {
                 const val = license.fields[key];
                 if (!val) return null;
                 if (key === "fullName") {
                   return (
-                    <Text key={key} style={styles.name}>
+                    <Text key={key} style={[styles.name, { color: c.text }]} numberOfLines={2}>
                       {val}
                     </Text>
                   );
                 }
                 return (
-                  <Text key={key} style={styles.field}>
-                    <Text style={styles.fieldLabel}>
-                      {(fieldSpec.label ?? key) + ": "}
-                    </Text>
+                  <Text key={key} style={[styles.field, { color: c.text }]} numberOfLines={1}>
+                    <Text style={[styles.fieldLabel, { color: c.subtext }]}>{(fieldSpec.label ?? key) + ": "}</Text>
                     {fieldSpec.type === "date"
                       ? new Date(val).toLocaleDateString()
                       : val}
@@ -122,23 +141,23 @@ export function LicenseCard({
               })}
             </View>
           </View>
-          {/* Footer */}
-          <View style={styles.footer}>
-            <View style={styles.footerRow}>
+
+          <View style={[styles.footer, { borderTopColor: c.border }]}> 
+            <View style={styles.footerRow}> 
               {!!license.fields.issueDate && (
-                <Text style={styles.footerField}>
-                  <Text style={styles.expiryLabel}>Issued: </Text>
-                  <Text style={styles.expiryDate}>
+                <Text style={[styles.footerField, { color: c.text }]}>
+                  <Text style={[styles.expiryLabel, { color: c.subtext }]}>Issued:</Text>{" "}
+                  <Text style={[styles.expiryDate, { color: c.text }]}>
                     {new Date(license.fields.issueDate).toLocaleDateString()}
                   </Text>
                 </Text>
               )}
             </View>
             {!!license.fields.expiryDate && (
-              <>
-                <Text style={styles.expiryLabel}>Expires</Text>
-                <View style={styles.expiryRow}>
-                  <Text style={styles.expiryDate}>
+              <> 
+                <Text style={[styles.expiryLabel, { color: c.subtext }]}>Expires</Text>
+                <View style={styles.expiryRow}> 
+                  <Text style={[styles.expiryDate, { color: c.text }]}>
                     {new Date(license.fields.expiryDate).toLocaleDateString()}
                   </Text>
                   <ExpiryIndicator expiryDate={license.fields.expiryDate} />
@@ -149,71 +168,111 @@ export function LicenseCard({
         </View>
       </TouchableOpacity>
 
-      <ImageViewerModal
-        visible={!!viewerUri}
-        uri={viewerUri}
-        onClose={() => setViewerUri(null)}
-      />
+      <ImageViewerModal visible={!!viewerUri} uri={viewerUri} onClose={() => setViewerUri(null)} />
     </>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 20,
-    gap: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
+    marginHorizontal: Spacing.page,
+    borderRadius: Radius.card,
+    padding: Spacing.cardPadding,
+    gap: Spacing.stackGap,
+    borderWidth: 1,
+    ...Shadows.card,
   },
-  cardLight: { backgroundColor: "#1A4C8F" },
-  cardDark: { backgroundColor: "#0D2A55" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  headerTextGroup: {
+    flex: 1,
   },
   headerLabel: {
-    color: "rgba(255,255,255,0.8)",
+    ...Type.sectionLabel,
+  },
+  issuer: {
+    ...Type.caption,
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  badge: {
+    borderRadius: Radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  badgeText: {
+    color: "#fff",
     fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
-  issuer: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  body: { flexDirection: "row", gap: 16 },
-  photo: { width: 72, height: 88, borderRadius: 8 },
+  body: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  photoContainer: {
+    width: 98,
+  },
+  photo: {
+    width: 98,
+    height: 118,
+    borderRadius: Radius.surface,
+    borderWidth: 1,
+  },
   photoPlaceholder: {
-    backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
-  photoPlaceholderText: { fontSize: 28 },
-  details: { flex: 1, gap: 4 },
-  name: { color: "#fff", fontSize: 17, fontWeight: "700" },
-  field: { color: "rgba(255,255,255,0.9)", fontSize: 13 },
-  fieldLabel: { color: "rgba(255,255,255,0.6)", fontSize: 12 },
+  photoPlaceholderText: {
+    ...Type.caption,
+    fontWeight: "700",
+  },
+  details: {
+    flex: 1,
+    gap: 8,
+    justifyContent: "center",
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: "800",
+    lineHeight: 24,
+  },
+  field: {
+    ...Type.body,
+  },
+  fieldLabel: {
+    ...Type.caption,
+    fontWeight: "600",
+  },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.2)",
-    paddingTop: 12,
-    gap: 4,
+    paddingTop: 14,
+    gap: 10,
   },
   footerRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 6,
+    gap: 10,
   },
-  footerField: { color: "rgba(255,255,255,0.9)", fontSize: 12 },
-  expiryLabel: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 11,
+  footerField: {
+    ...Type.caption,
     fontWeight: "600",
   },
-  expiryRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  expiryDate: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  expiryLabel: {
+    ...Type.sectionLabel,
+    fontWeight: "700",
+  },
+  expiryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  expiryDate: {
+    ...Type.body,
+    fontWeight: "700",
+  },
 });

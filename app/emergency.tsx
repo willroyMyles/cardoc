@@ -1,6 +1,6 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Header } from "@/components/ui/header";
-import { Colors, StatusColors } from "@/constants/theme";
+import { Colors, Radius, Spacing, StatusColors, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLicenseStore, useVehiclesStore } from "@/store";
 import { router } from "expo-router";
@@ -10,7 +10,6 @@ import {
     ScrollView,
     StyleSheet,
     Text,
-    TouchableOpacity,
     View,
 } from "react-native";
 
@@ -21,14 +20,14 @@ export default function EmergencyScreen() {
   const vehicles = useVehiclesStore((s) => s.vehicles);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: "#0f172a" }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header */}
         <Header title="Emergency Card" onBack={() => router.back()} />
 
         {/* Driver info */}
-        <View style={[styles.card, { backgroundColor: "#1e293b" }]}>
-          <Text style={styles.sectionTitle}>Driver Information</Text>
+        <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
+          <Text style={[styles.sectionTitle, { color: c.subtext }]}>Driver Information</Text>
           {license ? (
             <>
               <Row label="Full Name" value={license.fields.fullName ?? "—"} />
@@ -50,24 +49,26 @@ export default function EmergencyScreen() {
               ) : null}
             </>
           ) : (
-            <Text style={styles.empty}>
-              No driver's license saved. Add it in the License section.
+            <Text style={[styles.empty, { color: c.subtext }]}>
+              {"No driver's license saved. Add it in the License section."}
             </Text>
           )}
         </View>
 
         {/* Vehicles */}
         {vehicles.length > 0 && (
-          <View style={[styles.card, { backgroundColor: "#1e293b" }]}>
-            <Text style={styles.sectionTitle}>Registered Vehicles</Text>
+          <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Text style={[styles.sectionTitle, { color: c.subtext }]}>Registered Vehicles</Text>
             {vehicles.map((v) => (
               <View key={v.id} style={styles.vehicleRow}>
-                <IconSymbol name="car.fill" size={16} color="#94a3b8" />
+                <View style={styles.iconTile}>
+                  <IconSymbol name="car.fill" size={16} color="#F59E0B" />
+                </View>
                 <View>
-                  <Text style={styles.vehicleName}>
+                  <Text style={[styles.vehicleName, { color: c.text }]}>
                     {v.year} {v.make} {v.model}
                   </Text>
-                  <Text style={styles.vehiclePlate}>
+                  <Text style={[styles.vehiclePlate, { color: c.subtext }]}>
                     {v.licensePlate}
                     {v.vin ? ` · ${v.vin}` : ""}
                   </Text>
@@ -78,14 +79,22 @@ export default function EmergencyScreen() {
         )}
 
         {/* Emergency note */}
-        <View style={[styles.card, { backgroundColor: "#7f1d1d" }]}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: StatusColors.dangerBg,
+              borderColor: StatusColors.danger,
+            },
+          ]}
+        >
           <View style={styles.noteRow}>
             <IconSymbol
               name="exclamationmark.triangle.fill"
               size={18}
               color={StatusColors.danger}
             />
-            <Text style={styles.noteText}>
+            <Text style={[styles.noteText, { color: StatusColors.danger }]}>
               Show this screen to emergency services or law enforcement when
               requested.
             </Text>
@@ -97,17 +106,19 @@ export default function EmergencyScreen() {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
+  const scheme = useColorScheme() ?? "light";
+  const c = Colors[scheme];
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
+      <Text style={[styles.rowLabel, { color: c.subtext }]}>{label}</Text>
+      <Text style={[styles.rowValue, { color: c.text }]}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, paddingBottom: 40, gap: 14 },
+  scroll: { padding: Spacing.page, paddingBottom: 40, gap: Spacing.rowGap },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -116,13 +127,14 @@ const styles = StyleSheet.create({
   },
   sosLabel: { flexDirection: "row", alignItems: "center", gap: 6 },
   sosText: { color: "#fff", fontSize: 18, fontWeight: "700" },
-  card: { borderRadius: 14, padding: 16, gap: 8 },
+  card: {
+    borderRadius: Radius.card,
+    borderWidth: 1,
+    padding: Spacing.cardPadding,
+    gap: 8,
+  },
   sectionTitle: {
-    color: "#94a3b8",
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
+    ...Type.sectionLabel,
     marginBottom: 4,
   },
   row: {
@@ -130,9 +142,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 4,
   },
-  rowLabel: { color: "#94a3b8", fontSize: 14 },
+  rowLabel: Type.body,
   rowValue: {
-    color: "#f1f5f9",
     fontSize: 14,
     fontWeight: "600",
     flexShrink: 1,
@@ -144,9 +155,17 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 4,
   },
-  vehicleName: { color: "#f1f5f9", fontSize: 14, fontWeight: "600" },
-  vehiclePlate: { color: "#94a3b8", fontSize: 12 },
-  empty: { color: "#64748b", fontSize: 14 },
+  iconTile: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.tile,
+    backgroundColor: "#1A1A1A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  vehicleName: Type.title,
+  vehiclePlate: Type.caption,
+  empty: Type.body,
   noteRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  noteText: { color: "#fca5a5", fontSize: 13, flex: 1, lineHeight: 20 },
+  noteText: { ...Type.body, flex: 1, fontWeight: "600" },
 });

@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Shadows, Spacing } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import React from "react";
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
@@ -9,7 +9,7 @@ interface CardProps {
   padding?: number;
 }
 
-export function Card({ children, style, padding = 20 }: CardProps) {
+export function Card({ children, style, padding = Spacing.cardPadding }: CardProps) {
   const scheme = useColorScheme() ?? "light";
   return (
     <View
@@ -30,12 +30,8 @@ export function Card({ children, style, padding = 20 }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 24,
+    borderRadius: Radius.card,
     borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 16,
-    elevation: 1,
+    ...Shadows.card,
   },
 });

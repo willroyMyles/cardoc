@@ -1,4 +1,4 @@
-import { AccentColor, Colors } from "@/constants/theme";
+import { AccentColor, Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
 import React from "react";
@@ -50,25 +50,22 @@ export function ScanPromptCard({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 28,
+    borderRadius: Radius.card,
     borderWidth: 1.5,
     borderStyle: "dashed",
     padding: 24,
     alignItems: "center",
     gap: 10,
-    marginHorizontal: 16,
+    marginHorizontal: Spacing.page,
     marginVertical: 8,
   },
   header: {
-    fontSize: 9,
-    fontWeight: "700",
-    letterSpacing: 2,
-    textTransform: "uppercase",
+    ...Type.label,
   },
   iconTile: {
     width: 48,
     height: 48,
-    borderRadius: 16,
+    borderRadius: Radius.tileLg,
     backgroundColor: "#1A1A1A",
     alignItems: "center",
     justifyContent: "center",

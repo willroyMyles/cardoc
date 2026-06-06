@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { AccentColor, Colors } from "@/constants/theme";
+import { AccentColor, Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Vehicle } from "@/models";
 import { router } from "expo-router";
@@ -87,13 +87,13 @@ export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: { marginHorizontal: 16, marginVertical: 6 },
-  row: { flexDirection: "row", alignItems: "center", gap: 14 },
-  image: { width: 56, height: 56, borderRadius: 14 },
+  card: { marginHorizontal: Spacing.page, marginVertical: 6 },
+  row: { flexDirection: "row", alignItems: "center", gap: Spacing.rowGap },
+  image: { width: 56, height: 56, borderRadius: Radius.tile },
   imagePlaceholder: {
     width: 56,
     height: 56,
-    borderRadius: 14,
+    borderRadius: Radius.tile,
     backgroundColor: "#1A1A1A",
     alignItems: "center",
     justifyContent: "center",
@@ -102,6 +102,6 @@ const styles = StyleSheet.create({
   logo: { width: 36, height: 36, tintColor: AccentColor },
   info: { flex: 1, gap: 3 },
   title: { fontSize: 14, fontWeight: "700" },
-  sub: { fontSize: 11, marginTop: 0 },
+  sub: { ...Type.caption, marginTop: 0 },
   vin: { fontSize: 10, marginTop: 0 },
 });

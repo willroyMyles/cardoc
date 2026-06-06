@@ -1,246 +1,131 @@
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import {
+  DocumentSource,
+  DocumentSourceSheet,
+} from "@/components/documents/document-source-sheet";
 import { Header } from "@/components/ui/header";
-import { Colors } from "@/constants/theme";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AccentColor, Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Vehicle } from "@/models";
-import { decodeVIN } from "@/services/vin-decoder";
-import { useVehiclesStore } from "@/store";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
 
 export default function AddVehicleScreen() {
   const scheme = useColorScheme() ?? "light";
-  const addVehicle = useVehiclesStore((s) => s.addVehicle);
-
-  const [make, setMake] = useState("");
-  const [model, setModel] = useState("");
-  const [year, setYear] = useState("");
-  const [vin, setVin] = useState("");
-  const [plate, setPlate] = useState("");
-  const [color, setColor] = useState("");
-  const [bodyType, setBodyType] = useState("");
-  const [decodingVin, setDecodingVin] = useState(false);
-
   const c = Colors[scheme];
+  const [scannerSheetVisible, setScannerSheetVisible] = useState(true);
 
-  const inputStyle = [
-    styles.input,
-    { backgroundColor: c.card, borderColor: c.border, color: c.text },
-  ];
-  const labelStyle = [styles.label, { color: c.subtext }];
-
-  async function handleDecodeVin() {
-    if (vin.length < 11) {
-      Alert.alert("Invalid VIN", "Please enter a valid 17-character VIN.");
-      return;
-    }
-    setDecodingVin(true);
-    try {
-      const result = await decodeVIN(vin);
-      if (result.make) setMake(result.make);
-      if (result.model) setModel(result.model);
-      if (result.year) setYear(String(result.year));
-      if (result.bodyType) setBodyType(result.bodyType);
-    } catch {
-      Alert.alert(
-        "VIN Decode Failed",
-        "Could not decode VIN. Please fill in details manually.",
-      );
-    } finally {
-      setDecodingVin(false);
-    }
-  }
-
-  function handleSave() {
-    if (!make || !model || !year) {
-      Alert.alert("Missing Fields", "Make, model, and year are required.");
-      return;
-    }
-    const vehicle: Vehicle = {
-      id: generateId(),
-      make,
-      model,
-      year: parseInt(year, 10),
-      vin,
-      licensePlate: plate,
-      chassis: vin,
-      color,
-      bodyType,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    addVehicle(vehicle);
-    router.back();
+  function handleScannerSource(source: DocumentSource) {
+    setScannerSheetVisible(false);
+    router.push({
+      pathname: "/scan",
+      params: { source },
+    });
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: c.background }]}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <Header title="Add Vehicle" onBack={() => router.back()} />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* VIN */}
-        <View style={styles.vinRow}>
-          <View style={styles.vinInput}>
-            <Text style={labelStyle}>VIN (optional)</Text>
-            <TextInput
-              style={inputStyle}
-              value={vin}
-              onChangeText={(t) => setVin(t.toUpperCase())}
-              placeholder="e.g. 1HGCM82633A004352"
-              placeholderTextColor={c.subtext}
-              autoCapitalize="characters"
-              maxLength={17}
+
+      <View style={styles.content}>
+        <View
+          style={[
+            styles.prompt,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
+        >
+          <View style={styles.iconTile}>
+            <IconSymbol
+              name="doc.text.viewfinder"
+              size={28}
+              color={AccentColor}
             />
           </View>
+          <Text style={[styles.title, { color: c.text }]}>
+            Scan the vehicle document
+          </Text>
+          <Text style={[styles.subtitle, { color: c.subtext }]}>
+            Vehicles are added by scanning or uploading their registration,
+            insurance, inspection, or title document.
+          </Text>
           <TouchableOpacity
-            style={[
-              styles.decodeBtn,
-              { backgroundColor: c.tint, opacity: decodingVin ? 0.6 : 1 },
-            ]}
-            onPress={handleDecodeVin}
-            disabled={decodingVin}
+            style={[styles.button, { backgroundColor: c.tint }]}
+            onPress={() => setScannerSheetVisible(true)}
+            activeOpacity={0.85}
           >
-            {decodingVin ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <>
-                <IconSymbol name="barcode.viewfinder" size={16} color="#fff" />
-                <Text style={styles.decodeBtnText}>Decode</Text>
-              </>
-            )}
+            <IconSymbol name="camera.fill" size={16} color="#fff" />
+            <Text style={styles.buttonText}>Choose Source</Text>
           </TouchableOpacity>
         </View>
+      </View>
 
-        <Text style={labelStyle}>Make *</Text>
-        <TextInput
-          style={inputStyle}
-          value={make}
-          onChangeText={setMake}
-          placeholder="e.g. Toyota"
-          placeholderTextColor={c.subtext}
-        />
-
-        <Text style={labelStyle}>Model *</Text>
-        <TextInput
-          style={inputStyle}
-          value={model}
-          onChangeText={setModel}
-          placeholder="e.g. Camry"
-          placeholderTextColor={c.subtext}
-        />
-
-        <Text style={labelStyle}>Year *</Text>
-        <TextInput
-          style={inputStyle}
-          value={year}
-          onChangeText={setYear}
-          placeholder="e.g. 2022"
-          placeholderTextColor={c.subtext}
-          keyboardType="number-pad"
-          maxLength={4}
-        />
-
-        <Text style={labelStyle}>License Plate</Text>
-        <TextInput
-          style={inputStyle}
-          value={plate}
-          onChangeText={(t) => setPlate(t.toUpperCase())}
-          placeholder="e.g. ABC 123"
-          placeholderTextColor={c.subtext}
-          autoCapitalize="characters"
-        />
-
-        <Text style={labelStyle}>Color</Text>
-        <TextInput
-          style={inputStyle}
-          value={color}
-          onChangeText={setColor}
-          placeholder="e.g. Pearl White"
-          placeholderTextColor={c.subtext}
-        />
-
-        <Text style={labelStyle}>Body Type</Text>
-        <TextInput
-          style={inputStyle}
-          value={bodyType}
-          onChangeText={setBodyType}
-          placeholder="e.g. Sedan"
-          placeholderTextColor={c.subtext}
-        />
-
-        <TouchableOpacity
-          style={[styles.saveBtn, { backgroundColor: c.tint }]}
-          onPress={handleSave}
-        >
-          <Text style={styles.saveBtnText}>Save Vehicle</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <DocumentSourceSheet
+        visible={scannerSheetVisible}
+        title="Add vehicle"
+        subtitle="Choose the accompanying document source."
+        options={[
+          { source: "camera", label: "Scan Document" },
+          { source: "gallery", label: "Choose from Gallery" },
+          { source: "files", label: "Choose File" },
+        ]}
+        onClose={() => setScannerSheetVisible(false)}
+        onSelect={handleScannerSource}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    padding: Spacing.page,
   },
-  pageTitle: { fontSize: 20, fontWeight: "700" },
-  scroll: { padding: 16, gap: 4, paddingBottom: 40 },
-  label: { fontSize: 13, fontWeight: "600", marginTop: 12, marginBottom: 4 },
-  input: {
-    borderRadius: 10,
+  prompt: {
+    borderRadius: Radius.card,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 15,
+    padding: 24,
+    alignItems: "center",
+    gap: 12,
   },
-  vinRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 8,
+  iconTile: {
+    width: 58,
+    height: 58,
+    borderRadius: Radius.tileLg,
+    backgroundColor: "#1A1A1A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: {
+    ...Type.title,
     marginTop: 4,
+    textAlign: "center",
   },
-  vinInput: { flex: 1 },
-  decodeBtn: {
+  subtitle: {
+    ...Type.body,
+    textAlign: "center",
+    maxWidth: 280,
+  },
+  button: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    borderRadius: 10,
-    marginBottom: 0,
+    gap: 8,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    marginTop: 6,
   },
-  decodeBtnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  saveBtn: {
-    marginTop: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
+  buttonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
   },
-  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });

@@ -1,10 +1,11 @@
 import { DocumentCard } from "@/components/documents/document-card";
 import { Header } from "@/components/ui/header";
 import { ScanPromptCard } from "@/components/ui/scan-prompt-card";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Spacing } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CarDocumentType } from "@/models";
 import { useDocumentsStore, useVehiclesStore } from "@/store";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
   FlatList,
@@ -27,6 +28,7 @@ const FILTERS: Array<{ key: CarDocumentType | "all"; label: string }> = [
 export default function DocumentsTab() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
+  const { backTo } = useLocalSearchParams<{ backTo?: string }>();
   const documents = useDocumentsStore((s) => s.documents);
   const getVehicle = useVehiclesStore((s) => s.getVehicle);
   const [filter, setFilter] = useState<CarDocumentType | "all">("all");
@@ -36,7 +38,14 @@ export default function DocumentsTab() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <Header title="Documents" showBackButton={false} />
+      <Header
+        title="Documents"
+        onBack={
+          backTo === "/settings"
+            ? () => router.replace("/settings")
+            : undefined
+        }
+      />
 
       {/* Filter chips */}
       <View style={styles.chipRow}>
@@ -102,7 +111,7 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: "row",
-    paddingHorizontal: 16,
+    paddingHorizontal: Spacing.page,
     gap: 8,
     marginBottom: 8,
     flexWrap: "wrap",
@@ -110,7 +119,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 99,
+    borderRadius: Radius.pill,
     borderWidth: 1,
   },
   chipText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },

@@ -1,5 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors, StatusColors } from "@/constants/theme";
+import { Colors, Radius, Spacing, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import React, { useMemo, useState } from "react";
 import {
@@ -493,39 +493,38 @@ const styles = StyleSheet.create({
   collapsed: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: Radius.surface,
     borderWidth: 1,
-    // marginHorizontal: 16,
-    // marginBottom: 10,
+    marginHorizontal: Spacing.page,
+    marginBottom: 12,
   },
   collapsedText: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
   },
   container: {
-    borderRadius: 14,
+    borderRadius: Radius.surface,
     borderWidth: 1,
-    // marginHorizontal: 16,
-    marginBottom: 10,
-    overflow: "hidden",
+    marginHorizontal: Spacing.page,
+    marginBottom: 12,
   },
   expandedHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   dateRow: {
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 8,
-    paddingHorizontal: 14,
-    paddingBottom: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
   dateField: {
     flex: 1,
@@ -539,9 +538,9 @@ const styles = StyleSheet.create({
   },
   dateInput: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: Radius.sm,
     paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingVertical: 8,
     fontSize: 13,
   },
   clearBtn: {
@@ -555,34 +554,37 @@ const styles = StyleSheet.create({
   },
   rangeCount: {
     fontSize: 11,
-    paddingHorizontal: 14,
-    paddingBottom: 8,
+    fontWeight: "600",
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
   chipScroll: {
     flexGrow: 0,
+    overflow: "visible",
   },
   chipContainer: {
-    paddingHorizontal: 14,
-    gap: 6,
-    paddingBottom: 10,
+    paddingHorizontal: 16,
+    gap: 8,
+    paddingBottom: 13,
+    paddingTop: 2,
     flexDirection: "row",
   },
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: Radius.pill,
     borderWidth: 1,
   },
   chipText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   result: {
-    marginHorizontal: 14,
-    marginBottom: 14,
-    borderRadius: 10,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: Radius.tileLg,
     borderWidth: 1,
-    padding: 14,
+    padding: 16,
   },
   statsRow: {
     flexDirection: "row",
@@ -594,15 +596,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "800",
     lineHeight: 22,
   },
   statLabel: {
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   },
   statDivider: {
     width: 1,

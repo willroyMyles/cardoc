@@ -1,6 +1,7 @@
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
+import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { AccentColor, Colors, StatusColors } from "@/constants/theme";
+import { AccentColor, Colors, Radius, Shadows, Spacing, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
     signInWithApple,
@@ -133,6 +134,7 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
+      <Header title="More" />
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Account / Sign-In card — merges license info when signed in */}
         <View
@@ -363,10 +365,10 @@ export default function MoreScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, paddingBottom: 120, gap: 12 },
+  scroll: { padding: Spacing.page, paddingBottom: 120, gap: 12 },
   // Account card
   accountCard: {
-    borderRadius: 24,
+    borderRadius: Radius.card,
     borderWidth: 1,
     padding: 20,
     gap: 0,
@@ -393,7 +395,7 @@ const styles = StyleSheet.create({
   accountEmail: { fontSize: 12, marginTop: 2 },
   signOutBtn: {
     borderWidth: 1,
-    borderRadius: 99,
+    borderRadius: Radius.pill,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
@@ -403,7 +405,7 @@ const styles = StyleSheet.create({
   signInTitle: { fontSize: 16, fontWeight: "700" },
   signInSubtitle: { fontSize: 13 },
   signInBtn: {
-    borderRadius: 99,
+    borderRadius: Radius.pill,
     paddingVertical: 14,
     alignItems: "center",
   },
@@ -422,20 +424,16 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
+    padding: Spacing.cardPadding,
     gap: 14,
-    borderRadius: 24,
+    borderRadius: Radius.card,
     borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 16,
-    elevation: 1,
+    ...Shadows.card,
   },
   menuIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: Radius.tile,
     alignItems: "center",
     justifyContent: "center",
   },

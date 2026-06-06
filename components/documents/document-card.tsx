@@ -1,90 +1,123 @@
-import { Card } from "@/components/ui/card";
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors, DocTypeColors } from "@/constants/theme";
+import { Colors, DocTypeColors, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CAR_DOCUMENT_TYPE_LABELS, CarDocument } from "@/models";
 import { router } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const DOC_TYPE_ICONS: Record<string, string> = {
-  registration: "doc.text.fill",
-  insurance: "shield.fill",
-  inspection: "checkmark.seal.fill",
-  title: "doc.badge.plus",
-  roadworthy: "car.fill",
-  emission: "leaf.fill",
-  other: "doc.fill",
-};
-
 interface DocumentCardProps {
   document: CarDocument;
   vehicleName?: string;
+  onPress?: () => void;
 }
 
-export function DocumentCard({ document, vehicleName }: DocumentCardProps) {
+export function DocumentCard({
+  document,
+  vehicleName,
+  onPress,
+}: DocumentCardProps) {
   const scheme = useColorScheme() ?? "light";
+  const c = Colors[scheme];
   const accentColor = DocTypeColors[document.type] ?? DocTypeColors.other;
+  const expiryDate = new Date(document.expiryDate);
+  const expiryLabel = isNaN(expiryDate.getTime())
+    ? document.expiryDate
+    : expiryDate.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
 
   return (
     <TouchableOpacity
-      onPress={() =>
-        router.push({ pathname: "/document/[id]", params: { id: document.id } })
+      onPress={
+        onPress ??
+        (() =>
+          router.push({
+            pathname: "/document/[id]",
+            params: { id: document.id },
+          }))
       }
       activeOpacity={0.75}
+      style={[
+        styles.card,
+        { backgroundColor: c.card, borderColor: c.border },
+      ]}
     >
-      <Card style={styles.card}>
-        <View style={styles.row}>
-          <View style={[styles.iconTile, { backgroundColor: "#1A1A1A" }]}>
-            <IconSymbol
-              name={(DOC_TYPE_ICONS[document.type] ?? "doc.fill") as any}
-              size={20}
-              color={accentColor}
-            />
-          </View>
-          <View style={styles.info}>
-            <Text style={[styles.type, { color: Colors[scheme].subtext }]}>
-              {CAR_DOCUMENT_TYPE_LABELS[document.type]}
-            </Text>
-            <Text style={[styles.title, { color: Colors[scheme].text }]}>
-              {document.title ?? CAR_DOCUMENT_TYPE_LABELS[document.type]}
-            </Text>
-            {vehicleName ? (
-              <Text style={[styles.vehicle, { color: Colors[scheme].subtext }]}>
-                {vehicleName}
-              </Text>
-            ) : null}
-            <View style={styles.footer}>
-              <ExpiryIndicator expiryDate={document.expiryDate} />
-            </View>
-          </View>
-          <IconSymbol name="chevron.right" size={16} color={Colors[scheme].icon} />
+      <View style={[styles.statusRail, { backgroundColor: accentColor }]} />
+
+      <View style={styles.topRow}>
+        <Text style={[styles.number, { color: c.subtext }]} numberOfLines={1}>
+          {document.documentNumber || "No document number"}
+        </Text>
+        <ExpiryIndicator expiryDate={document.expiryDate} />
+      </View>
+
+      <View style={styles.mainRow}>
+        <View style={styles.info}>
+          <Text style={[styles.title, { color: c.text }]} numberOfLines={2}>
+            {document.title ?? CAR_DOCUMENT_TYPE_LABELS[document.type]}
+          </Text>
         </View>
-      </Card>
+        <Text
+          style={[styles.type, { color: c.text }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          {CAR_DOCUMENT_TYPE_LABELS[document.type]}
+        </Text>
+      </View>
+
+      <Text style={[styles.sub, { color: c.subtext }]} numberOfLines={1}>
+        {vehicleName
+          ? `${vehicleName} / Expires ${expiryLabel}`
+          : `Expires ${expiryLabel}`}
+      </Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { marginHorizontal: 16, marginVertical: 6 },
-  row: { flexDirection: "row", alignItems: "center", gap: 14 },
-  iconTile: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+  card: {
+    marginHorizontal: Spacing.page,
+    marginVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    overflow: "hidden",
+  },
+  statusRail: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+  },
+  topRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 5,
   },
-  info: { flex: 1, gap: 2 },
-  type: {
+  mainRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  info: { flex: 1, gap: 2, minWidth: 0 },
+  number: {
+    flex: 1,
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: "800",
     textTransform: "uppercase",
-    letterSpacing: 1.2,
+    letterSpacing: 1,
   },
-  title: { fontSize: 14, fontWeight: "700" },
-  vehicle: { fontSize: 11 },
-  footer: { marginTop: 6 },
+  title: { fontSize: 13, lineHeight: 17, fontWeight: "700" },
+  sub: Type.caption,
+  type: {
+    maxWidth: 116,
+    minWidth: 74,
+    fontSize: 12,
+    fontWeight: "800",
+    textAlign: "right",
+  },
 });

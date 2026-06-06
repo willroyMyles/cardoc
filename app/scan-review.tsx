@@ -1,30 +1,5 @@
-// Utility to check if a vehicle matches scanned VIN/chassis
-function isSameVehicleByVinChassis(
-  vehicle: Vehicle,
-  fields: Record<string, string>,
-): boolean {
-  const scannedVin = (fields.vin ?? fields.engine_number ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-  const scannedChassis = (fields.chassis_number ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-  const vehicleVin = (vehicle.vin ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-  const vehicleChassis = (vehicle.chassis ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-  if (scannedVin && vehicleVin && scannedChassis && vehicleChassis) {
-    return scannedVin === vehicleVin && scannedChassis === vehicleChassis;
-  }
-  if (scannedVin && vehicleVin && scannedVin === vehicleVin) return true;
-  if (scannedChassis && vehicleChassis && scannedChassis === vehicleChassis)
-    return true;
-  return false;
-}
 import { Header } from "@/components/ui/header";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
     CAR_DOCUMENT_TYPE_LABELS,
@@ -59,6 +34,32 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+
+// Utility to check if a vehicle matches scanned VIN/chassis
+function isSameVehicleByVinChassis(
+  vehicle: Vehicle,
+  fields: Record<string, string>,
+): boolean {
+  const scannedVin = (fields.vin ?? fields.engine_number ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const scannedChassis = (fields.chassis_number ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const vehicleVin = (vehicle.vin ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const vehicleChassis = (vehicle.chassis ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  if (scannedVin && vehicleVin && scannedChassis && vehicleChassis) {
+    return scannedVin === vehicleVin && scannedChassis === vehicleChassis;
+  }
+  if (scannedVin && vehicleVin && scannedVin === vehicleVin) return true;
+  if (scannedChassis && vehicleChassis && scannedChassis === vehicleChassis)
+    return true;
+  return false;
+}
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -410,60 +411,57 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  scroll: { padding: 16, paddingBottom: 24 },
+  scroll: { padding: Spacing.page, paddingBottom: 24 },
   docTypeCard: {
-    borderRadius: 14,
-    padding: 20,
+    borderRadius: Radius.card,
+    padding: Spacing.cardPadding,
     marginBottom: 20,
     alignItems: "center",
   },
   docTypeDetectedLabel: {
     color: "rgba(255,255,255,0.8)",
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
+    ...Type.sectionLabel,
   },
   docTypeName: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     marginTop: 6,
     textAlign: "center",
   },
   docTypeIssuer: {
     color: "rgba(255,255,255,0.75)",
-    fontSize: 13,
+    ...Type.body,
     marginTop: 4,
     textAlign: "center",
   },
   section: { marginBottom: 20 },
-  sectionTitle: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
-  sectionHint: { fontSize: 13, marginBottom: 12 },
+  sectionTitle: { ...Type.sectionLabel, marginBottom: 4 },
+  sectionHint: { ...Type.body, marginBottom: 12 },
   vehicleChip: {
     paddingHorizontal: 14,
     paddingVertical: 9,
-    borderRadius: 20,
-    borderWidth: 1.5,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
     marginRight: 8,
   },
   fieldRow: { marginBottom: 14 },
-  fieldLabel: { fontSize: 13, fontWeight: "500", marginBottom: 4 },
+  fieldLabel: { ...Type.sectionLabel, marginBottom: 4 },
   input: {
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: Radius.sm,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === "ios" ? 12 : 9,
     fontSize: 15,
   },
   footer: {
-    padding: 16,
+    padding: Spacing.page,
     borderTopWidth: 1,
   },
   saveBtn: {
-    borderRadius: 12,
+    borderRadius: Radius.pill,
     paddingVertical: 14,
     alignItems: "center",
   },
-  saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  saveBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 });

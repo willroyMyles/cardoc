@@ -4,7 +4,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Header } from "@/components/ui/header";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { TICKET_STATUS_LABELS, TicketStatus } from "@/models";
 import { useTicketsStore, useVehiclesStore } from "@/store";
@@ -29,15 +29,12 @@ const statusBadgeMap: Record<
   dismissed: "neutral",
 };
 
-const STATUSES: TicketStatus[] = ["unpaid", "paid", "disputed", "dismissed"];
-
 export default function TicketDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
 
   const ticket = useTicketsStore((s) => s.getTicket(id));
-  const updateTicket = useTicketsStore((s) => s.updateTicket);
   const deleteTicket = useTicketsStore((s) => s.deleteTicket);
   const getVehicle = useVehiclesStore((s) => s.getVehicle);
   const [showDelete, setShowDelete] = useState(false);
@@ -139,35 +136,6 @@ export default function TicketDetailScreen() {
           ) : null}
         </Card>
 
-        {/* Update status */}
-        <Text style={[styles.sectionTitle, { color: c.text }]}>
-          Update Status
-        </Text>
-        <View style={styles.chipRow}>
-          {STATUSES.map((s) => (
-            <TouchableOpacity
-              key={s}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: ticket.status === s ? c.tint : c.card,
-                  borderColor: ticket.status === s ? c.tint : c.border,
-                },
-              ]}
-              onPress={() => updateTicket(id, { status: s })}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  { color: ticket.status === s ? "#fff" : c.text },
-                ]}
-              >
-                {TICKET_STATUS_LABELS[s]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         <TouchableOpacity
           style={styles.deleteBtn}
           onPress={() => setShowDelete(true)}
@@ -192,21 +160,15 @@ export default function TicketDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  scroll: { padding: 16, gap: 8, paddingBottom: 40 },
+  scroll: { padding: Spacing.page, gap: 8, paddingBottom: 40 },
   card: { gap: 8 },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
-  ticketNum: { fontSize: 12, fontWeight: "600", textTransform: "uppercase" },
-  violation: { fontSize: 18, fontWeight: "700", marginTop: 2 },
+  ticketNum: Type.sectionLabel,
+  violation: { ...Type.title, marginTop: 2 },
   amount: { fontSize: 28, fontWeight: "800" },
   row: {
     flexDirection: "row",
@@ -215,7 +177,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: "rgba(128,128,128,0.15)",
   },
-  fieldLabel: { fontSize: 13 },
+  fieldLabel: Type.body,
   fieldValue: {
     fontSize: 14,
     fontWeight: "500",
@@ -223,23 +185,14 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
   },
-  notes: { fontSize: 13, marginTop: 4 },
-  sectionTitle: { fontSize: 15, fontWeight: "700", marginTop: 8 },
-  chipRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  chipText: { fontSize: 13, fontWeight: "600" },
+  notes: { ...Type.body, marginTop: 4 },
   deleteBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: Radius.pill,
     backgroundColor: "#EF4444",
     marginTop: 8,
   },

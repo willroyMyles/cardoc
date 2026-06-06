@@ -1,5 +1,5 @@
 import { Header } from "@/components/ui/header";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
@@ -152,10 +152,10 @@ export default function EditVehicleScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, gap: 4, paddingBottom: 40 },
-  label: { fontSize: 13, fontWeight: "600", marginTop: 12, marginBottom: 4 },
+  scroll: { padding: Spacing.page, gap: 4, paddingBottom: 40 },
+  label: { ...Type.sectionLabel, marginTop: 12, marginBottom: 4 },
   input: {
-    borderRadius: 10,
+    borderRadius: Radius.sm,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 11,
@@ -164,8 +164,8 @@ const styles = StyleSheet.create({
   saveBtn: {
     marginTop: 24,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: Radius.pill,
     alignItems: "center",
   },
-  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
 });

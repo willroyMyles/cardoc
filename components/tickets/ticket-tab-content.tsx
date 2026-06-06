@@ -1,20 +1,21 @@
 import { SAVED_TICKET_FIELDS, TicketAggregator } from "@/components/tickets/ticket-aggregator";
 import { TicketCard } from "@/components/tickets/ticket-card";
+import { TicketDetailSheet } from "@/components/tickets/ticket-detail-sheet";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Ticket, TicketStatus } from "@/models";
 import { useTicketsStore, useVehiclesStore } from "@/store";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const FILTERS: Array<{ key: TicketStatus | "all"; label: string }> = [
@@ -25,59 +26,81 @@ const FILTERS: Array<{ key: TicketStatus | "all"; label: string }> = [
   { key: "dismissed", label: "Dismissed" },
 ];
 
-function formatDate(raw: string | undefined): string {
-  if (!raw) return "—";
-  const d = new Date(raw.split(" ")[0]);
-  if (isNaN(d.getTime())) return raw;
-  return d.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+function formatMoney(currency: string, amount: number): string {
+  return `${currency} ${amount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 }
 
 export function TicketTabContent() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const tickets = useTicketsStore((s) => s.tickets);
+  const deleteTicket = useTicketsStore((s) => s.deleteTicket);
   const getVehicle = useVehiclesStore((s) => s.getVehicle);
   const [filter, setFilter] = useState<TicketStatus | "all">("all");
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   const filtered =
     filter === "all" ? tickets : tickets.filter((t) => t.status === filter);
+  const selectedTicket =
+    selectedTicketId ? tickets.find((ticket) => ticket.id === selectedTicketId) ?? null : null;
 
   const unpaidTotal = tickets
     .filter((t) => t.status === "unpaid")
     .reduce((sum, t) => sum + t.amount, 0);
+  const unpaidCurrency =
+    tickets.find((t) => t.status === "unpaid")?.currency ??
+    tickets[0]?.currency ??
+    "JMD";
+  const getVehicleName = (ticket: Ticket) => {
+    const vehicle = ticket.vehicleId ? getVehicle(ticket.vehicleId) : undefined;
+    return vehicle
+      ? `${vehicle.year} ${vehicle.make} ${vehicle.model}`
+      : undefined;
+  };
 
   return (
     <View style={styles.container}>
-      <Header
-        title="Tickets"
-        showBackButton={false}
-        right={
-          <TouchableOpacity
-            style={[
-              styles.lookupBtn,
-              { backgroundColor: c.card, borderColor: c.border },
-            ]}
-            onPress={() => router.push("/ticket/lookup")}
-          >
-            <IconSymbol name="magnifyingglass" size={16} color={c.tint} />
-            <Text style={[styles.lookupBtnText, { color: c.tint }]}>Lookup</Text>
-          </TouchableOpacity>
-        }
-      />
+      <View style={styles.headerRow}>
+        <Text style={[styles.sectionTitle, { color: c.subtext }]}>TICKETS</Text>
+        <TouchableOpacity
+          style={[styles.lookupBtn, { backgroundColor: c.text }]}
+          onPress={() => router.push("/ticket/lookup")}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.lookupBtnText, { color: c.background }]}>Lookup</Text>
+        </TouchableOpacity>
+      </View>
 
-      {unpaidTotal > 0 ? (
-        <View style={styles.balanceBanner}>
-          <Text style={styles.balanceLabel}>Unpaid Balance</Text>
-          <Text style={styles.balanceAmount}>
-            {tickets.find((t) => t.status === "unpaid")?.currency ?? "JMD"}{" "}
-            {unpaidTotal.toFixed(2)}
-          </Text>
+      <View style={[styles.summaryCard, { backgroundColor: c.card, borderColor: c.border }]}>
+        <View style={styles.summaryItem}>
+          <View style={[styles.summaryIcon, { backgroundColor: c.background }]}>
+            <IconSymbol name="ticket.fill" size={15} color={c.tint} />
+          </View>
+          <View style={styles.summaryCopy}>
+            <Text style={[styles.summaryLabel, { color: c.subtext }]}>Saved Tickets</Text>
+            <Text style={[styles.summaryValue, { color: c.text }]}>{tickets.length}</Text>
+          </View>
         </View>
-      ) : null}
+        <View style={[styles.summarySep, { backgroundColor: c.border }]} />
+        <View style={styles.summaryItem}>
+          <View style={[styles.summaryIcon, { backgroundColor: "#FEF2F2" }]}>
+            <IconSymbol name="exclamationmark.triangle.fill" size={15} color="#ef4444" />
+          </View>
+          <View style={styles.summaryCopy}>
+            <Text style={[styles.summaryLabel, { color: c.subtext }]}>Unpaid Balance</Text>
+            <Text
+              style={[styles.summaryValue, styles.summaryMoney, { color: c.text }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {formatMoney(unpaidCurrency, unpaidTotal)}
+            </Text>
+          </View>
+        </View>
+      </View>
 
       <TicketAggregator
         items={filtered}
@@ -107,7 +130,12 @@ export function TicketTabContent() {
         getDateValue={(ticket: Ticket) => ticket.date}
       />
 
-      <View style={styles.chipRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipScroll}
+        contentContainerStyle={styles.chipRow}
+      >
         {FILTERS.map((f) => (
           <TouchableOpacity
             key={f.key}
@@ -130,19 +158,17 @@ export function TicketTabContent() {
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       <FlatList
         data={filtered}
         keyExtractor={(ticket) => ticket.id}
         renderItem={({ item }) => {
-          const vehicle = item.vehicleId ? getVehicle(item.vehicleId) : undefined;
           return (
             <TicketCard
               ticket={item}
-              vehicleName={
-                vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : undefined
-              }
+              vehicleName={getVehicleName(item)}
+              onPress={() => setSelectedTicketId(item.id)}
             />
           );
         }}
@@ -157,6 +183,14 @@ export function TicketTabContent() {
           />
         }
       />
+
+      <TicketDetailSheet
+        ticket={selectedTicket}
+        vehicleName={selectedTicket ? getVehicleName(selectedTicket) : undefined}
+        visible={selectedTicket !== null}
+        onClose={() => setSelectedTicketId(null)}
+        onDelete={deleteTicket}
+      />
     </View>
   );
 }
@@ -167,40 +201,72 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 99,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: Radius.pill,
     borderWidth: 1,
   },
-  lookupBtnText: { fontSize: 13, fontWeight: "600" },
-  balanceBanner: {
-    marginHorizontal: 16,
-    marginBottom: 10,
-    padding: 16,
-    borderRadius: 24,
-    backgroundColor: "#FEF2F2",
-    borderWidth: 1,
-    borderColor: "#FECACA",
+  lookupBtnText: { fontSize: 13, fontWeight: "700" },
+  headerRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.section,
+    paddingTop: 18,
+    paddingBottom: 10,
   },
-  balanceLabel: { color: "#EF4444", fontWeight: "600", fontSize: 14 },
-  balanceAmount: { color: "#EF4444", fontWeight: "700", fontSize: 18 },
+  sectionTitle: {
+    ...Type.sectionLabel,
+  },
+  summaryCard: {
+    flexDirection: "row",
+    marginHorizontal: Spacing.section,
+    marginBottom: 14,
+    borderRadius: Radius.surface,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+  },
+  summaryItem: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    minWidth: 0,
+  },
+  summaryIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: Radius.tile,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  summaryCopy: { flex: 1, minWidth: 0, gap: 2 },
+  summaryLabel: { fontSize: 11, fontWeight: "600" },
+  summaryValue: { fontSize: 18, fontWeight: "800", letterSpacing: 0 },
+  summaryMoney: { fontSize: 16 },
+  summarySep: { width: 1, marginHorizontal: 12 },
+  chipScroll: {
+    flexGrow: 0,
+    marginBottom: 8,
+    overflow: "visible",
+  },
   chipRow: {
     flexDirection: "row",
-    paddingHorizontal: 16,
+    paddingHorizontal: Spacing.page,
     gap: 8,
-    marginBottom: 8,
-    flexWrap: "wrap",
+    paddingVertical: 5,
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 99,
+    minWidth: 72,
+    alignItems: "center",
+    paddingHorizontal: 15,
+    paddingVertical: 9,
+    borderRadius: Radius.pill,
     borderWidth: 1,
   },
-  chipText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },
-  list: { paddingTop: 8, paddingBottom: 100 },
+  chipText: { fontSize: 12, fontWeight: "700", letterSpacing: 0 },
+  list: { paddingTop: 10, paddingBottom: 100 },
   emptyList: { flex: 1 },
 });

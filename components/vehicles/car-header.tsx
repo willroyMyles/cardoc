@@ -12,13 +12,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export type CarHeaderTab =
-  | "dashboard"
   | "doc vault"
-  | "maintenance"
-  | "fuel"
-  | "appointments"
+  // | "maintenance"
+  // | "fuel"
+  // | "appointments"
   | "tickets";
 
 interface CarHeaderProps {
@@ -32,12 +32,11 @@ interface CarHeaderProps {
 }
 
 const TABS: { key: CarHeaderTab; label: string }[] = [
-  { key: "dashboard", label: "DASHBOARD" },
   { key: "doc vault", label: "DOC VAULT" },
-  { key: "maintenance", label: "MAINTENANCE" },
-  { key: "fuel", label: "FUEL" },
+  // { key: "maintenance", label: "MAINTENANCE" },
+  // { key: "fuel", label: "FUEL" },
   { key: "tickets", label: "TICKETS" },
-  { key: "appointments", label: "APPOINTMENTS" },
+  // { key: "appointments", label: "APPOINTMENTS" },
 ];
 
 function getInitials(displayName: string | null | undefined): string {
@@ -70,6 +69,7 @@ export function CarHeader({
   const hasNext = activeIndex < vehicles.length - 1;
 
   return (
+    <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: c.card }]}>
     <View style={[styles.container, { backgroundColor: c.card }]}>
       {/* ── Top row ── */}
       <View style={styles.topRow}>
@@ -78,7 +78,7 @@ export function CarHeader({
         </Text>
 
         <View style={styles.topRight}>
-          <View style={styles.syncBadge}>
+          {false && <View style={styles.syncBadge}>
             <View
               style={[
                 styles.syncDot,
@@ -92,7 +92,7 @@ export function CarHeader({
             <Text style={[styles.syncText, { color: c.text }]}>
               {synced ? "SYNCED" : "SYNCING"}
             </Text>
-          </View>
+          </View>}
           <TouchableOpacity
             onPress={() => router.push("/settings")}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -177,13 +177,14 @@ export function CarHeader({
         </ScrollView>
       </View>
     </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingHorizontal: 10,
+    paddingTop: 0,
     paddingBottom: 4,
     gap: 10,
   },

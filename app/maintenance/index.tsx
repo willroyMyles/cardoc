@@ -2,7 +2,7 @@ import { MaintenanceCard } from "@/components/maintenance/maintenance-card";
 import { MaintenanceDetailSheet } from "@/components/maintenance/maintenance-detail-sheet";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Header } from "@/components/ui/header";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import type { MaintenanceEntry } from "@/models/maintenance";
 import { useMaintenanceStore, useVehiclesStore } from "@/store";
@@ -82,17 +82,15 @@ export default function MaintenanceListScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  list: { padding: 16, gap: 12, paddingBottom: 40 },
-  emptyList: { flex: 1, padding: 16 },
+  list: { padding: Spacing.page, gap: Spacing.rowGap, paddingBottom: 40 },
+  emptyList: { flex: 1, padding: Spacing.page },
   logBtn: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: Radius.pill,
   },
   logBtnText: {
-    fontSize: 12,
+    ...Type.sectionLabel,
     fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
   },
 });

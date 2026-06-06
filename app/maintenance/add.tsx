@@ -1,5 +1,5 @@
 import { Header } from "@/components/ui/header";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   MAINTENANCE_TYPE_LABELS,
@@ -90,7 +90,7 @@ export default function AddMaintenanceScreen() {
                 styles.chip,
                 {
                   borderColor: v.id === vehicleId ? c.tint : c.border,
-                  backgroundColor: v.id === vehicleId ? c.tint + "18" : c.card,
+                  backgroundColor: v.id === vehicleId ? c.tint : c.card,
                 },
               ]}
               onPress={() => setVehicleId(v.id)}
@@ -98,7 +98,7 @@ export default function AddMaintenanceScreen() {
               <Text
                 style={[
                   styles.chipText,
-                  { color: v.id === vehicleId ? c.tint : c.text },
+                  { color: v.id === vehicleId ? "#fff" : c.subtext },
                 ]}
               >
                 {v.make} {v.model}
@@ -117,7 +117,7 @@ export default function AddMaintenanceScreen() {
                 styles.chip,
                 {
                   borderColor: key === type ? c.tint : c.border,
-                  backgroundColor: key === type ? c.tint + "18" : c.card,
+                  backgroundColor: key === type ? c.tint : c.card,
                 },
               ]}
               onPress={() => setType(key)}
@@ -125,7 +125,7 @@ export default function AddMaintenanceScreen() {
               <Text
                 style={[
                   styles.chipText,
-                  { color: key === type ? c.tint : c.text },
+                  { color: key === type ? "#fff" : c.subtext },
                 ]}
               >
                 {label}
@@ -214,25 +214,17 @@ function Label({ text, c }: { text: string; c: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  pageTitle: { fontSize: 20, fontWeight: "700" },
-  saveBtn: { fontSize: 16, fontWeight: "600" },
-  scroll: { padding: 16, paddingBottom: 40, gap: 8 },
-  label: { fontSize: 13, fontWeight: "600", marginTop: 6 },
+  saveBtn: { ...Type.body, fontWeight: "700" },
+  scroll: { padding: Spacing.page, paddingBottom: 40, gap: 8 },
+  label: { ...Type.sectionLabel, marginTop: 8 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
   },
-  chipText: { fontSize: 13, fontWeight: "600" },
-  input: { borderWidth: 1, borderRadius: 10, padding: 12, fontSize: 15 },
+  chipText: { ...Type.body, fontWeight: "700" },
+  input: { borderWidth: 1, borderRadius: Radius.sm, padding: 12, fontSize: 15 },
   textarea: { height: 80, textAlignVertical: "top" },
 });

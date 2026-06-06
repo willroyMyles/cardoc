@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Colors, StatusColors } from "@/constants/theme";
+import { Colors, Radius, Shadows, Spacing, StatusColors, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   hasLicenseCoverage,
@@ -450,11 +450,7 @@ export default function TicketLookupScreen() {
                   {
                     backgroundColor: c.card,
                     borderColor: c.border,
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 4,
-                    elevation: 2,
+                    ...Shadows.card,
                   },
                 ]}
                 onPress={() => router.push("/(tabs)/tickets")}
@@ -986,11 +982,7 @@ export default function TicketLookupScreen() {
               {
                 backgroundColor: c.card,
                 borderColor: c.border,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 4,
-                elevation: 2,
+                ...Shadows.card,
               },
             ]}
             onPress={() => router.push("/(tabs)/tickets")}
@@ -1139,31 +1131,22 @@ export default function TicketLookupScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, paddingBottom: 40, gap: 12 },
+  scroll: { padding: Spacing.page, paddingBottom: 40, gap: Spacing.rowGap },
 
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-    borderBottomWidth: 1,
-  },
-  topBarTitle: { flex: 1, fontSize: 16, fontWeight: "600" },
   webview: { flex: 1 },
 
   // Provider list
-  intro: { fontSize: 14, lineHeight: 20 },
-  noProviders: { fontSize: 14, textAlign: "center", marginVertical: 24 },
+  intro: Type.body,
+  noProviders: { ...Type.body, textAlign: "center", marginVertical: 24 },
   providerCard: { marginHorizontal: 0 },
   providerRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   providerInfo: { flex: 1, gap: 4 },
-  providerName: { fontSize: 15, fontWeight: "700" },
-  providerInstructions: { fontSize: 13, lineHeight: 18 },
+  providerName: Type.title,
+  providerInstructions: Type.body,
   apiBadge: {
     alignSelf: "flex-start",
     backgroundColor: StatusColors.infoBg,
-    borderRadius: 4,
+    borderRadius: Radius.pill,
     paddingHorizontal: 6,
     paddingVertical: 2,
     marginTop: 4,
@@ -1181,16 +1164,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: Radius.pill,
     borderWidth: 1,
   },
-  settingsBtnText: { fontSize: 15, fontWeight: "600" },
+  settingsBtnText: { fontSize: 15, fontWeight: "700" },
 
   // Saved tickets button
   savedTicketsBtn: {
-    borderRadius: 16,
+    borderRadius: Radius.card,
     borderWidth: 1,
-    padding: 16,
+    padding: Spacing.cardPadding,
     marginBottom: 12,
   },
   savedTicketsContent: {
@@ -1204,7 +1187,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: Radius.tile,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1213,12 +1196,10 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   savedTicketsTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    letterSpacing: -0.3,
+    ...Type.title,
   },
   savedTicketsSubtitle: {
-    fontSize: 13,
+    ...Type.body,
     fontWeight: "500",
   },
   savedTicketsCounts: {
@@ -1227,7 +1208,7 @@ const styles = StyleSheet.create({
   },
   countBadge: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: Radius.surface,
     borderWidth: 1,
     padding: 12,
     alignItems: "center",
@@ -1250,32 +1231,32 @@ const styles = StyleSheet.create({
   },
 
   // Form
-  formIntro: { fontSize: 13, lineHeight: 19, marginBottom: 4 },
+  formIntro: { ...Type.body, marginBottom: 4 },
   licenseInfoCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: Radius.surface,
     borderWidth: 1,
     marginTop: 4,
   },
-  licenseInfoTitle: { fontSize: 13, fontWeight: "700", marginBottom: 2 },
-  licenseInfoText: { fontSize: 12, lineHeight: 17 },
+  licenseInfoTitle: { ...Type.body, fontWeight: "700", marginBottom: 2 },
+  licenseInfoText: Type.caption,
   noLicenseCard: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: Radius.surface,
     borderWidth: 1,
     marginTop: 4,
   },
-  noLicenseTitle: { fontSize: 13, fontWeight: "700", marginBottom: 2 },
-  noLicenseText: { fontSize: 12, lineHeight: 17 },
+  noLicenseTitle: { ...Type.body, fontWeight: "700", marginBottom: 2 },
+  noLicenseText: Type.caption,
   autoFilledCard: {
     padding: 12,
-    borderRadius: 10,
+    borderRadius: Radius.surface,
     borderWidth: 1,
     marginTop: 8,
   },
@@ -1301,26 +1282,24 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: Radius.pill,
   },
   modeButtonText: {
-    fontSize: 13,
+    ...Type.body,
     fontWeight: "600",
   },
   actionCard: {
-    borderRadius: 16,
+    borderRadius: Radius.card,
     borderWidth: 1,
-    padding: 16,
+    padding: Spacing.cardPadding,
     marginTop: 12,
     gap: 10,
   },
   actionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
+    ...Type.title,
   },
   actionText: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...Type.body,
   },
   actionButtons: {
     flexDirection: "row",
@@ -1329,14 +1308,14 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    borderRadius: 10,
+    borderRadius: Radius.pill,
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
     alignItems: "center",
   },
   actionButtonText: {
-    fontSize: 13,
+    ...Type.body,
     fontWeight: "700",
   },
   noLicenseActions: {
@@ -1344,25 +1323,25 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 12,
   },
-  label: { fontSize: 13, fontWeight: "600", marginBottom: 4, marginTop: 8 },
+  label: { ...Type.sectionLabel, marginBottom: 4, marginTop: 8 },
   input: {
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: Radius.sm,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
   },
-  hint: { fontSize: 12, marginTop: 3, lineHeight: 16 },
+  hint: { ...Type.caption, marginTop: 3 },
   errorBox: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: Radius.surface,
     marginTop: 12,
     marginBottom: 4,
   },
-  errorText: { fontSize: 13, lineHeight: 19, fontWeight: "500" },
+  errorText: { ...Type.body, fontWeight: "500" },
   errorLink: {
     fontSize: 13,
     fontWeight: "700",
@@ -1374,7 +1353,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: Radius.pill,
     marginTop: 16,
   },
   lookupBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
@@ -1382,9 +1361,9 @@ const styles = StyleSheet.create({
   // Results
   tabRow: { flexDirection: "row", borderBottomWidth: 1 },
   tab: { flex: 1, alignItems: "center", paddingVertical: 12 },
-  tabText: { fontSize: 14, fontWeight: "600" },
+  tabText: { ...Type.body, fontWeight: "700" },
   tabCount: { fontWeight: "400" },
-  resultScroll: { padding: 12, paddingBottom: 40, gap: 12 },
+  resultScroll: { padding: Spacing.page, paddingBottom: 40, gap: Spacing.rowGap },
   resultCard: { marginHorizontal: 0, marginBottom: 12 },
   resultHeader: {
     flexDirection: "row",
@@ -1392,10 +1371,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 4,
   },
-  ticketNo: { fontSize: 11, fontWeight: "600", textTransform: "uppercase" },
+  ticketNo: Type.sectionLabel,
   offence: {
-    fontSize: 15,
-    fontWeight: "700",
+    ...Type.title,
     lineHeight: 20,
     marginBottom: 10,
   },
@@ -1406,16 +1384,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   metaItem: { gap: 2 },
-  metaLabel: { fontSize: 11, fontWeight: "600", textTransform: "uppercase" },
-  metaValue: { fontSize: 13, fontWeight: "600" },
-  courtInfo: { fontSize: 12, marginBottom: 10 },
+  metaLabel: Type.sectionLabel,
+  metaValue: { ...Type.body, fontWeight: "600" },
+  courtInfo: { ...Type.caption, marginBottom: 10 },
   saveBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
     paddingVertical: 9,
-    borderRadius: 8,
+    borderRadius: Radius.pill,
     borderWidth: 1,
     marginTop: 4,
   },
@@ -1428,5 +1406,5 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyState: { alignItems: "center", paddingVertical: 48, gap: 12 },
-  emptyText: { fontSize: 14, textAlign: "center" },
+  emptyText: { ...Type.body, textAlign: "center" },
 });

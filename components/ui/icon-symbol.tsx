@@ -19,6 +19,8 @@ const MAPPING = {
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
+  "chevron.down": "keyboard-arrow-down",
+  "chevron.up": "keyboard-arrow-up",
   // navigation
   "car.fill": "directions-car",
   "doc.fill": "description",
@@ -34,9 +36,13 @@ const MAPPING = {
   // actions
   plus: "add",
   "plus.circle.fill": "add-circle",
+  camera: "camera-alt",
   "camera.fill": "camera-alt",
+  "doc.text": "article",
+  "doc.text.fill": "article",
   "doc.text.viewfinder": "document-scanner",
   "trash.fill": "delete",
+  trash: "delete",
   pencil: "edit",
   "square.and.arrow.up": "share",
   "arrow.left": "arrow-back",
@@ -61,6 +67,8 @@ const MAPPING = {
   "photo.fill": "photo",
   "mappin.and.ellipse": "location-on",
   "ticket.fill": "confirmation-number",
+  "chart.bar.fill": "bar-chart",
+  "dollarsign.circle": "attach-money",
   speedometer: "speed",
 } as IconMapping;
 

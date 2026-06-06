@@ -4,7 +4,13 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ImageViewerModal } from "@/components/ui/image-viewer-modal";
-import { DocTypeColors, Colors as ThemeColors } from "@/constants/theme";
+import {
+  DocTypeColors,
+  Colors as ThemeColors,
+  Radius,
+  Spacing,
+  Type,
+} from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CAR_DOCUMENT_TYPE_LABELS as LABELS } from "@/models";
 import { cancelDocumentExpiryReminders } from "@/services/notifications/expiry-reminders";
@@ -178,7 +184,7 @@ const styles = StyleSheet.create({
   typeBar: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: Spacing.page,
     paddingVertical: 10,
     gap: 8,
   },
@@ -187,13 +193,10 @@ const styles = StyleSheet.create({
   },
   typeBarText: {
     color: "#fff",
-    fontWeight: "700",
-    fontSize: 13,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+    ...Type.sectionLabel,
   },
-  infoCard: { margin: 16, gap: 10 },
-  title: { fontSize: 20, fontWeight: "700", marginBottom: 4 },
+  infoCard: { margin: Spacing.page, gap: 10 },
+  title: { ...Type.title, marginBottom: 4 },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -203,7 +206,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(128,128,128,0.15)",
   },
   expiryRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  fieldLabel: { fontSize: 13 },
+  fieldLabel: Type.body,
   fieldValue: {
     fontSize: 14,
     fontWeight: "500",
@@ -212,16 +215,20 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   notesBox: { gap: 4, paddingTop: 4 },
-  notes: { fontSize: 14, lineHeight: 20 },
-  docImage: { marginHorizontal: 16, height: 200, borderRadius: 12 },
-  actions: { margin: 16 },
+  notes: Type.body,
+  docImage: {
+    marginHorizontal: Spacing.page,
+    height: 200,
+    borderRadius: Radius.surface,
+  },
+  actions: { margin: Spacing.page },
   deleteBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: Radius.pill,
     backgroundColor: "#EF4444",
   },
   deleteBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },

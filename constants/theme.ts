@@ -93,12 +93,61 @@ export const Fonts = Platform.select({
 export const Radius = {
   /** Pills, chips, status badges */
   pill: 99,
-  /** Large section cards, account card */
-  card: 24,
-  /** Hero cards, modals */
-  hero: 24,
+  /** Main page cards and dashboard panels */
+  card: 28,
+  /** Nested cards, menu rows, modals */
+  surface: 24,
+  /** Hero cards, bottom sheets */
+  hero: 28,
   /** Icon tiles inside cards */
   tile: 14,
+  /** Larger icon tiles in empty or prompt states */
+  tileLg: 16,
   /** Small UI elements */
   sm: 8,
+} as const;
+
+export const Spacing = {
+  page: 16,
+  section: 20,
+  cardPadding: 20,
+  rowGap: 14,
+  stackGap: 16,
+} as const;
+
+export const Type = {
+  label: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  body: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  caption: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+} as const;
+
+export const Shadows = {
+  card: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 16,
+    elevation: 1,
+  },
 } as const;

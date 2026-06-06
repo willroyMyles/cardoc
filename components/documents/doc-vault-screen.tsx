@@ -1,12 +1,18 @@
 import { DocumentCard } from "@/components/documents/document-card";
+import { DocumentDetailSheet } from "@/components/documents/document-detail-sheet";
+import {
+  DocumentSource,
+  DocumentSourceSheet,
+} from "@/components/documents/document-source-sheet";
 import { Card } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { CAR_DOCUMENT_TYPE_LABELS } from "@/models";
+import { CAR_DOCUMENT_TYPE_LABELS, CarDocument } from "@/models";
+import { cancelDocumentExpiryReminders } from "@/services/notifications/expiry-reminders";
 import { useDocumentsStore, useVehiclesStore } from "@/store";
 import { router } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -35,8 +41,13 @@ export function DocVaultScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const documents = useDocumentsStore((s) => s.documents);
+  const deleteDocument = useDocumentsStore((s) => s.deleteDocument);
   const vehicles = useVehiclesStore((s) => s.vehicles);
   const getVehicle = useVehiclesStore((s) => s.getVehicle);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+    null,
+  );
+  const [uploadSheetVisible, setUploadSheetVisible] = useState(false);
 
   const expiringDocuments = useMemo(() => {
     const now = new Date();
@@ -67,6 +78,29 @@ export function DocVaultScreen() {
   const documentsForVehicle = activeVehicle
     ? documents.filter((doc) => doc.vehicleId === activeVehicle.id)
     : documents;
+  const selectedDocument = selectedDocumentId
+    ? documents.find((document) => document.id === selectedDocumentId) ?? null
+    : null;
+
+  const getVehicleName = (document: CarDocument) => {
+    const vehicle = getVehicle(document.vehicleId);
+    return vehicle
+      ? `${vehicle.year} ${vehicle.make} ${vehicle.model}`
+      : undefined;
+  };
+
+  async function handleDeleteDocument(id: string) {
+    await cancelDocumentExpiryReminders(id).catch(() => {});
+    deleteDocument(id);
+  }
+
+  function handleScanSource(source: DocumentSource) {
+    setUploadSheetVisible(false);
+    router.push({
+      pathname: "/scan",
+      params: { source },
+    });
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}> 
@@ -92,7 +126,7 @@ export function DocVaultScreen() {
           <View style={styles.uploadActions}>
             <TouchableOpacity
               style={[styles.uploadButton, { backgroundColor: "#1A1A1A" }]}
-              onPress={() => router.push("/scan")}
+              onPress={() => setUploadSheetVisible(true)}
               activeOpacity={0.85}
             >
               <IconSymbol name="square.and.arrow.up" size={14} color="#fff" />
@@ -100,7 +134,7 @@ export function DocVaultScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.uploadButton, { backgroundColor: c.card, borderColor: c.border, borderWidth: 1 }]}
-              onPress={() => router.push("/scan")}
+              onPress={() => handleScanSource("camera")}
               activeOpacity={0.85}
             >
               <IconSymbol name="camera.fill" size={14} color={c.text} />
@@ -140,7 +174,8 @@ export function DocVaultScreen() {
               <DocumentCard
                 key={document.id}
                 document={document}
-                vehicleName={activeVehicle ? `${activeVehicle.year} ${activeVehicle.make} ${activeVehicle.model}` : undefined}
+                vehicleName={getVehicleName(document)}
+                onPress={() => setSelectedDocumentId(document.id)}
               />
             ))}
           </View>
@@ -151,6 +186,28 @@ export function DocVaultScreen() {
           </Card>
         )}
       </ScrollView>
+
+      <DocumentDetailSheet
+        document={selectedDocument}
+        vehicleName={
+          selectedDocument ? getVehicleName(selectedDocument) : undefined
+        }
+        visible={selectedDocument !== null}
+        onClose={() => setSelectedDocumentId(null)}
+        onDelete={handleDeleteDocument}
+      />
+
+      <DocumentSourceSheet
+        visible={uploadSheetVisible}
+        title="Upload document"
+        subtitle="Choose where to import the document from."
+        options={[
+          { source: "gallery", label: "Gallery" },
+          { source: "files", label: "File" },
+        ]}
+        onClose={() => setUploadSheetVisible(false)}
+        onSelect={handleScanSource}
+      />
     </SafeAreaView>
   );
 }

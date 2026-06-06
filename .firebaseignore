@@ -1,0 +1,10 @@
+.git
+.gitignore
+.expo
+android
+ios
+node_modules
+dist
+web-build
+*.log
+*.local

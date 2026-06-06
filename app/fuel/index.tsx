@@ -1,7 +1,7 @@
 import { EmptyState } from "@/components/ui/empty-state";
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { FUEL_TYPE_LABELS, type FuelEntry } from "@/models/fuel-log";
 import { useFuelStore, useVehiclesStore } from "@/store";
@@ -54,8 +54,8 @@ export default function FuelListScreen() {
       style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
     >
       <View style={styles.cardHeader}>
-        <View style={[styles.icon, { backgroundColor: "#06B6D418" }]}>
-          <IconSymbol name="fuelpump.fill" size={18} color="#06B6D4" />
+        <View style={styles.icon}>
+          <IconSymbol name="fuelpump.fill" size={18} color="#F59E0B" />
         </View>
         <View style={styles.cardInfo}>
           <Text style={[styles.fuelType, { color: c.text }]}>
@@ -155,47 +155,45 @@ export default function FuelListScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  pageTitle: { fontSize: 20, fontWeight: "700" },
   statsRow: {
     flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 16,
+    gap: Spacing.rowGap,
+    paddingHorizontal: Spacing.page,
     marginBottom: 4,
   },
   statCard: {
     flex: 1,
-    padding: 12,
-    borderRadius: 10,
+    padding: 14,
+    borderRadius: Radius.surface,
     borderWidth: 1,
     alignItems: "center",
   },
   statValue: { fontSize: 20, fontWeight: "800" },
-  statLabel: { fontSize: 11, fontWeight: "600" },
-  statDesc: { fontSize: 11, marginTop: 2 },
-  list: { padding: 16, gap: 12, paddingBottom: 40 },
-  emptyList: { flex: 1, padding: 16 },
-  card: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 6 },
+  statLabel: { ...Type.caption, fontWeight: "700" },
+  statDesc: { ...Type.caption, marginTop: 2 },
+  list: { padding: Spacing.page, gap: Spacing.rowGap, paddingBottom: 40 },
+  emptyList: { flex: 1, padding: Spacing.page },
+  card: {
+    borderRadius: Radius.card,
+    borderWidth: 1,
+    padding: Spacing.cardPadding,
+    gap: 8,
+  },
   cardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   icon: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: Radius.tile,
+    backgroundColor: "#1A1A1A",
     alignItems: "center",
     justifyContent: "center",
   },
   cardInfo: { flex: 1 },
   cardRight: { alignItems: "flex-end" },
-  fuelType: { fontSize: 15, fontWeight: "600" },
-  vehicleName: { fontSize: 12, marginTop: 2 },
-  cost: { fontSize: 15, fontWeight: "700" },
-  date: { fontSize: 12, marginTop: 2 },
+  fuelType: Type.title,
+  vehicleName: { ...Type.caption, marginTop: 2 },
+  cost: Type.title,
+  date: { ...Type.caption, marginTop: 2 },
   row: { flexDirection: "row", justifyContent: "space-between" },
-  detail: { fontSize: 12 },
+  detail: Type.caption,
 });

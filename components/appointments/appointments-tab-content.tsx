@@ -22,40 +22,14 @@ interface AppointmentItem {
   description: string;
 }
 
-const INITIAL_APPOINTMENTS: AppointmentItem[] = [
-  {
-    id: "appt-1",
-    title: "Porsche Brake Wear Level Danger Warning",
-    provider: "Tesla Center",
-    date: "2026-05-31",
-    time: "09:00",
-    vehicle: "2024 Porsche 911",
-    status: "Push Alarm Pending",
-    description:
-      "A warning alarm is ready for the upcoming service slot. Confirm the appointment or reschedule it with your service provider.",
-  },
-  {
-    id: "appt-2",
-    title: "Pre-Summer Safety Inspection",
-    provider: "Precision Auto Care",
-    date: "2026-06-25",
-    time: "09:30",
-    vehicle: "2024 Porsche 911",
-    status: "Push Alarm Pending",
-    description:
-      "A comprehensive pre-summer inspection to verify brakes, fluids, and electrical systems before the hot season.",
-  },
-];
+const INITIAL_APPOINTMENTS: AppointmentItem[] = [];
 
 export function AppointmentsTabContent() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
 
-  const nextAppointment = useMemo(
-    () => appointments[0],
-    [appointments],
-  );
+  const nextAppointment = useMemo(() => appointments[0], [appointments]);
 
   const handleDelete = (id: string) => {
     Alert.alert(
@@ -84,95 +58,90 @@ export function AppointmentsTabContent() {
       contentContainerStyle={[styles.container, { backgroundColor: c.background }]}
       showsVerticalScrollIndicator={false}
     >
-      <View
-        style={[
-          styles.banner,
-          {
-            backgroundColor: scheme === "dark" ? "#3f2b10" : "#fef3c7",
-            borderColor: scheme === "dark" ? "#8c6b20" : "#fcd34d",
-          },
-        ]}
-      >
-        <View style={styles.bannerIcon}>
-          <IconSymbol name="bell.fill" size={20} color={StatusColors.warning} />
-        </View>
-        <View style={styles.bannerText}>
-          <Text style={[styles.bannerTitle, { color: c.text }]}>ACTIVE REMINDERS & WARNINGS</Text>
-          <Text style={[styles.bannerMessage, { color: c.subtext }]}>Set upcoming appointments and watch for service dates inside your reminder window.</Text>
-        </View>
-      </View>
-
       <View style={styles.headerRow}>
         <View>
-          <Text style={[styles.sectionTitle, { color: c.text }]}>Upcoming Appointments</Text>
-          <Text style={[styles.sectionSubtitle, { color: c.subtext }]}>Manage service and inspection reminders in one place.</Text>
+          <Text style={[styles.sectionTitle, { color: c.subtext }]}>UPCOMING APPOINTMENTS</Text>
+          <Text style={[styles.sectionSubtitle, { color: c.text }]}>Keep your service visits and reminders neatly tracked.</Text>
         </View>
-        <View style={[styles.badge, { backgroundColor: c.card, borderColor: c.border }]}> 
-          <Text style={[styles.badgeText, { color: c.text }]}>{appointments.length} scheduled</Text>
+
+        <TouchableOpacity
+          style={[styles.logBtn, { backgroundColor: c.text }]}
+          onPress={handleSchedule}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.logBtnText, { color: c.background }]}>Schedule</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={[styles.summaryPill, { backgroundColor: c.card, borderColor: c.border }]}> 
+        <View style={styles.summaryItem}>
+          <IconSymbol name="calendar" size={14} color="#f59e0b" />
+          <View style={styles.summaryText}>
+            <Text style={[styles.summaryLabel, { color: c.subtext }]}>Scheduled</Text>
+            <Text style={[styles.summaryValue, { color: c.text }]}>{appointments.length}</Text>
+          </View>
+        </View>
+        <View style={[styles.summarySep, { backgroundColor: c.border }]} />
+        <View style={styles.summaryItem}>
+          <IconSymbol name="clock.fill" size={14} color="#f59e0b" />
+          <View style={styles.summaryText}>
+            <Text style={[styles.summaryLabel, { color: c.subtext }]}>Next slot</Text>
+            <Text style={[styles.summaryValue, { color: c.text }]}> 
+              {nextAppointment ? `${nextAppointment.date} · ${nextAppointment.time}` : "None"}
+            </Text>
+          </View>
         </View>
       </View>
 
-      {appointments.map((appointment) => (
-        <View
-          key={appointment.id}
-          style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-        >
-          <View style={styles.cardHeader}>
-            <View style={[styles.cardIcon, { backgroundColor: c.background }]}> 
-              <IconSymbol name="calendar" size={18} color={c.tint} />
-            </View>
-            <View style={styles.cardTitleRow}>
-              <Text style={[styles.cardTitle, { color: c.text }]}>{appointment.title}</Text>
-              <Text style={[styles.cardMeta, { color: c.subtext }]}>{appointment.provider}</Text>
-            </View>
-            <View style={[styles.statusPill, { backgroundColor: "#fef3c7", borderColor: "#fcd34d" }]}> 
-              <Text style={[styles.statusText, { color: StatusColors.warning }]}>{appointment.status}</Text>
-            </View>
-          </View>
-
-          <Text style={[styles.cardDescription, { color: c.subtext }]} numberOfLines={3}>
-            {appointment.description}
-          </Text>
-
-          <View style={styles.cardFooter}>
-            <View style={styles.detailsGroup}>
-              <Text style={[styles.detailLabel, { color: c.subtext }]}>Date</Text>
-              <Text style={[styles.detailValue, { color: c.text }]}>{appointment.date}</Text>
-            </View>
-            <View style={styles.detailsGroup}>
-              <Text style={[styles.detailLabel, { color: c.subtext }]}>Time</Text>
-              <Text style={[styles.detailValue, { color: c.text }]}>{appointment.time}</Text>
-            </View>
-            <View style={styles.detailsGroup}>
-              <Text style={[styles.detailLabel, { color: c.subtext }]}>Vehicle</Text>
-              <Text style={[styles.detailValue, { color: c.text }]} numberOfLines={1}>{appointment.vehicle}</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.deleteButton, { borderColor: c.border }]}
-            onPress={() => handleDelete(appointment.id)}
-            activeOpacity={0.8}
+      {appointments.length > 0 ? (
+        appointments.map((appointment) => (
+          <View
+            key={appointment.id}
+            style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
           >
-            <Text style={[styles.deleteButtonText, { color: c.tint }]}>Cancel Appointment</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
+            <View style={styles.cardHeader}>
+              <View style={[styles.typeIcon, { backgroundColor: c.background }]}> 
+                <IconSymbol name="calendar" size={18} color={c.tint} />
+              </View>
+              <View style={styles.cardInfo}>
+                <Text style={[styles.typeLabel, { color: c.text }]}>{appointment.title}</Text>
+                <Text style={[styles.vehicleName, { color: c.subtext }]}>{appointment.provider}</Text>
+              </View>
+              <View style={styles.cardRight}>
+                <Text style={[styles.cost, { color: c.text }]}>{appointment.date}</Text>
+                <Text style={[styles.date, { color: c.subtext }]}>{appointment.time}</Text>
+              </View>
+            </View>
 
-      {!appointments.length && (
-        <View style={[styles.emptyState, { backgroundColor: c.card, borderColor: c.border }]}> 
+            <Text style={[styles.description, { color: c.subtext }]} numberOfLines={3}>
+              {appointment.description}
+            </Text>
+
+            <View style={styles.metaRow}>
+              <Text style={[styles.metaLabel, { color: c.subtext }]}>Vehicle</Text>
+              <Text style={[styles.metaValue, { color: c.text }]} numberOfLines={1}>{appointment.vehicle}</Text>
+            </View>
+
+            <View style={styles.cardFooter}>
+              <View style={[styles.statusPill, { backgroundColor: "#fef3c7", borderColor: "#fcd34d" }]}> 
+                <Text style={[styles.statusText, { color: StatusColors.warning }]}>{appointment.status}</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.deleteButton, { borderColor: c.border }]}
+                onPress={() => handleDelete(appointment.id)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.deleteButtonText, { color: c.tint }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))
+      ) : (
+        <View style={[styles.emptyStateContainer, { backgroundColor: c.card, borderColor: c.border }]}> 
           <Text style={[styles.emptyTitle, { color: c.text }]}>No upcoming appointments</Text>
-          <Text style={[styles.emptySubtitle, { color: c.subtext }]}>Schedule your next service appointment to get alerts and reminders.</Text>
+          <Text style={[styles.emptySubtitle, { color: c.subtext }]}>Schedule a service visit to keep reminders and alerts in one place.</Text>
         </View>
       )}
-
-      <TouchableOpacity
-        style={[styles.scheduleButton, { backgroundColor: c.tint }]}
-        onPress={handleSchedule}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.scheduleButtonText}>Schedule Car Slot</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -183,86 +152,131 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
     gap: 16,
   },
-  banner: {
-    borderWidth: 1,
-    borderRadius: 24,
-    padding: 18,
-    flexDirection: "row",
-    gap: 14,
-  },
-  bannerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(251, 191, 36, 0.15)",
-  },
-  bannerText: {
-    flex: 1,
-  },
-  bannerTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  bannerMessage: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
   headerRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 20,
+    paddingBottom: 8,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 11,
     fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 14,
     lineHeight: 20,
+    maxWidth: 260,
   },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
+  logBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
-  badgeText: {
-    fontSize: 12,
+  logBtnText: {
+    fontSize: 11,
     fontWeight: "700",
+    letterSpacing: 0.8,
+  },
+  summaryPill: {
+    flexDirection: "row",
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+  },
+  summaryItem: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    minWidth: 0,
+  },
+  summaryText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  summaryValue: {
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  summarySep: {
+    width: 1,
+    alignSelf: "stretch",
   },
   card: {
     borderWidth: 1,
-    borderRadius: 26,
-    padding: 18,
-    gap: 14,
+    borderRadius: 18,
+    padding: 16,
+    gap: 12,
   },
   cardHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 14,
+    gap: 12,
   },
-  cardIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 16,
+  typeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
-  cardTitleRow: {
+  cardInfo: {
     flex: 1,
   },
-  cardTitle: {
-    fontSize: 16,
+  cardRight: {
+    alignItems: "flex-end",
+  },
+  typeLabel: {
+    fontSize: 15,
     fontWeight: "700",
   },
-  cardMeta: {
+  vehicleName: {
     fontSize: 12,
     marginTop: 4,
+  },
+  cost: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  date: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  description: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  },
+  metaLabel: {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  metaValue: {
+    fontSize: 13,
+    fontWeight: "700",
+    flex: 1,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
   },
   statusPill: {
     paddingHorizontal: 10,
@@ -274,30 +288,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
   },
-  cardDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  cardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  detailsGroup: {
-    flex: 1,
-  },
-  detailLabel: {
-    fontSize: 11,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
   deleteButton: {
-    paddingVertical: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
     borderRadius: 18,
     borderWidth: 1,
     alignItems: "center",
@@ -306,10 +299,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
-  emptyState: {
+  emptyStateContainer: {
     borderWidth: 1,
     borderRadius: 24,
-    padding: 24,
+    padding: 28,
     alignItems: "center",
   },
   emptyTitle: {

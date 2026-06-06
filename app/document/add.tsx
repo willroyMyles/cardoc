@@ -1,6 +1,5 @@
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Header } from "@/components/ui/header";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
     CAR_DOCUMENT_TYPE_LABELS,
@@ -20,7 +19,6 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
 } from "react-native";
 
 function generateId() {
@@ -236,18 +234,10 @@ export default function AddDocumentScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  pageTitle: { fontSize: 20, fontWeight: "700" },
-  scroll: { padding: 16, gap: 4, paddingBottom: 40 },
-  label: { fontSize: 13, fontWeight: "600", marginTop: 12, marginBottom: 4 },
+  scroll: { padding: Spacing.page, gap: 4, paddingBottom: 40 },
+  label: { ...Type.sectionLabel, marginTop: 12, marginBottom: 4 },
   input: {
-    borderRadius: 10,
+    borderRadius: Radius.sm,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 11,
@@ -258,16 +248,16 @@ const styles = StyleSheet.create({
   typeChip: {
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 16,
+    borderRadius: Radius.pill,
     borderWidth: 1,
     marginRight: 8,
   },
-  typeChipText: { fontSize: 13, fontWeight: "600" },
+  typeChipText: { ...Type.body, fontWeight: "700" },
   saveBtn: {
     marginTop: 24,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: Radius.pill,
     alignItems: "center",
   },
-  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
 });

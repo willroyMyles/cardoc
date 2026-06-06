@@ -1,5 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
+import { AccentColor, Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { detectAndExtractDocument } from "@/services/firebase/ai-document";
 import { useSettingsStore } from "@/store";
@@ -110,8 +110,8 @@ export default function InsuranceScanScreen() {
 
       <View style={styles.body}>
         {/* Icon */}
-        <View style={[styles.iconWrapper, { backgroundColor: "#EDE9FE" }]}>
-          <IconSymbol name="shield.fill" size={48} color="#8B5CF6" />
+        <View style={styles.iconWrapper}>
+          <IconSymbol name="shield.fill" size={42} color={AccentColor} />
         </View>
 
         <Text style={[styles.headline, { color: c.text }]}>
@@ -162,7 +162,7 @@ export default function InsuranceScanScreen() {
               ]}
               onPress={handlePickPdf}
             >
-              <IconSymbol name="doc.fill" size={28} color="#8B5CF6" />
+              <IconSymbol name="doc.fill" size={28} color={AccentColor} />
               <Text style={[styles.pickerBtnLabel, { color: c.text }]}>
                 Choose PDF
               </Text>
@@ -193,7 +193,7 @@ export default function InsuranceScanScreen() {
               ]}
               onPress={handlePickPdf}
             >
-              <IconSymbol name="doc.fill" size={18} color="#8B5CF6" />
+              <IconSymbol name="doc.fill" size={18} color={AccentColor} />
               <Text style={[styles.pickerBtnLabelSm, { color: c.text }]}>
                 PDF
               </Text>
@@ -219,7 +219,7 @@ export default function InsuranceScanScreen() {
         <TouchableOpacity
           style={[
             styles.processBtn,
-            { backgroundColor: selectedFile ? "#8B5CF6" : c.border },
+            { backgroundColor: selectedFile ? c.tint : c.border },
           ]}
           onPress={handleProcess}
           disabled={!selectedFile || processing}
@@ -237,35 +237,26 @@ export default function InsuranceScanScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backBtn: { width: 36, alignItems: "flex-start" },
-  title: { fontSize: 17, fontWeight: "600" },
   body: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 32,
-    gap: 16,
+    paddingHorizontal: Spacing.section,
+    gap: Spacing.stackGap,
   },
   iconWrapper: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
+    width: 88,
+    height: 88,
+    borderRadius: Radius.tileLg,
+    backgroundColor: "#1A1A1A",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,
   },
-  headline: { fontSize: 22, fontWeight: "700", textAlign: "center" },
+  headline: { fontSize: 20, fontWeight: "700", textAlign: "center" },
   subtitle: {
-    fontSize: 14,
+    ...Type.body,
     textAlign: "center",
-    lineHeight: 20,
     marginBottom: 8,
   },
   fileChip: {
@@ -274,11 +265,11 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: Radius.pill,
     borderWidth: 1,
     maxWidth: "100%",
   },
-  fileName: { flex: 1, fontSize: 14, fontWeight: "500" },
+  fileName: { flex: 1, ...Type.body, fontWeight: "600" },
   pickerRow: {
     flexDirection: "row",
     gap: 12,
@@ -289,26 +280,26 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     paddingVertical: 20,
-    borderRadius: 16,
+    borderRadius: Radius.surface,
     borderWidth: 1,
     gap: 8,
   },
-  pickerBtnLabel: { fontSize: 14, fontWeight: "600" },
+  pickerBtnLabel: { ...Type.body, fontWeight: "700" },
   pickerBtnSmall: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: Radius.pill,
     borderWidth: 1,
     gap: 6,
   },
-  pickerBtnLabelSm: { fontSize: 13, fontWeight: "500" },
-  footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
+  pickerBtnLabelSm: { ...Type.body, fontWeight: "600" },
+  footer: { padding: Spacing.page, borderTopWidth: StyleSheet.hairlineWidth },
   processBtn: {
-    borderRadius: 14,
+    borderRadius: Radius.pill,
     paddingVertical: 15,
     alignItems: "center",
   },
-  processBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  processBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 });

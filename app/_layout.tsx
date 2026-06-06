@@ -6,6 +6,7 @@ import {
 } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { configureGoogleSignIn } from "@/services/firebase/auth-service";
 import { syncAllStores } from "@/services/firebase/sync-manager";
@@ -13,9 +14,21 @@ import { useAuthStore, useSettingsStore } from "@/store";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
+import { Text } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import "react-native-get-random-values";
 import "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+
+// Use the app's core sans font for every Text component by default.
+const defaultTextStyle = { fontFamily: Fonts.sans };
+const TextAny = Text as any;
+if (TextAny.defaultProps == null) {
+  TextAny.defaultProps = {};
+}
+TextAny.defaultProps = {
+  ...TextAny.defaultProps,
+  style: [defaultTextStyle, TextAny.defaultProps.style],
+};
 
 // Replace with your Firebase Web Client ID (from Firebase Console →
 // Authentication → Sign-in method → Google → Web SDK configuration)
@@ -54,10 +67,6 @@ export default function Layout() {
           <SafeAreaView style={{ flex: 1 }}>
             <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", headerShown: false }}
-          />
           {/* Vehicle */}
           <Stack.Screen
             name="vehicle/add"

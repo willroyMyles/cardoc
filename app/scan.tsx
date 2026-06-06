@@ -1,4 +1,7 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Header } from "@/components/ui/header";
+import { AccentColor, Colors, Radius, Spacing, Type } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   detectAndExtractDocumentFromParts,
   uriToInlineDataPart,
@@ -38,6 +41,8 @@ function makeId() {
 }
 
 export default function ScanScreen() {
+  const scheme = useColorScheme() ?? "light";
+  const c = Colors[scheme];
   const country = useSettingsStore((s) => s.country);
   const [permission, requestPermission] = useCameraPermissions();
   const [mode, setMode] = useState<InputMode>("chooser");
@@ -71,7 +76,7 @@ export default function ScanScreen() {
   );
 
   const addItems = useCallback(
-    (files: Array<{ uri: string; mimeType: string }>) => {
+    (files: { uri: string; mimeType: string }[]) => {
       const newItems: CapturedItem[] = files.map(({ uri, mimeType }) => ({
         id: makeId(),
         uri,
@@ -91,7 +96,7 @@ export default function ScanScreen() {
     setItems((prev) => prev.filter((it) => it.id !== id));
 
   // ── Open camera ────────────────────────────────────────────────────────────
-  const openCamera = async () => {
+  const openCamera = useCallback(async () => {
     if (!permission?.granted) {
       const { granted } = await requestPermission();
       if (!granted) {
@@ -103,10 +108,10 @@ export default function ScanScreen() {
       }
     }
     setMode("camera");
-  };
+  }, [permission?.granted, requestPermission]);
 
   // ── Pick multiple photos from library ──────────────────────────────────────
-  const handlePickPhoto = async () => {
+  const handlePickPhoto = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.9,
@@ -118,10 +123,10 @@ export default function ScanScreen() {
       result.assets.map((a) => ({ uri: a.uri, mimeType: "image/jpeg" })),
     );
     setMode("preview");
-  };
+  }, [addItems]);
 
   // ── Pick file (PDF / image) ────────────────────────────────────────────────
-  const handlePickFile = async () => {
+  const handlePickFile = useCallback(async () => {
     const result = await DocumentPicker.getDocumentAsync({
       type: ["application/pdf", "image/*"],
       copyToCacheDirectory: true,
@@ -135,7 +140,7 @@ export default function ScanScreen() {
       })),
     );
     setMode("preview");
-  };
+  }, [addItems]);
 
   useEffect(() => {
     if (pickerTriggered) return;
@@ -147,10 +152,12 @@ export default function ScanScreen() {
         await handlePickPhoto();
       } else if (source === "files") {
         await handlePickFile();
+      } else if (source === "camera") {
+        await openCamera();
       }
     };
     runPicker();
-  }, [params.source, pickerTriggered, handlePickFile, handlePickPhoto]);
+  }, [params.source, pickerTriggered, handlePickFile, handlePickPhoto, openCamera]);
 
   // ── Camera capture (adds to list, stays in camera mode) ───────────────────
   const handleCapture = async () => {
@@ -205,65 +212,65 @@ export default function ScanScreen() {
   // ── Chooser state ──────────────────────────────────────────────────────────
   if (mode === "chooser") {
     return (
-      <SafeAreaView style={[styles.container, styles.chooserContainer]}>
-        <StatusBar style="dark" />
-        <View style={styles.chooserHeader}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.closeBtn}
-          >
-            <IconSymbol name="xmark" size={20} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.chooserTitle}>Scan Document</Text>
-          <View style={{ width: 40 }} />
-        </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
+        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+        <Header title="Scan Document" />
 
         <View style={styles.chooserBody}>
           <TouchableOpacity
-            style={styles.choiceBtn}
+            style={[
+              styles.choiceBtn,
+              { backgroundColor: c.card, borderColor: c.border },
+            ]}
             onPress={openCamera}
             activeOpacity={0.75}
           >
-            <View style={[styles.choiceIcon, { backgroundColor: "#EFF6FF" }]}>
-              <IconSymbol name="camera.fill" size={28} color="#3B82F6" />
+            <View style={styles.choiceIcon}>
+              <IconSymbol name="camera.fill" size={26} color={AccentColor} />
             </View>
             <View style={styles.choiceText}>
-              <Text style={styles.choiceBtnLabel}>Camera</Text>
-              <Text style={styles.choiceBtnSub}>
+              <Text style={[styles.choiceBtnLabel, { color: c.text }]}>Camera</Text>
+              <Text style={[styles.choiceBtnSub, { color: c.subtext }]}>
                 Take one or more photos of a document
               </Text>
             </View>
-            <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
+            <IconSymbol name="chevron.right" size={16} color={c.subtext} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.choiceBtn}
+            style={[
+              styles.choiceBtn,
+              { backgroundColor: c.card, borderColor: c.border },
+            ]}
             onPress={handlePickPhoto}
             activeOpacity={0.75}
           >
-            <View style={[styles.choiceIcon, { backgroundColor: "#F0FDF4" }]}>
-              <IconSymbol name="photo.on.rectangle" size={28} color="#10B981" />
+            <View style={styles.choiceIcon}>
+              <IconSymbol name="photo.fill" size={26} color={AccentColor} />
             </View>
             <View style={styles.choiceText}>
-              <Text style={styles.choiceBtnLabel}>Photo Library</Text>
-              <Text style={styles.choiceBtnSub}>Select one or more photos</Text>
+              <Text style={[styles.choiceBtnLabel, { color: c.text }]}>Photo Library</Text>
+              <Text style={[styles.choiceBtnSub, { color: c.subtext }]}>Select one or more photos</Text>
             </View>
-            <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
+            <IconSymbol name="chevron.right" size={16} color={c.subtext} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.choiceBtn}
+            style={[
+              styles.choiceBtn,
+              { backgroundColor: c.card, borderColor: c.border },
+            ]}
             onPress={handlePickFile}
             activeOpacity={0.75}
           >
-            <View style={[styles.choiceIcon, { backgroundColor: "#FFF7ED" }]}>
-              <IconSymbol name="doc.fill" size={28} color="#F97316" />
+            <View style={styles.choiceIcon}>
+              <IconSymbol name="doc.fill" size={26} color={AccentColor} />
             </View>
             <View style={styles.choiceText}>
-              <Text style={styles.choiceBtnLabel}>Choose File</Text>
-              <Text style={styles.choiceBtnSub}>Import PDF or image files</Text>
+              <Text style={[styles.choiceBtnLabel, { color: c.text }]}>Choose File</Text>
+              <Text style={[styles.choiceBtnSub, { color: c.subtext }]}>Import PDF or image files</Text>
             </View>
-            <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
+            <IconSymbol name="chevron.right" size={16} color={c.subtext} />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -500,8 +507,8 @@ const styles = StyleSheet.create({
   doneBtn: {
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: "#1A6FE8",
+    borderRadius: Radius.pill,
+    backgroundColor: "#1A1A1A",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -526,7 +533,7 @@ const styles = StyleSheet.create({
   cameraThumb: {
     width: 60,
     height: 60,
-    borderRadius: 8,
+    borderRadius: Radius.sm,
     overflow: "hidden",
     backgroundColor: "#333",
   },
@@ -581,7 +588,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: "rgba(255,255,255,0.1)",
     marginHorizontal: 16,
-    borderRadius: 10,
+    borderRadius: Radius.pill,
     marginBottom: 8,
   },
   convertingText: { color: "#fff", fontSize: 13 },
@@ -595,7 +602,7 @@ const styles = StyleSheet.create({
   thumbWrapper: {
     width: "47%",
     aspectRatio: 1.4,
-    borderRadius: 10,
+    borderRadius: Radius.surface,
     overflow: "hidden",
     backgroundColor: "#333",
     position: "relative",
@@ -636,7 +643,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: Radius.pill,
     borderWidth: 2,
     borderColor: "rgba(255,255,255,0.5)",
   },
@@ -645,8 +652,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: "#1A6FE8",
+    borderRadius: Radius.pill,
+    backgroundColor: "#1A1A1A",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
@@ -654,38 +661,29 @@ const styles = StyleSheet.create({
   },
   processBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   // Chooser state styles
-  chooserContainer: { backgroundColor: "#fff" },
-  chooserHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 16,
-  },
-  chooserTitle: { fontSize: 18, fontWeight: "700", color: "#11181C" },
   chooserBody: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.page,
     paddingTop: 8,
-    gap: 2,
+    gap: Spacing.rowGap,
   },
   choiceBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E5E7EB",
+    padding: Spacing.cardPadding,
+    borderRadius: Radius.card,
+    borderWidth: 1,
   },
   choiceIcon: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: Radius.tileLg,
+    backgroundColor: "#1A1A1A",
     alignItems: "center",
     justifyContent: "center",
   },
   choiceText: { flex: 1 },
-  choiceBtnLabel: { fontSize: 16, fontWeight: "600", color: "#11181C" },
-  choiceBtnSub: { fontSize: 13, color: "#6B7280", marginTop: 2 },
+  choiceBtnLabel: Type.title,
+  choiceBtnSub: { ...Type.body, marginTop: 2 },
 });

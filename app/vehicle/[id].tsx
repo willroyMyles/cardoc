@@ -6,7 +6,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useDocumentsStore, useTicketsStore, useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
@@ -201,7 +201,7 @@ export default function VehicleDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, gap: 4, paddingBottom: 40 },
+  scroll: { padding: Spacing.page, gap: 4, paddingBottom: 40 },
   infoCard: { marginBottom: 12, gap: 6 },
   detailRow: {
     flexDirection: "row",
@@ -209,8 +209,8 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 2,
   },
-  detail: { fontSize: 14 },
-  vin: { fontSize: 12 },
+  detail: Type.body,
+  vin: Type.caption,
   actions: { flexDirection: "row", gap: 8, marginTop: 12 },
   actionBtn: {
     flexDirection: "row",
@@ -218,10 +218,10 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: Radius.pill,
   },
   deleteBtn: { backgroundColor: "#EF4444" },
-  actionBtnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  actionBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
   quickLinks: { flexDirection: "row", gap: 8, marginVertical: 8 },
   quickLink: {
     flex: 1,
@@ -229,10 +229,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: Radius.surface,
     borderWidth: 1,
   },
-  quickLinkText: { fontSize: 14, fontWeight: "600" },
+  quickLinkText: Type.title,
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -241,5 +241,5 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     paddingHorizontal: 4,
   },
-  sectionTitle: { fontSize: 16, fontWeight: "700" },
+  sectionTitle: Type.title,
 });

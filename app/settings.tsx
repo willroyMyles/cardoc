@@ -1,7 +1,16 @@
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SectionHeader } from "@/components/ui/section-header";
-import { AccentColor, Colors, StatusColors } from "@/constants/theme";
+import {
+  AccentColor,
+  Colors,
+  Fonts,
+  Radius,
+  Shadows,
+  Spacing,
+  StatusColors,
+  Type,
+} from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COUNTRY_LABELS, type CountryCode } from "@/services/docs-registry";
 import {
@@ -11,7 +20,7 @@ import {
 } from "@/services/firebase/auth-service";
 import { syncAllStores } from "@/services/firebase/sync-manager";
 import { requestNotificationPermissions } from "@/services/notifications/expiry-reminders";
-import { useAuthStore, useLicenseStore, useSettingsStore } from "@/store";
+import { useAuthStore, useSettingsStore } from "@/store";
 import { type SyncMode } from "@/store/settings-store";
 import { useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
@@ -28,7 +37,6 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -49,6 +57,12 @@ const SYNC_MODES: { value: SyncMode; label: string; description: string }[] = [
 ];
 
 const QUICK_LINKS = [
+  {
+    label: "Vehicles",
+    route: "/(tabs)/vehicles",
+    description: "Manage vehicles from scanned documents",
+    icon: "car.fill",
+  },
   {
     label: "Documents",
     route: "/(tabs)/documents",
@@ -85,30 +99,14 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const authLoading = useAuthStore((s) => s.loading);
   const setLoading = useAuthStore((s) => s.setLoading);
-  const license = useLicenseStore((s) => s.license);
   const [authError, setAuthError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
 
   const currentCountryLabel = COUNTRY_LABELS[country] ?? country;
 
   function handleCountryPick() {
-    const options = COUNTRIES.map(([, label]) => label);
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        { options: ["Cancel", ...options], cancelButtonIndex: 0 },
-        (i) => {
-          if (i > 0) setCountry(COUNTRIES[i - 1][0]);
-        },
-      );
-    } else {
-      Alert.alert("Select Country", undefined, [
-        { text: "Cancel", style: "cancel" },
-        ...COUNTRIES.map(([code, label]) => ({
-          text: label,
-          onPress: () => setCountry(code),
-        })),
-      ]);
-    }
+    setCountryDropdownOpen((open) => !open);
   }
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -282,9 +280,11 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Header title="Settings" onBack={() => router.back()} />
-
+      <Header title="Settings" onBack={() => router.back()} />
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
         <View
           style={[
             styles.accountCard,
@@ -315,11 +315,17 @@ export default function SettingsScreen() {
                   </View>
                 )}
                 <View style={styles.accountInfo}>
-                  <Text style={[styles.accountName, { color: c.text }]} numberOfLines={1}>
+                  <Text
+                    style={[styles.accountName, { color: c.text }]}
+                    numberOfLines={1}
+                  >
                     {user.displayName ?? "Signed In"}
                   </Text>
                   {user.email ? (
-                    <Text style={[styles.accountEmail, { color: c.subtext }]} numberOfLines={1}>
+                    <Text
+                      style={[styles.accountEmail, { color: c.subtext }]}
+                      numberOfLines={1}
+                    >
                       {user.email}
                     </Text>
                   ) : null}
@@ -333,15 +339,26 @@ export default function SettingsScreen() {
                   disabled={authLoading}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.signOutBtnText, { color: StatusColors.danger }]}>Sign Out</Text>
+                  <Text
+                    style={[
+                      styles.signOutBtnText,
+                      { color: StatusColors.danger },
+                    ]}
+                  >
+                    Sign Out
+                  </Text>
                 </TouchableOpacity>
               </View>
             </>
           ) : (
             <View style={styles.signInPrompt}>
               <View style={styles.signInTextBlock}>
-                <Text style={[styles.signInTitle, { color: c.text }]}>Sync your data</Text>
-                <Text style={[styles.signInSubtitle, { color: c.subtext }]}>Sign in to back up and sync across devices</Text>
+                <Text style={[styles.signInTitle, { color: c.text }]}>
+                  Sync your data
+                </Text>
+                <Text style={[styles.signInSubtitle, { color: c.subtext }]}>
+                  Sign in to back up and sync across devices
+                </Text>
               </View>
               <TouchableOpacity
                 style={[styles.signInBtn, { backgroundColor: c.tint }]}
@@ -379,15 +396,35 @@ export default function SettingsScreen() {
                   borderBottomWidth: 1,
                 },
               ]}
-              onPress={() => router.push(item.route as any)}
+              onPress={() => {
+                if (
+                  item.route === "/(tabs)/documents" ||
+                  item.route === "/(tabs)/vehicles"
+                ) {
+                  router.push({
+                    pathname: item.route as any,
+                    params: { backTo: "/settings" },
+                  });
+                  return;
+                }
+                router.push(item.route as any);
+              }}
               activeOpacity={0.75}
             >
-              <View style={[styles.menuIcon, { backgroundColor: "#1A1A1A" }]}> 
-                <IconSymbol name={item.icon as any} size={20} color={AccentColor} />
+              <View style={[styles.menuIcon, { backgroundColor: "#1A1A1A" }]}>
+                <IconSymbol
+                  name={item.icon as any}
+                  size={20}
+                  color={AccentColor}
+                />
               </View>
               <View style={styles.menuText}>
-                <Text style={[styles.menuLabel, { color: c.text }]}> {item.label}</Text>
-                <Text style={[styles.menuDesc, { color: c.subtext }]}> {item.description}</Text>
+                <Text style={[styles.menuLabel, { color: c.text }]}>
+                  {item.label}
+                </Text>
+                <Text style={[styles.menuDesc, { color: c.subtext }]}>
+                  {item.description}
+                </Text>
               </View>
               <IconSymbol name="chevron.right" size={16} color={c.subtext} />
             </TouchableOpacity>
@@ -407,11 +444,62 @@ export default function SettingsScreen() {
             onPress={handleCountryPick}
             activeOpacity={0.7}
           >
-            <Text style={[styles.countryLabel, { color: c.text }]}>
-              {currentCountryLabel}
-            </Text>
-            <IconSymbol name="chevron.right" size={16} color={c.subtext} />
+            <View style={styles.rowText}>
+              <Text style={[styles.countryLabel, { color: c.text }]}>
+                {currentCountryLabel}
+              </Text>
+              <Text style={[styles.countryHint, { color: c.subtext }]}>
+                Document parsing region
+              </Text>
+            </View>
+            <View style={styles.rowTrailing}>
+              <IconSymbol
+                name={countryDropdownOpen ? "chevron.up" : "chevron.down"}
+                size={18}
+                color={c.subtext}
+              />
+            </View>
           </TouchableOpacity>
+          {countryDropdownOpen ? (
+            <View style={[styles.countryDropdown, { borderTopColor: c.border }]}>
+              {COUNTRIES.map(([code, label], index) => {
+                const selected = code === country;
+                return (
+                  <TouchableOpacity
+                    key={code}
+                    style={[
+                      styles.countryOption,
+                      index < COUNTRIES.length - 1 && {
+                        borderBottomColor: c.border,
+                        borderBottomWidth: StyleSheet.hairlineWidth,
+                      },
+                    ]}
+                    onPress={() => {
+                      setCountry(code);
+                      setCountryDropdownOpen(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Text
+                      style={[
+                        styles.countryOptionText,
+                        { color: selected ? c.tint : c.text },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                    {selected ? (
+                      <IconSymbol
+                        name="checkmark.circle.fill"
+                        size={18}
+                        color={c.tint}
+                      />
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : null}
         </View>
 
         {/* Notifications */}
@@ -423,12 +511,19 @@ export default function SettingsScreen() {
           ]}
         >
           <View style={styles.switchRow}>
-            <Text style={[styles.switchLabel, { color: c.text }]}>
-              Document Expiry Reminders
-            </Text>
+            <View style={styles.rowText}>
+              <Text style={[styles.switchLabel, { color: c.text }]}>
+                Document Expiry Reminders
+              </Text>
+              <Text style={[styles.optionDescription, { color: c.subtext }]}>
+                Get notified before registrations, insurance, and licenses expire
+              </Text>
+            </View>
             <Switch
               value={notificationsEnabled}
               onValueChange={handleNotificationsToggle}
+              trackColor={{ false: c.border, true: c.tint + "55" }}
+              thumbColor={notificationsEnabled ? c.tint : c.card}
             />
           </View>
         </View>
@@ -442,7 +537,7 @@ export default function SettingsScreen() {
           ]}
         >
           <View style={styles.switchRow}>
-            <View style={{ flex: 1, marginRight: 12 }}>
+            <View style={styles.rowText}>
               <Text style={[styles.switchLabel, { color: c.text }]}>
                 Camera
               </Text>
@@ -453,11 +548,21 @@ export default function SettingsScreen() {
             <Switch
               value={cameraPermission?.status === "granted"}
               onValueChange={handleCameraToggle}
+              trackColor={{
+                false: c.border,
+                true:
+                  cameraPermission?.status === "granted"
+                    ? c.tint + "55"
+                    : c.border,
+              }}
+              thumbColor={
+                cameraPermission?.status === "granted" ? c.tint : c.card
+              }
             />
           </View>
           <View style={[styles.permDivider, { backgroundColor: c.border }]} />
           <View style={styles.switchRow}>
-            <View style={{ flex: 1, marginRight: 12 }}>
+            <View style={styles.rowText}>
               <Text style={[styles.switchLabel, { color: c.text }]}>
                 Photo Library
               </Text>
@@ -468,6 +573,16 @@ export default function SettingsScreen() {
             <Switch
               value={mediaPermission?.status === "granted"}
               onValueChange={handleMediaToggle}
+              trackColor={{
+                false: c.border,
+                true:
+                  mediaPermission?.status === "granted"
+                    ? c.tint + "55"
+                    : c.border,
+              }}
+              thumbColor={
+                mediaPermission?.status === "granted" ? c.tint : c.card
+              }
             />
           </View>
         </View>
@@ -487,7 +602,7 @@ export default function SettingsScreen() {
               onPress={() => handleSyncModeChange(mode.value)}
               activeOpacity={0.7}
             >
-              <View style={{ flex: 1 }}>
+              <View style={styles.rowText}>
                 <Text style={[styles.optionLabel, { color: c.text }]}>
                   {mode.label}
                 </Text>
@@ -536,97 +651,128 @@ export default function SettingsScreen() {
   );
 }
 
-
-function LabeledInput({
-  label,
-  value,
-  onChangeText,
-  onBlur,
-  placeholder,
-  c,
-  secureTextEntry,
-}: any) {
-  return (
-    <View style={styles.labeledInput}>
-      <Text style={[styles.inputLabel, { color: c.subtext }]}>{label}</Text>
-      <TextInput
-        style={[styles.input, { color: c.text, borderColor: c.border }]}
-        value={value}
-        onChangeText={onChangeText}
-        onBlur={onBlur}
-        placeholder={placeholder}
-        placeholderTextColor={c.subtext}
-        secureTextEntry={secureTextEntry}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, paddingBottom: 40, gap: 10 },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
+  scroll: {
+    paddingHorizontal: Spacing.page,
+    paddingTop: Spacing.page,
+    paddingBottom: 40,
+    gap: 10,
   },
-  pageTitle: { fontSize: 20, fontWeight: "700" },
-  sectionHeader: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    marginTop: 6,
-    marginBottom: 2,
+  group: {
+    borderRadius: Radius.surface,
+    borderWidth: 1,
+    overflow: "hidden",
+    ...Shadows.card,
   },
-  labeledInput: { gap: 4, marginBottom: 8 },
-  inputLabel: { fontSize: 13, fontWeight: "600" },
-  input: { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 14 },
-  group: { borderRadius: 20, borderWidth: 1, overflow: "hidden" },
   optionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: Spacing.page,
     paddingVertical: 14,
+    gap: Spacing.rowGap,
   },
-  optionLabel: { fontSize: 15 },
-  optionDescription: { fontSize: 12, marginTop: 2 },
-  onlineWarning: { fontSize: 13, paddingHorizontal: 4 },
+  optionLabel: {
+    ...Type.title,
+    fontFamily: Fonts.sans,
+    fontSize: 15,
+  },
+  optionDescription: {
+    ...Type.caption,
+    fontFamily: Fonts.sans,
+    marginTop: 3,
+  },
+  onlineWarning: {
+    ...Type.caption,
+    fontFamily: Fonts.sans,
+    paddingHorizontal: 4,
+  },
   switchRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Spacing.page,
+    paddingVertical: 14,
+    gap: Spacing.rowGap,
   },
-  switchLabel: { fontSize: 15 },
-  permDivider: { height: 1, marginHorizontal: 16 },
+  switchLabel: {
+    ...Type.title,
+    fontFamily: Fonts.sans,
+    fontSize: 15,
+  },
+  permDivider: { height: 1, marginHorizontal: Spacing.page },
   countryRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    paddingHorizontal: Spacing.page,
     paddingVertical: 14,
+    gap: Spacing.rowGap,
   },
-  countryLabel: { fontSize: 15, fontWeight: "500" },
+  countryLabel: {
+    ...Type.title,
+    fontFamily: Fonts.sans,
+    fontSize: 15,
+  },
+  countryHint: {
+    ...Type.caption,
+    fontFamily: Fonts.sans,
+    marginTop: 3,
+  },
+  countryDropdown: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  countryOption: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.page,
+    paddingVertical: 12,
+    gap: Spacing.rowGap,
+  },
+  countryOptionText: {
+    ...Type.title,
+    flex: 1,
+    minWidth: 0,
+    fontFamily: Fonts.sans,
+    fontSize: 15,
+  },
+  rowText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  rowTrailing: {
+    width: 24,
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
   syncBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    padding: 14,
-    borderRadius: 12,
+    minHeight: 48,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: Radius.pill,
   },
-  syncBtnText: { color: "#fff", fontSize: 15, fontWeight: "600" },
+  syncBtnText: {
+    color: "#fff",
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
   accountCard: {
-    borderRadius: 24,
+    borderRadius: Radius.card,
     borderWidth: 1,
-    padding: 20,
-    marginBottom: 12,
+    padding: Spacing.cardPadding,
+    marginBottom: 4,
     gap: 12,
+    ...Shadows.card,
   },
   accountRow: {
     flexDirection: "row",
@@ -646,42 +792,79 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   accountInfo: { flex: 1 },
-  accountName: { fontSize: 15, fontWeight: "700" },
-  accountEmail: { fontSize: 12, marginTop: 2 },
+  accountName: {
+    ...Type.title,
+    fontFamily: Fonts.sans,
+    fontSize: 15,
+  },
+  accountEmail: {
+    ...Type.caption,
+    fontFamily: Fonts.sans,
+    marginTop: 2,
+  },
   signOutBtn: {
     borderWidth: 1,
-    borderRadius: 99,
+    borderRadius: Radius.pill,
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 7,
   },
-  signOutBtnText: { fontSize: 13, fontWeight: "600" },
+  signOutBtnText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: "700",
+  },
   signInPrompt: { gap: 12 },
   signInTextBlock: { gap: 3 },
-  signInTitle: { fontSize: 16, fontWeight: "700" },
-  signInSubtitle: { fontSize: 13 },
+  signInTitle: {
+    ...Type.title,
+    fontFamily: Fonts.sans,
+  },
+  signInSubtitle: {
+    ...Type.body,
+    fontFamily: Fonts.sans,
+  },
   signInBtn: {
-    borderRadius: 99,
+    borderRadius: Radius.pill,
     paddingVertical: 14,
     alignItems: "center",
   },
-  signInBtnText: { color: "#fff", fontSize: 13, fontWeight: "700", letterSpacing: 1 },
-  authError: { fontSize: 12, marginTop: 4 },
+  signInBtnText: {
+    color: "#fff",
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  authError: {
+    ...Type.caption,
+    fontFamily: Fonts.sans,
+    marginTop: 4,
+  },
   menuRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    paddingHorizontal: Spacing.page,
     paddingVertical: 16,
-    gap: 14,
+    gap: Spacing.rowGap,
   },
   menuIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: Radius.tile,
     alignItems: "center",
     justifyContent: "center",
   },
   menuText: { flex: 1 },
-  menuLabel: { fontSize: 15, fontWeight: "600" },
-  menuDesc: { fontSize: 12, marginTop: 1 },
+  menuLabel: {
+    ...Type.title,
+    fontFamily: Fonts.sans,
+    fontSize: 15,
+  },
+  menuDesc: {
+    ...Type.caption,
+    fontFamily: Fonts.sans,
+    marginTop: 2,
+  },
 });

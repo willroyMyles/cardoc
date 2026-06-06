@@ -3,7 +3,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ImageViewerModal } from "@/components/ui/image-viewer-modal";
-import { Colors } from "@/constants/theme";
+import { Colors, Radius, Shadows, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { DynamicDriverLicense } from "@/models";
 import {
@@ -418,10 +418,17 @@ export default function LicenseScreen() {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
+        <View
+          style={[
+            styles.sectionCard,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
+        >
         {/* ── License Images ─────────────────────────────────────────── */}
         <Text style={[styles.sectionTitle, { color: c.text }]}>
           License Images
         </Text>
+          <Text style={[styles.sectionDescription, { color: c.subtext }]}>{"Add the front and back of your driver's license so the app can fill in your details faster."}</Text>
         <View style={styles.imageRow}>
           {/* Front */}
           <TouchableOpacity
@@ -555,8 +562,8 @@ export default function LicenseScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── Process buttons ────────────────────────────────────────── */}
-        <View style={styles.processRow}>
+          {/* ── Process buttons ────────────────────────────────────────── */}
+          <View style={styles.processRow}>
           {/* <TouchableOpacity
             style={[
               styles.mlBtn,
@@ -594,7 +601,7 @@ export default function LicenseScreen() {
               styles.mlBtn,
               styles.mlBtnHalf,
               {
-                backgroundColor: frontUri || backUri ? "#8B5CF6" : c.card,
+                backgroundColor: frontUri || backUri ? c.tint : c.card,
                 borderColor: c.border,
               },
               (aiProcessing || frontConverting || backConverting) &&
@@ -636,8 +643,8 @@ export default function LicenseScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── Dynamic Fields ─────────────────────────────────────────── */}
-        {Object.values(fields).some(Boolean) ? (
+          {/* ── Dynamic Fields ─────────────────────────────────────────── */}
+          {Object.values(fields).some(Boolean) ? (
           Object.entries(spec.fields).map(([key, fieldSpec]) => {
             const fieldLabel =
               (fieldSpec.label ?? key) + (fieldSpec.required ? " *" : "");
@@ -695,20 +702,16 @@ export default function LicenseScreen() {
             );
           })
         ) : (
-          <Text style={[styles.hintText, { color: c.subtext }]}> 
-            Upload one or two license photos or files, then tap Continue to populate the form.
-          </Text>
+          <Text style={[styles.hintText, { color: c.subtext }]}>Upload one or two license photos or files, then tap Continue to populate the form.</Text>
         )}
 
-        <View style={styles.formActions}>
+          <View style={styles.formActions}>
           {license ? (
             <TouchableOpacity
               style={[styles.cancelBtn, { borderColor: c.border }]}
               onPress={() => setEditing(false)}
             >
-              <Text style={[styles.cancelBtnText, { color: c.text }]}>
-                Cancel
-              </Text>
+              <Text style={[styles.cancelBtnText, { color: c.text }]}>Cancel</Text>
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity
@@ -722,6 +725,7 @@ export default function LicenseScreen() {
           >
             <Text style={styles.saveBtnText}>Save License</Text>
           </TouchableOpacity>
+        </View>
         </View>
       </ScrollView>
 
@@ -799,18 +803,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  scroll: { padding: 16, gap: 4, paddingBottom: 40 },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    marginBottom: 8,
-    marginTop: 4,
+  scroll: { padding: Spacing.page, gap: Spacing.stackGap, paddingBottom: 40 },
+  sectionCard: {
+    marginBottom: 16,
+    borderRadius: Radius.card,
+    borderWidth: 1,
+    padding: Spacing.cardPadding,
+    gap: 18,
+    ...Shadows.card,
   },
-  imageRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
+  sectionTitle: {
+    ...Type.title,
+    marginBottom: 6,
+  },
+  sectionDescription: {
+    ...Type.body,
+  },
+  imageRow: { flexDirection: "row", gap: 14, marginBottom: 14 },
   imageSlot: {
     flex: 1,
-    height: 120,
-    borderRadius: 12,
+    height: 128,
+    borderRadius: Radius.surface,
     borderWidth: 1,
     overflow: "hidden",
     position: "relative",
@@ -838,14 +851,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
+    padding: 10,
   },
-  imagePlaceholderText: { fontSize: 12, fontWeight: "600" },
+  imagePlaceholderText: { ...Type.caption, fontWeight: "700" },
   imageLabel: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    paddingVertical: 3,
+    paddingVertical: 4,
     alignItems: "center",
   },
   imageLabelText: {
@@ -859,18 +873,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: Radius.pill,
     borderWidth: 1,
     marginBottom: 8,
   },
   mlBtnHalf: { flex: 1 },
-  processRow: { flexDirection: "row", gap: 8, marginBottom: 0 },
+  processRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  actionButtonsRow: { flexDirection: "row", gap: 8, marginTop: 20 },
   mlBtnDisabled: { opacity: 0.6 },
-  mlBtnText: { fontSize: 15, fontWeight: "600" },
-  label: { fontSize: 13, fontWeight: "600", marginTop: 12, marginBottom: 4 },
+  mlBtnText: { ...Type.body, fontWeight: "700" },
+  label: { ...Type.sectionLabel, marginTop: 12, marginBottom: 4 },
   input: {
-    borderRadius: 10,
+    borderRadius: Radius.sm,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 11,
@@ -881,10 +896,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: Radius.pill,
     borderWidth: 1,
   },
-  segmentBtnText: { fontWeight: "600", fontSize: 14 },
+  segmentBtnText: { ...Type.body, fontWeight: "700" },
   actions: {
     flexDirection: "row",
     gap: 8,
@@ -898,18 +913,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: Radius.pill,
   },
-  actionBtnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  formActions: { flexDirection: "row", gap: 8, marginTop: 24 },
+  actionBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  formActions: { flexDirection: "row", gap: 8, marginTop: 24, alignItems: "center" },
   cancelBtn: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: Radius.pill,
     borderWidth: 1,
   },
-  cancelBtnText: { fontWeight: "600", fontSize: 15 },
+  cancelBtnText: { fontWeight: "700", fontSize: 15 },
   filePreview: {
     flex: 1,
     padding: 12,
@@ -931,12 +946,12 @@ const styles = StyleSheet.create({
     flex: 2,
     alignItems: "center",
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: Radius.pill,
   },
   saveBtnDisabled: {
     opacity: 0.5,
   },
-  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   bottomSheetContent: {
     padding: 16,
     gap: 12,
@@ -963,7 +978,7 @@ const styles = StyleSheet.create({
   sheetButton: {
     width: "30%",
     aspectRatio: 1,
-    borderRadius: 16,
+    borderRadius: Radius.surface,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -980,7 +995,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     width: "100%",
     paddingVertical: 14,
-    borderRadius: 14,
+    borderRadius: Radius.pill,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
