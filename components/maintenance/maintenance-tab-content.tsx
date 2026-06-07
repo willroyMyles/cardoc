@@ -2,6 +2,7 @@ import { MaintenanceCard } from "@/components/maintenance/maintenance-card";
 import { MaintenanceDetailSheet } from "@/components/maintenance/maintenance-detail-sheet";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import type { MaintenanceEntry } from "@/models/maintenance";
@@ -12,7 +13,6 @@ import {
   FlatList,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -38,15 +38,15 @@ export function MaintenanceTabContent() {
         <Text style={[styles.sectionTitle, { color: c.subtext }]}>
           SERVICES LEDGER{entries.length > 0 ? ` (${entries.length})` : ""}
         </Text>
-        <TouchableOpacity
+        <AnimatedPressable
           style={[styles.logBtn, { backgroundColor: c.text }]}
           onPress={() => router.push("/maintenance/add")}
-          activeOpacity={0.85}
+          pressedScale={0.96}
         >
           <Text style={[styles.logBtnText, { color: c.background }]}>
             LOG RECORD
           </Text>
-        </TouchableOpacity>
+        </AnimatedPressable>
       </View>
 
       {/* Summary pill */}
@@ -92,7 +92,9 @@ export function MaintenanceTabContent() {
           <EmptyState
             icon="wrench.and.screwdriver.fill"
             title="No Maintenance Records"
-            subtitle="Track your service history by tapping Log Record"
+            subtitle="Log service work as it happens so costs, dates, and vehicle history stay searchable."
+            actionLabel="Log Record"
+            onAction={() => router.push("/maintenance/add")}
           />
         }
       />

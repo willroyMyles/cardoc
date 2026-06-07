@@ -1,5 +1,6 @@
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
 import { ImageViewerModal } from "@/components/ui/image-viewer-modal";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { AccentColor, Colors, Radius, Shadows, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { DynamicDriverLicense } from "@/models";
@@ -8,7 +9,7 @@ import {
     type DriverLicenseSpec,
 } from "@/services/docs-registry";
 import React, { useState } from "react";
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, StyleSheet, Text, View } from "react-native";
 
 interface LicenseCardProps {
   license: DynamicDriverLicense;
@@ -39,7 +40,7 @@ export function LicenseCard({
 
   if (!spec) {
     return (
-      <TouchableOpacity onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
+      <AnimatedPressable onPress={onPress}>
         <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}> 
           <Text style={[styles.headerLabel, { color: c.subtext }]}>{"DRIVER'S LICENSE"}</Text>
           <Text style={[styles.field, { color: c.text }]}>
@@ -50,7 +51,7 @@ export function LicenseCard({
               .join("\n")}
           </Text>
         </View>
-      </TouchableOpacity>
+      </AnimatedPressable>
     );
   }
 
@@ -61,7 +62,7 @@ export function LicenseCard({
 
   return (
     <>
-      <TouchableOpacity onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
+      <AnimatedPressable onPress={onPress}>
         <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}> 
           <View style={styles.header}>
             <View style={styles.headerTextGroup}>
@@ -78,7 +79,7 @@ export function LicenseCard({
           <View style={styles.body}> 
             <View style={styles.photoContainer}>
               {license.imageUriFront ? (
-                <TouchableOpacity
+                <AnimatedPressable
                   onPress={() =>
                     canPreviewFront
                       ? setViewerUri(license.imageUriFront!)
@@ -87,7 +88,7 @@ export function LicenseCard({
                           "This license file cannot be previewed here.",
                         )
                   }
-                  activeOpacity={0.8}
+                  pressedScale={0.98}
                 >
                   {canPreviewFront ? (
                     <Image
@@ -105,7 +106,7 @@ export function LicenseCard({
                       <Text style={[styles.photoPlaceholderText, { color: c.subtext }]}>Doc</Text>
                     </View>
                   )}
-                </TouchableOpacity>
+                </AnimatedPressable>
               ) : (
                 <View
                   style={[
@@ -166,7 +167,7 @@ export function LicenseCard({
             )}
           </View>
         </View>
-      </TouchableOpacity>
+      </AnimatedPressable>
 
       <ImageViewerModal visible={!!viewerUri} uri={viewerUri} onClose={() => setViewerUri(null)} />
     </>

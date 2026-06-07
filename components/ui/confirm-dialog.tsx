@@ -1,13 +1,15 @@
 import { Colors, StatusColors } from "@/constants/theme";
+import { haptics } from "@/services/haptics";
 import React from "react";
 import {
+    ActivityIndicator,
     Modal,
     StyleSheet,
     Text,
-    TouchableOpacity,
     useColorScheme,
     View,
 } from "react-native";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -16,7 +18,9 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   destructive?: boolean;
-  onConfirm: () => void;
+  loading?: boolean;
+  loadingLabel?: string;
+  onConfirm: () => void | Promise<void>;
   onCancel: () => void;
 }
 
@@ -27,10 +31,17 @@ export function ConfirmDialog({
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   destructive = false,
+  loading = false,
+  loadingLabel,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   const scheme = useColorScheme() ?? "light";
+  async function handleConfirm() {
+    await onConfirm();
+    void (destructive ? haptics.warning() : haptics.success());
+  }
+
   return (
     <Modal
       transparent
@@ -47,15 +58,17 @@ export function ConfirmDialog({
             {message}
           </Text>
           <View style={styles.buttons}>
-            <TouchableOpacity
+            <AnimatedPressable
               style={[styles.btn, styles.cancelBtn]}
               onPress={onCancel}
+              disabled={loading}
+              pressedScale={0.96}
             >
               <Text style={[styles.btnText, { color: Colors[scheme].text }]}>
                 {cancelLabel}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </AnimatedPressable>
+            <AnimatedPressable
               style={[
                 styles.btn,
                 styles.confirmBtn,
@@ -65,12 +78,23 @@ export function ConfirmDialog({
                     : Colors[scheme].tint,
                 },
               ]}
-              onPress={onConfirm}
+              onPress={handleConfirm}
+              disabled={loading}
+              pressedScale={0.96}
             >
-              <Text style={[styles.btnText, styles.confirmText]}>
-                {confirmLabel}
-              </Text>
-            </TouchableOpacity>
+              {loading ? (
+                <>
+                  <ActivityIndicator color="#fff" size="small" />
+                  <Text style={[styles.btnText, styles.confirmText]}>
+                    {loadingLabel ?? confirmLabel}
+                  </Text>
+                </>
+              ) : (
+                <Text style={[styles.btnText, styles.confirmText]}>
+                  {confirmLabel}
+                </Text>
+              )}
+            </AnimatedPressable>
           </View>
         </View>
       </View>
@@ -97,9 +121,12 @@ const styles = StyleSheet.create({
   buttons: { flexDirection: "row", gap: 12, marginTop: 8 },
   btn: {
     flex: 1,
+    flexDirection: "row",
+    gap: 8,
     paddingVertical: 13,
     borderRadius: 14,
     alignItems: "center",
+    justifyContent: "center",
   },
   cancelBtn: { backgroundColor: "rgba(128,128,128,0.12)" },
   confirmBtn: {},

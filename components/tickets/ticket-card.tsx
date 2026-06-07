@@ -1,10 +1,11 @@
 import { StatusBadge, StatusType } from "@/components/ui/status-badge";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { Colors, Spacing, StatusColors, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Ticket, TICKET_STATUS_LABELS, TicketStatus } from "@/models";
 import { router } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 const statusMap: Record<TicketStatus, StatusType> = {
   unpaid: "danger",
@@ -40,13 +41,12 @@ export function TicketCard({ ticket, vehicleName, onPress }: TicketCardProps) {
       });
 
   return (
-    <TouchableOpacity
+    <AnimatedPressable
       onPress={
         onPress ??
         (() =>
           router.push({ pathname: "/ticket/[id]", params: { id: ticket.id } }))
       }
-      activeOpacity={0.75}
       style={[
         styles.card,
         { backgroundColor: c.card, borderColor: c.border },
@@ -89,7 +89,7 @@ export function TicketCard({ ticket, vehicleName, onPress }: TicketCardProps) {
       <Text style={[styles.sub, { color: c.subtext }]} numberOfLines={1}>
         {vehicleName ? `${vehicleName} / ${dateLabel}` : dateLabel}
       </Text>
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }
 

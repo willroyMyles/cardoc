@@ -145,7 +145,9 @@ export default function FuelListScreen() {
           <EmptyState
             icon="fuelpump.fill"
             title="No Fuel Records"
-            subtitle="Start tracking your fuel by tapping +"
+            subtitle="Log your first refill to start tracking fuel costs, mileage, and economy."
+            actionLabel="Log Refill"
+            onAction={() => router.push("/fuel/add")}
           />
         }
       />

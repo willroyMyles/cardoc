@@ -2,12 +2,12 @@ import { type Href, router } from "expo-router";
 import React, { type ReactNode } from "react";
 import {
     StyleSheet,
-    TouchableOpacity,
     View,
     type ViewStyle,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -50,19 +50,20 @@ export function Header({
     <View
       style={[
         styles.header,
-        { backgroundColor: c.card, borderBottomColor: c.border },
+        { backgroundColor: c.background, borderBottomColor: "transparent" },
         style,
       ]}
     >
       {showBackButton ? (
-        <TouchableOpacity
-          style={styles.backButton}
+        <AnimatedPressable
+          style={[styles.backButton, { backgroundColor: c.card }]}
           onPress={handleBack}
           accessibilityRole="button"
           accessibilityLabel="Go back"
+          pressedScale={0.92}
         >
           <IconSymbol name="arrow.left" size={20} color={c.text} />
-        </TouchableOpacity>
+        </AnimatedPressable>
       ) : (
         <View style={styles.spacer} />
       )}
@@ -76,7 +77,11 @@ export function Header({
         {title}
       </ThemedText>
 
-      {right ? <View style={styles.right}>{right}</View> : <View style={styles.spacer} />}
+      {right ? (
+        <View style={[styles.right, { backgroundColor: c.card }]}>{right}</View>
+      ) : (
+        <View style={styles.spacer} />
+      )}
     </View>
   );
 }
@@ -88,12 +93,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: Spacing.page,
-    paddingVertical: 14,
+    paddingTop: 8,
+    paddingBottom: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   backButton: {
     width: 40,
     height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -103,16 +110,17 @@ const styles = StyleSheet.create({
   },
   right: {
     minWidth: 40,
+    minHeight: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
   title: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: "300",
+    fontSize: 16,
+    fontWeight: "700",
     textAlign: "center",
-    textTransform: "uppercase",
-    letterSpacing: 1.5,
+    letterSpacing: 0,
     marginHorizontal: 8,
   },
 });

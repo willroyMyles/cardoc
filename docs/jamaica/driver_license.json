@@ -16,7 +16,6 @@
       "sex": { "label": "Sex", "type": "enum", "values": ["M", "F"], "required": true },
       "nationality": { "label": "Nationality", "type": "string", "required": false },
       "originalIssueDate": { "label": "Original Issue Date", "type": "date", "format": "ISO 8601", "required": false },
-      "date": { "label": "Date", "type": "date", "format": "ISO 8601", "required": false },
       "licenseToDrive": { "label": "Licence to Drive", "type": "string", "required": false },
       "controlNumber": { "label": "Control Number", "type": "string", "required": false },
       "judicialEndorsement": { "label": "Judicial Endorsement", "type": "string", "required": false }

@@ -1,4 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { Colors, DocTypeColors, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { FuelEntry, MaintenanceEntry } from "@/models";
@@ -310,22 +311,22 @@ export default function DashboardOverview() {
           <Text style={[styles.emptyTitle, { color: c.text }]}>Scan to get started</Text>
           <Text style={[styles.emptySubtitle, { color: c.subtext }]}>Add your first vehicle by scanning a document.</Text>
           <View style={styles.buttonRow}>
-            <TouchableOpacity
+            <AnimatedPressable
               style={[styles.actionButton, { backgroundColor: c.tint }]}
               onPress={() =>
                 router.push({ pathname: "/scan", params: { source: "camera" } })
               }
-              activeOpacity={0.85}
+              pressedScale={0.96}
             >
               <Text style={[styles.actionButtonText, { color: "#fff" }]}>Camera</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </AnimatedPressable>
+            <AnimatedPressable
               style={[styles.actionButton, { backgroundColor: c.card, borderColor: c.border, borderWidth: 1 }]}
               onPress={() => setUploadSheetVisible(true)}
-              activeOpacity={0.85}
+              pressedScale={0.96}
             >
               <Text style={[styles.actionButtonText, { color: c.text }]}>Upload</Text>
-            </TouchableOpacity>
+            </AnimatedPressable>
           </View>
         </View>
 
@@ -343,27 +344,27 @@ export default function DashboardOverview() {
             <View style={[styles.sheet, { backgroundColor: c.card, borderColor: c.border }]}> 
               <View style={styles.sheetHandle} />
               <Text style={[styles.sheetTitle, { color: c.text }]}>Upload from</Text>
-              <TouchableOpacity
+              <AnimatedPressable
                 style={[styles.sheetOption, { borderColor: c.border }]}
                 onPress={() => handleUploadChoice("gallery")}
-                activeOpacity={0.75}
+                pressedScale={0.98}
               >
                 <Text style={[styles.sheetOptionText, { color: c.text }]}>{galleryLabel}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </AnimatedPressable>
+              <AnimatedPressable
                 style={[styles.sheetOption, { borderColor: c.border }]}
                 onPress={() => handleUploadChoice("files")}
-                activeOpacity={0.75}
+                pressedScale={0.98}
               >
                 <Text style={[styles.sheetOptionText, { color: c.text }]}>Files</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </AnimatedPressable>
+              <AnimatedPressable
                 style={styles.sheetCancel}
                 onPress={() => setUploadSheetVisible(false)}
-                activeOpacity={0.75}
+                pressedScale={0.98}
               >
                 <Text style={[styles.sheetCancelText, { color: c.text }]}>Cancel</Text>
-              </TouchableOpacity>
+              </AnimatedPressable>
             </View>
           </TouchableOpacity>
         </Modal>
@@ -455,9 +456,9 @@ export default function DashboardOverview() {
       <View style={[styles.vaultCard, { backgroundColor: c.card, borderColor: c.border }]}> 
         <View style={styles.vaultHeader}>
           <Text style={[styles.cardLabel, { color: c.subtext }]}>DOCUMENT VAULT SUMMARY</Text>
-          <TouchableOpacity onPress={() => router.push("/documents")}> 
+          <AnimatedPressable onPress={() => router.push("/documents")} pressedScale={0.98}>
             <Text style={[styles.vaultAction, { color: c.tint }]}>MANAGE ALL ({documents.length})</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
         {featuredDoc ? (
           <View style={[styles.docRow, { backgroundColor: c.background, borderColor: c.border }]}> 

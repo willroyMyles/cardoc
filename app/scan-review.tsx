@@ -13,6 +13,7 @@ import {
     getDriverLicenseSpec,
     type DocSpec,
 } from "@/services/docs-registry";
+import { haptics } from "@/services/haptics";
 import { scheduleDocumentExpiryReminders } from "@/services/notifications/expiry-reminders";
 import {
     useDocumentsStore,
@@ -23,16 +24,17 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 // Utility to check if a vehicle matches scanned VIN/chassis
@@ -110,6 +112,7 @@ export default function ScanReviewScreen() {
     issuingAuthority,
     fields: fieldsParam,
     imageUri,
+    imageUploadCount: imageUploadCountParam,
   } = useLocalSearchParams<{
     category: string;
     specType: string;
@@ -117,6 +120,7 @@ export default function ScanReviewScreen() {
     issuingAuthority: string;
     fields: string;
     imageUri: string;
+    imageUploadCount?: string;
   }>();
 
   useEffect(() => {
@@ -163,6 +167,12 @@ export default function ScanReviewScreen() {
   const [pendingVehicle, setPendingVehicle] = useState<Vehicle | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const imageUploadCount = useMemo(() => {
+    const parsed = Number(imageUploadCountParam);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    return imageUri ? 1 : 0;
+  }, [imageUploadCountParam, imageUri]);
+
   function setField(key: string, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }));
   }
@@ -200,10 +210,12 @@ export default function ScanReviewScreen() {
           country,
           fields,
           imageUriFront: imageUri ?? "",
+          imageUploadCount,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
         setLicense(license);
+        void haptics.success();
         router.replace("/license");
       } else {
         const docType = inferDocumentType(specType ?? "");
@@ -258,6 +270,7 @@ export default function ScanReviewScreen() {
         };
         addDocument(doc);
         await scheduleDocumentExpiryReminders(doc).catch(() => {});
+        void haptics.success();
         router.replace({
           pathname: "/vehicle/[id]/related",
           params: { id: vehicleId },
@@ -327,6 +340,7 @@ export default function ScanReviewScreen() {
                         },
                       ]}
                       onPress={() => setSelectedVehicleId(v.id)}
+                      disabled={saving}
                       activeOpacity={0.75}
                     >
                       <Text
@@ -370,6 +384,7 @@ export default function ScanReviewScreen() {
                   placeholderTextColor={c.subtext}
                   autoCapitalize="none"
                   returnKeyType="next"
+                  editable={!saving}
                 />
               </View>
             ))}
@@ -393,9 +408,14 @@ export default function ScanReviewScreen() {
             disabled={saving}
             activeOpacity={0.85}
           >
-            <Text style={styles.saveBtnText}>
-              {saving ? "Saving…" : "Save Document"}
-            </Text>
+            {saving ? (
+              <>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text style={styles.saveBtnText}>Saving</Text>
+              </>
+            ) : (
+              <Text style={styles.saveBtnText}>Save Document</Text>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -459,9 +479,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   saveBtn: {
+    flexDirection: "row",
+    gap: 8,
     borderRadius: Radius.pill,
     paddingVertical: 14,
     alignItems: "center",
+    justifyContent: "center",
   },
   saveBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 });

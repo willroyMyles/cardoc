@@ -2,23 +2,25 @@ import { Header } from "@/components/ui/header";
 import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
-    CAR_DOCUMENT_TYPE_LABELS,
-    CarDocument,
-    CarDocumentType,
+  CAR_DOCUMENT_TYPE_LABELS,
+  CarDocument,
+  CarDocumentType,
 } from "@/models";
 import { scheduleDocumentExpiryReminders } from "@/services/notifications/expiry-reminders";
+import { haptics } from "@/services/haptics";
 import { useDocumentsStore, useVehiclesStore } from "@/store";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
 } from "react-native";
 
 function generateId() {
@@ -44,6 +46,7 @@ export default function AddDocumentScreen() {
   const [expiryDate, setExpiryDate] = useState("");
   const [vehicleId, setVehicleId] = useState(vehicles[0]?.id ?? "");
   const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const inputStyle = [
     styles.input,
@@ -52,6 +55,7 @@ export default function AddDocumentScreen() {
   const labelStyle = [styles.label, { color: c.subtext }];
 
   async function handleSave() {
+    if (saving) return;
     if (!docNumber || !expiryDate) {
       Alert.alert(
         "Missing Fields",
@@ -63,6 +67,7 @@ export default function AddDocumentScreen() {
       Alert.alert("No Vehicle", "Please add a vehicle first.");
       return;
     }
+    setSaving(true);
     const doc: CarDocument = {
       id: generateId(),
       vehicleId,
@@ -78,12 +83,17 @@ export default function AddDocumentScreen() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    addDocument(doc);
-    await scheduleDocumentExpiryReminders(doc).catch(() => {});
-    router.replace({
-      pathname: "/vehicle/[id]/related",
-      params: { id: vehicleId },
-    });
+    try {
+      addDocument(doc);
+      await scheduleDocumentExpiryReminders(doc).catch(() => {});
+      void haptics.success();
+      router.replace({
+        pathname: "/vehicle/[id]/related",
+        params: { id: vehicleId },
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -114,6 +124,7 @@ export default function AddDocumentScreen() {
                 },
               ]}
               onPress={() => setType(key)}
+              disabled={saving}
             >
               <Text
                 style={[
@@ -147,6 +158,7 @@ export default function AddDocumentScreen() {
                     },
                   ]}
                   onPress={() => setVehicleId(v.id)}
+                  disabled={saving}
                 >
                   <Text
                     style={[
@@ -169,6 +181,7 @@ export default function AddDocumentScreen() {
           onChangeText={setTitle}
           placeholder="e.g. Comprehensive Insurance"
           placeholderTextColor={c.subtext}
+          editable={!saving}
         />
 
         <Text style={labelStyle}>Document Number *</Text>
@@ -179,6 +192,7 @@ export default function AddDocumentScreen() {
           placeholder="e.g. INS-123456"
           placeholderTextColor={c.subtext}
           autoCapitalize="characters"
+          editable={!saving}
         />
 
         <Text style={labelStyle}>Issuing Authority</Text>
@@ -188,6 +202,7 @@ export default function AddDocumentScreen() {
           onChangeText={setIssuer}
           placeholder="e.g. State DMV"
           placeholderTextColor={c.subtext}
+          editable={!saving}
         />
 
         <Text style={labelStyle}>Issue Date (YYYY-MM-DD)</Text>
@@ -198,6 +213,7 @@ export default function AddDocumentScreen() {
           placeholder="2024-01-01"
           placeholderTextColor={c.subtext}
           keyboardType="numbers-and-punctuation"
+          editable={!saving}
         />
 
         <Text style={labelStyle}>Expiry Date * (YYYY-MM-DD)</Text>
@@ -208,6 +224,7 @@ export default function AddDocumentScreen() {
           placeholder="2025-12-31"
           placeholderTextColor={c.subtext}
           keyboardType="numbers-and-punctuation"
+          editable={!saving}
         />
 
         <Text style={labelStyle}>Notes</Text>
@@ -219,13 +236,25 @@ export default function AddDocumentScreen() {
           placeholderTextColor={c.subtext}
           multiline
           numberOfLines={3}
+          editable={!saving}
         />
 
         <TouchableOpacity
-          style={[styles.saveBtn, { backgroundColor: c.tint }]}
+          style={[
+            styles.saveBtn,
+            { backgroundColor: saving ? c.border : c.tint },
+          ]}
           onPress={handleSave}
+          disabled={saving}
         >
-          <Text style={styles.saveBtnText}>Save Document</Text>
+          {saving ? (
+            <>
+              <ActivityIndicator color="#fff" size="small" />
+              <Text style={styles.saveBtnText}>Saving</Text>
+            </>
+          ) : (
+            <Text style={styles.saveBtnText}>Save Document</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -255,9 +284,12 @@ const styles = StyleSheet.create({
   typeChipText: { ...Type.body, fontWeight: "700" },
   saveBtn: {
     marginTop: 24,
+    flexDirection: "row",
+    gap: 8,
     paddingVertical: 14,
     borderRadius: Radius.pill,
     alignItems: "center",
+    justifyContent: "center",
   },
   saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
 });

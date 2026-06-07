@@ -1,6 +1,7 @@
 import { Header } from "@/components/ui/header";
 import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { haptics } from "@/services/haptics";
 import { useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -65,6 +66,7 @@ export default function EditVehicleScreen() {
       color,
       bodyType,
     });
+    void haptics.success();
     router.back();
   }
 

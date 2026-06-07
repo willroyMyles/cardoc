@@ -1,6 +1,7 @@
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { AccentColor, Colors, Radius, Shadows, Spacing, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
@@ -8,11 +9,13 @@ import {
     signInWithGoogle,
     signOutUser,
 } from "@/services/firebase/auth-service";
+import { haptics } from "@/services/haptics";
 import { useAuthStore, useLicenseStore } from "@/store";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+    ActivityIndicator,
     ActionSheetIOS,
     Alert,
     Platform,
@@ -20,7 +23,6 @@ import {
     ScrollView,
     StyleSheet,
     Text,
-    TouchableOpacity,
     View,
 } from "react-native";
 
@@ -95,6 +97,7 @@ export default function MoreScreen() {
     setLoading(true);
     try {
       await signInWithGoogle();
+      void haptics.success();
     } catch (e: any) {
       if (e.message !== "Sign-in cancelled.") setAuthError(e.message);
     } finally {
@@ -107,6 +110,7 @@ export default function MoreScreen() {
     setLoading(true);
     try {
       await signInWithApple();
+      void haptics.success();
     } catch (e: any) {
       if (e.message !== "Sign-in cancelled.") setAuthError(e.message);
     } finally {
@@ -124,6 +128,7 @@ export default function MoreScreen() {
           setLoading(true);
           try {
             await signOutUser();
+            void haptics.warning();
           } finally {
             setLoading(false);
           }
@@ -182,24 +187,28 @@ export default function MoreScreen() {
                     </Text>
                   ) : null}
                 </View>
-                <TouchableOpacity
+                <AnimatedPressable
                   style={[
                     styles.signOutBtn,
                     { borderColor: StatusColors.danger + "55" },
                   ]}
                   onPress={handleSignOut}
                   disabled={authLoading}
-                  activeOpacity={0.7}
+                  pressedScale={0.96}
                 >
-                  <Text
-                    style={[
-                      styles.signOutBtnText,
-                      { color: StatusColors.danger },
-                    ]}
-                  >
-                    Sign Out
-                  </Text>
-                </TouchableOpacity>
+                  {authLoading ? (
+                    <ActivityIndicator color={StatusColors.danger} size="small" />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.signOutBtnText,
+                        { color: StatusColors.danger },
+                      ]}
+                    >
+                      Sign Out
+                    </Text>
+                  )}
+                </AnimatedPressable>
               </View>
 
               {license && (
@@ -207,10 +216,10 @@ export default function MoreScreen() {
                   <View
                     style={[styles.cardDivider, { backgroundColor: c.border }]}
                   />
-                  <TouchableOpacity
+                  <AnimatedPressable
                     style={styles.licenseInCard}
                     onPress={() => router.push("/license")}
-                    activeOpacity={0.75}
+                    pressedScale={0.98}
                   >
                     <View
                       style={[
@@ -244,7 +253,7 @@ export default function MoreScreen() {
                       size={16}
                       color={c.subtext}
                     />
-                  </TouchableOpacity>
+                  </AnimatedPressable>
                 </>
               )}
             </>
@@ -258,16 +267,21 @@ export default function MoreScreen() {
                   Sign in to back up and sync across devices
                 </Text>
               </View>
-              <TouchableOpacity
+              <AnimatedPressable
                 style={[styles.signInBtn, { backgroundColor: c.tint }]}
                 onPress={handleSignIn}
                 disabled={authLoading}
-                activeOpacity={0.8}
+                pressedScale={0.96}
               >
-                <Text style={styles.signInBtnText}>
-                  {authLoading ? "Signing in…" : "Sign In"}
-                </Text>
-              </TouchableOpacity>
+                {authLoading ? (
+                  <>
+                    <ActivityIndicator color="#fff" size="small" />
+                    <Text style={styles.signInBtnText}>Signing in</Text>
+                  </>
+                ) : (
+                  <Text style={styles.signInBtnText}>Sign In</Text>
+                )}
+              </AnimatedPressable>
               {authError ? (
                 <Text
                   style={[styles.authError, { color: StatusColors.danger }]}
@@ -281,10 +295,10 @@ export default function MoreScreen() {
                   <View
                     style={[styles.cardDivider, { backgroundColor: c.border }]}
                   />
-                  <TouchableOpacity
+                  <AnimatedPressable
                     style={styles.licenseInCard}
                     onPress={() => router.push("/license")}
-                    activeOpacity={0.75}
+                    pressedScale={0.98}
                   >
                     <View
                       style={[
@@ -318,7 +332,7 @@ export default function MoreScreen() {
                       size={16}
                       color={c.subtext}
                     />
-                  </TouchableOpacity>
+                  </AnimatedPressable>
                 </>
               )}
             </View>
@@ -327,14 +341,14 @@ export default function MoreScreen() {
 
         {/* Menu items — each as its own card */}
         {MENU_ITEMS.map((item) => (
-          <TouchableOpacity
+          <AnimatedPressable
             key={item.route}
             style={[
               styles.menuItem,
               { backgroundColor: c.card, borderColor: c.border },
             ]}
             onPress={() => router.push(item.route as any)}
-            activeOpacity={0.75}
+            pressedScale={0.98}
           >
             <View
               style={[styles.menuIcon, { backgroundColor: "#1A1A1A" }]}
@@ -356,7 +370,7 @@ export default function MoreScreen() {
               ) : null}
             </View>
             <IconSymbol name="chevron.right" size={16} color={c.subtext} />
-          </TouchableOpacity>
+          </AnimatedPressable>
         ))}
       </ScrollView>
     </SafeAreaView>
@@ -394,6 +408,11 @@ const styles = StyleSheet.create({
   accountName: { fontSize: 15, fontWeight: "700" },
   accountEmail: { fontSize: 12, marginTop: 2 },
   signOutBtn: {
+    minWidth: 82,
+    minHeight: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderRadius: Radius.pill,
     paddingHorizontal: 14,
@@ -405,6 +424,9 @@ const styles = StyleSheet.create({
   signInTitle: { fontSize: 16, fontWeight: "700" },
   signInSubtitle: { fontSize: 13 },
   signInBtn: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
     borderRadius: Radius.pill,
     paddingVertical: 14,
     alignItems: "center",

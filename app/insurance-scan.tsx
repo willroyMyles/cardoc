@@ -92,6 +92,7 @@ export default function InsuranceScanScreen() {
             issuingAuthority: result.issuingAuthority,
             fields: JSON.stringify(result.fields),
             imageUri: selectedFile.uri,
+            imageUploadCount: "1",
           },
         });
       }

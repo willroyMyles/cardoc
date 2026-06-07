@@ -2,7 +2,8 @@ import { AccentColor, Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { AnimatedPressable } from "./animated-pressable";
 import { IconSymbol } from "./icon-symbol";
 
 interface ScanPromptCardProps {
@@ -36,14 +37,14 @@ export function ScanPromptCard({
 
       <Text style={[styles.subtitle, { color: c.subtext }]}>{subtitle}</Text>
 
-      <TouchableOpacity
+      <AnimatedPressable
         style={[styles.button, { backgroundColor: c.tint }]}
         onPress={() => router.push("/scan")}
-        activeOpacity={0.85}
+        pressedScale={0.96}
       >
         <IconSymbol name="doc.text.viewfinder" size={14} color={AccentColor} />
         <Text style={styles.buttonText}>SCAN NOW</Text>
-      </TouchableOpacity>
+      </AnimatedPressable>
     </View>
   );
 }

@@ -1,8 +1,8 @@
 import {
-    getDocumentSpecs,
-    getDriverLicenseSpec,
-    type CountryCode,
-    type DocSpec,
+  getDocumentSpecs,
+  getDriverLicenseSpec,
+  type CountryCode,
+  type DocSpec,
 } from "@/services/docs-registry";
 import { InlineDataPart, TextPart } from "@react-native-firebase/ai";
 import { File } from "expo-file-system";
@@ -133,6 +133,8 @@ Return ONLY a valid JSON object (no markdown code fences) in this exact structur
     files.map((f) => uriToInlineDataPart(f.uri, f.mimeType)),
   );
   const textPart: TextPart = { text: prompt };
+
+  console.log(fileParts);
 
   const result = await model.generateContent([...fileParts, textPart]);
   const raw = result.response.text().trim();

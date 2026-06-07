@@ -12,6 +12,7 @@ import {
 } from "@/services/docs-registry";
 import { uriToInlineDataPart } from "@/services/firebase/ai-document";
 import { extractLicenseFieldsFromParts } from "@/services/firebase/ai-license";
+import { haptics } from "@/services/haptics";
 import { useLicenseStore, useSettingsStore } from "@/store";
 import {
   BottomSheetModal,
@@ -67,6 +68,10 @@ function isImageMimeType(mime?: string) {
 
 function isImageUri(uri: string) {
   return /\.(jpe?g|png|webp|gif)$/i.test(uri.split("?")[0]);
+}
+
+function countLicenseImages(frontUri?: string, backUri?: string) {
+  return [frontUri, backUri].filter(Boolean).length;
 }
 
 export default function LicenseScreen() {
@@ -227,6 +232,7 @@ export default function LicenseScreen() {
         }
         return next;
       });
+      void haptics.success();
       Alert.alert(
         "Done",
         "Fields filled with AI. Please review and correct any errors.",
@@ -344,6 +350,7 @@ export default function LicenseScreen() {
       fields: normalized,
       imageUriFront: frontUri || undefined,
       imageUriBack: backUri || undefined,
+      imageUploadCount: countLicenseImages(frontUri, backUri),
       imageMimeTypeFront: frontMimeType,
       imageMimeTypeBack: backMimeType,
       createdAt: license?.createdAt ?? new Date().toISOString(),
@@ -351,6 +358,7 @@ export default function LicenseScreen() {
     };
     setLicense(data);
     setEditing(false);
+    void haptics.success();
   }
 
   function handleDelete() {

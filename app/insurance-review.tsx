@@ -4,6 +4,7 @@ import { Colors, Radius, Spacing, StatusColors, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CarDocument, Vehicle } from "@/models";
 import { getDocumentSpecs } from "@/services/docs-registry";
+import { haptics } from "@/services/haptics";
 import { scheduleDocumentExpiryReminders } from "@/services/notifications/expiry-reminders";
 import { useDocumentsStore, useSettingsStore, useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
@@ -255,6 +256,7 @@ export default function InsuranceReviewScreen() {
 
       addDocument(doc);
       await scheduleDocumentExpiryReminders(doc).catch(() => {});
+      void haptics.success();
       router.replace({
         pathname: "/vehicle/[id]/related",
         params: { id: vehicleId },

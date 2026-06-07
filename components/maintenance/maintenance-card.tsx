@@ -1,4 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
@@ -6,7 +7,7 @@ import {
     type MaintenanceEntry,
 } from "@/models/maintenance";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 interface MaintenanceCardProps {
   entry: MaintenanceEntry;
@@ -19,8 +20,7 @@ export function MaintenanceCard({ entry, vehicleName, onPress }: MaintenanceCard
   const c = Colors[scheme];
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.75}
+    <AnimatedPressable
       onPress={onPress}
       style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
     > 
@@ -68,7 +68,7 @@ export function MaintenanceCard({ entry, vehicleName, onPress }: MaintenanceCard
           @ {entry.workshop}
         </Text>
       ) : null}
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }
 

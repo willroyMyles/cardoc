@@ -5,6 +5,7 @@ import {
     MAINTENANCE_TYPE_LABELS,
     type MaintenanceEntry,
 } from "@/models/maintenance";
+import { haptics } from "@/services/haptics";
 import React from "react";
 import {
     Modal,
@@ -36,6 +37,7 @@ export function MaintenanceDetailSheet({
 
   function handleDelete() {
     onDelete(entry!.id);
+    void haptics.warning();
     onClose();
   }
 

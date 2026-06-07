@@ -1,4 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { Colors, Radius, Spacing, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import React, { useMemo, useState } from "react";
@@ -7,7 +8,6 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    TouchableOpacity,
     View,
 } from "react-native";
 
@@ -196,20 +196,19 @@ export function TicketAggregator<T>({
     if (!showCollapsedControl) return null;
 
     return (
-      <TouchableOpacity
+      <AnimatedPressable
         style={[
           styles.collapsed,
           { backgroundColor: c.card, borderColor: c.border },
         ]}
         onPress={() => setExpanded(true)}
-        activeOpacity={0.8}
       >
         <IconSymbol name="chart.bar.fill" size={15} color={c.tint} />
         <Text style={[styles.collapsedText, { color: c.text }]}>
           Insights &amp; Aggregation
         </Text>
         <IconSymbol name="chevron.down" size={13} color={c.subtext} />
-      </TouchableOpacity>
+      </AnimatedPressable>
     );
   }
 
@@ -221,17 +220,16 @@ export function TicketAggregator<T>({
       ]}
     >
       {/* Header */}
-      <TouchableOpacity
+      <AnimatedPressable
         style={styles.expandedHeader}
         onPress={() => setExpanded(false)}
-        activeOpacity={0.8}
       >
         <IconSymbol name="chart.bar.fill" size={15} color={c.tint} />
         <Text style={[styles.collapsedText, { color: c.text }]}>
           Insights &amp; Aggregation
         </Text>
         <IconSymbol name="chevron.up" size={13} color={c.subtext} />
-      </TouchableOpacity>
+      </AnimatedPressable>
 
       {/* Date Range */}
       <View style={styles.dateRow}>
@@ -274,7 +272,7 @@ export function TicketAggregator<T>({
           />
         </View>
         {fromDate || toDate ? (
-          <TouchableOpacity
+          <AnimatedPressable
             style={[
               styles.clearBtn,
               { backgroundColor: c.background, borderColor: c.border },
@@ -283,9 +281,10 @@ export function TicketAggregator<T>({
               setFromDate("");
               setToDate("");
             }}
+            pressedScale={0.92}
           >
             <IconSymbol name="xmark" size={12} color={c.subtext} />
-          </TouchableOpacity>
+          </AnimatedPressable>
         ) : null}
       </View>
 
@@ -304,7 +303,7 @@ export function TicketAggregator<T>({
         {fields.map((f) => {
           const active = f.key === selectedKey;
           return (
-            <TouchableOpacity
+            <AnimatedPressable
               key={f.key}
               style={[
                 styles.chip,
@@ -314,6 +313,7 @@ export function TicketAggregator<T>({
                 },
               ]}
               onPress={() => setSelectedKey(f.key)}
+              pressedScale={0.95}
             >
               <Text
                 style={[
@@ -323,7 +323,7 @@ export function TicketAggregator<T>({
               >
                 {f.label}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressable>
           );
         })}
       </ScrollView>

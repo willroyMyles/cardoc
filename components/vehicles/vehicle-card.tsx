@@ -1,11 +1,12 @@
 import { Card } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { AccentColor, Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Vehicle } from "@/models";
 import { router } from "expo-router";
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -23,7 +24,7 @@ export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
   const bgColor = vehicle.color.toLowerCase() || Colors[scheme].border;
 
   return (
-    <TouchableOpacity
+    <AnimatedPressable
       onPress={
         onPress ??
         (() =>
@@ -32,7 +33,6 @@ export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
             params: { id: vehicle.id },
           }))
       }
-      activeOpacity={0.75}
     >
       <Card style={styles.card}>
         <View style={styles.row}>
@@ -82,7 +82,7 @@ export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
           />
         </View>
       </Card>
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }
 

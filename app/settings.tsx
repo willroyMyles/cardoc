@@ -1,6 +1,8 @@
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SectionHeader } from "@/components/ui/section-header";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
+import { AppSwitch } from "@/components/ui/app-switch";
 import {
   AccentColor,
   Colors,
@@ -19,6 +21,7 @@ import {
   signOutUser,
 } from "@/services/firebase/auth-service";
 import { syncAllStores } from "@/services/firebase/sync-manager";
+import { haptics } from "@/services/haptics";
 import { requestNotificationPermissions } from "@/services/notifications/expiry-reminders";
 import { useAuthStore, useSettingsStore } from "@/store";
 import { type SyncMode } from "@/store/settings-store";
@@ -28,6 +31,7 @@ import { useMediaLibraryPermissions } from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   ActionSheetIOS,
   Alert,
   Linking,
@@ -35,9 +39,7 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -101,6 +103,9 @@ export default function SettingsScreen() {
   const setLoading = useAuthStore((s) => s.setLoading);
   const [authError, setAuthError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [permissionLoading, setPermissionLoading] = useState<
+    "notifications" | "camera" | "media" | null
+  >(null);
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
 
   const currentCountryLabel = COUNTRY_LABELS[country] ?? country;
@@ -125,7 +130,10 @@ export default function SettingsScreen() {
       );
       return;
     }
-    setSyncMode(mode);
+    if (mode !== syncMode) {
+      setSyncMode(mode);
+      void haptics.selection();
+    }
   };
 
   const handleSyncNow = async () => {
@@ -136,6 +144,7 @@ export default function SettingsScreen() {
     setSyncing(true);
     try {
       await syncAllStores();
+      void haptics.success();
       Alert.alert("Synced", "All stores reconciled with Firestore.");
     } catch (e: any) {
       Alert.alert("Sync failed", e?.message ?? "An error occurred.");
@@ -145,21 +154,28 @@ export default function SettingsScreen() {
   };
 
   const handleNotificationsToggle = async (val: boolean) => {
+    setPermissionLoading("notifications");
     if (val) {
-      const granted = await requestNotificationPermissions();
-      if (!granted) {
-        Alert.alert(
-          "Permission Denied",
-          "Enable notifications in System Settings.",
-          [
-            { text: "Cancel", style: "cancel" },
-            { text: "Open Settings", onPress: () => Linking.openSettings() },
-          ],
-        );
-        return;
+      try {
+        const granted = await requestNotificationPermissions();
+        if (!granted) {
+          Alert.alert(
+            "Permission Denied",
+            "Enable notifications in System Settings.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { text: "Open Settings", onPress: () => Linking.openSettings() },
+            ],
+          );
+          return;
+        }
+      } finally {
+        setPermissionLoading(null);
       }
     }
     setNotificationsEnabled(val);
+    setPermissionLoading(null);
+    void haptics.selection();
   };
 
   function handleSignIn() {
@@ -189,6 +205,7 @@ export default function SettingsScreen() {
     setLoading(true);
     try {
       await signInWithGoogle();
+      void haptics.success();
     } catch (e: any) {
       if (e.message !== "Sign-in cancelled.") setAuthError(e.message);
     } finally {
@@ -201,6 +218,7 @@ export default function SettingsScreen() {
     setLoading(true);
     try {
       await signInWithApple();
+      void haptics.success();
     } catch (e: any) {
       if (e.message !== "Sign-in cancelled.") setAuthError(e.message);
     } finally {
@@ -218,6 +236,7 @@ export default function SettingsScreen() {
           setLoading(true);
           try {
             await signOutUser();
+            void haptics.warning();
           } finally {
             setLoading(false);
           }
@@ -239,16 +258,22 @@ export default function SettingsScreen() {
       return;
     }
     if (cameraPermission?.status === "granted") return;
-    const result = await requestCameraPermission();
-    if (!result.granted) {
-      Alert.alert(
-        "Camera Permission Denied",
-        "Enable camera access in System Settings to scan documents.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Open Settings", onPress: () => Linking.openSettings() },
-        ],
-      );
+    setPermissionLoading("camera");
+    try {
+      const result = await requestCameraPermission();
+      if (result.granted) void haptics.selection();
+      if (!result.granted) {
+        Alert.alert(
+          "Camera Permission Denied",
+          "Enable camera access in System Settings to scan documents.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: () => Linking.openSettings() },
+          ],
+        );
+      }
+    } finally {
+      setPermissionLoading(null);
     }
   };
 
@@ -265,16 +290,22 @@ export default function SettingsScreen() {
       return;
     }
     if (mediaPermission?.status === "granted") return;
-    const result = await requestMediaPermission();
-    if (!result.granted) {
-      Alert.alert(
-        "Photo Library Permission Denied",
-        "Enable photo library access in System Settings.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Open Settings", onPress: () => Linking.openSettings() },
-        ],
-      );
+    setPermissionLoading("media");
+    try {
+      const result = await requestMediaPermission();
+      if (result.granted) void haptics.selection();
+      if (!result.granted) {
+        Alert.alert(
+          "Photo Library Permission Denied",
+          "Enable photo library access in System Settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: () => Linking.openSettings() },
+          ],
+        );
+      }
+    } finally {
+      setPermissionLoading(null);
     }
   };
 
@@ -330,24 +361,28 @@ export default function SettingsScreen() {
                     </Text>
                   ) : null}
                 </View>
-                <TouchableOpacity
+                <AnimatedPressable
                   style={[
                     styles.signOutBtn,
                     { borderColor: StatusColors.danger + "55" },
                   ]}
                   onPress={handleSignOut}
                   disabled={authLoading}
-                  activeOpacity={0.7}
+                  pressedScale={0.96}
                 >
-                  <Text
-                    style={[
-                      styles.signOutBtnText,
-                      { color: StatusColors.danger },
-                    ]}
-                  >
-                    Sign Out
-                  </Text>
-                </TouchableOpacity>
+                  {authLoading ? (
+                    <ActivityIndicator color={StatusColors.danger} size="small" />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.signOutBtnText,
+                        { color: StatusColors.danger },
+                      ]}
+                    >
+                      Sign Out
+                    </Text>
+                  )}
+                </AnimatedPressable>
               </View>
             </>
           ) : (
@@ -360,16 +395,21 @@ export default function SettingsScreen() {
                   Sign in to back up and sync across devices
                 </Text>
               </View>
-              <TouchableOpacity
+              <AnimatedPressable
                 style={[styles.signInBtn, { backgroundColor: c.tint }]}
                 onPress={handleSignIn}
                 disabled={authLoading}
-                activeOpacity={0.8}
+                pressedScale={0.96}
               >
-                <Text style={styles.signInBtnText}>
-                  {authLoading ? "Signing in…" : "Sign In"}
-                </Text>
-              </TouchableOpacity>
+                {authLoading ? (
+                  <>
+                    <ActivityIndicator color="#fff" size="small" />
+                    <Text style={styles.signInBtnText}>Signing in</Text>
+                  </>
+                ) : (
+                  <Text style={styles.signInBtnText}>Sign In</Text>
+                )}
+              </AnimatedPressable>
               {authError ? (
                 <Text style={[styles.authError, { color: StatusColors.danger }]}>
                   {authError}
@@ -387,7 +427,7 @@ export default function SettingsScreen() {
           ]}
         >
           {QUICK_LINKS.map((item, index) => (
-            <TouchableOpacity
+            <AnimatedPressable
               key={item.route}
               style={[
                 styles.menuRow,
@@ -409,7 +449,6 @@ export default function SettingsScreen() {
                 }
                 router.push(item.route as any);
               }}
-              activeOpacity={0.75}
             >
               <View style={[styles.menuIcon, { backgroundColor: "#1A1A1A" }]}>
                 <IconSymbol
@@ -427,7 +466,7 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               <IconSymbol name="chevron.right" size={16} color={c.subtext} />
-            </TouchableOpacity>
+            </AnimatedPressable>
           ))}
         </View>
 
@@ -439,10 +478,9 @@ export default function SettingsScreen() {
             { backgroundColor: c.card, borderColor: c.border },
           ]}
         >
-          <TouchableOpacity
+          <AnimatedPressable
             style={styles.countryRow}
             onPress={handleCountryPick}
-            activeOpacity={0.7}
           >
             <View style={styles.rowText}>
               <Text style={[styles.countryLabel, { color: c.text }]}>
@@ -459,13 +497,13 @@ export default function SettingsScreen() {
                 color={c.subtext}
               />
             </View>
-          </TouchableOpacity>
+          </AnimatedPressable>
           {countryDropdownOpen ? (
             <View style={[styles.countryDropdown, { borderTopColor: c.border }]}>
               {COUNTRIES.map(([code, label], index) => {
                 const selected = code === country;
                 return (
-                  <TouchableOpacity
+                  <AnimatedPressable
                     key={code}
                     style={[
                       styles.countryOption,
@@ -475,10 +513,10 @@ export default function SettingsScreen() {
                       },
                     ]}
                     onPress={() => {
+                      if (code !== country) void haptics.selection();
                       setCountry(code);
                       setCountryDropdownOpen(false);
                     }}
-                    activeOpacity={0.75}
                   >
                     <Text
                       style={[
@@ -495,7 +533,7 @@ export default function SettingsScreen() {
                         color={c.tint}
                       />
                     ) : null}
-                  </TouchableOpacity>
+                  </AnimatedPressable>
                 );
               })}
             </View>
@@ -519,12 +557,14 @@ export default function SettingsScreen() {
                 Get notified before registrations, insurance, and licenses expire
               </Text>
             </View>
-            <Switch
+            <AppSwitch
               value={notificationsEnabled}
               onValueChange={handleNotificationsToggle}
-              trackColor={{ false: c.border, true: c.tint + "55" }}
-              thumbColor={notificationsEnabled ? c.tint : c.card}
+              disabled={permissionLoading !== null}
             />
+            {permissionLoading === "notifications" ? (
+              <ActivityIndicator color={c.tint} size="small" />
+            ) : null}
           </View>
         </View>
 
@@ -545,20 +585,14 @@ export default function SettingsScreen() {
                 Required for scanning documents
               </Text>
             </View>
-            <Switch
+            <AppSwitch
               value={cameraPermission?.status === "granted"}
               onValueChange={handleCameraToggle}
-              trackColor={{
-                false: c.border,
-                true:
-                  cameraPermission?.status === "granted"
-                    ? c.tint + "55"
-                    : c.border,
-              }}
-              thumbColor={
-                cameraPermission?.status === "granted" ? c.tint : c.card
-              }
+              disabled={permissionLoading !== null}
             />
+            {permissionLoading === "camera" ? (
+              <ActivityIndicator color={c.tint} size="small" />
+            ) : null}
           </View>
           <View style={[styles.permDivider, { backgroundColor: c.border }]} />
           <View style={styles.switchRow}>
@@ -570,20 +604,14 @@ export default function SettingsScreen() {
                 Required for uploading document images
               </Text>
             </View>
-            <Switch
+            <AppSwitch
               value={mediaPermission?.status === "granted"}
               onValueChange={handleMediaToggle}
-              trackColor={{
-                false: c.border,
-                true:
-                  mediaPermission?.status === "granted"
-                    ? c.tint + "55"
-                    : c.border,
-              }}
-              thumbColor={
-                mediaPermission?.status === "granted" ? c.tint : c.card
-              }
+              disabled={permissionLoading !== null}
             />
+            {permissionLoading === "media" ? (
+              <ActivityIndicator color={c.tint} size="small" />
+            ) : null}
           </View>
         </View>
 
@@ -596,11 +624,10 @@ export default function SettingsScreen() {
           ]}
         >
           {SYNC_MODES.map((mode) => (
-            <TouchableOpacity
+            <AnimatedPressable
               key={mode.value}
               style={styles.optionRow}
               onPress={() => handleSyncModeChange(mode.value)}
-              activeOpacity={0.7}
             >
               <View style={styles.rowText}>
                 <Text style={[styles.optionLabel, { color: c.text }]}>
@@ -617,7 +644,7 @@ export default function SettingsScreen() {
                   color={c.tint}
                 />
               )}
-            </TouchableOpacity>
+            </AnimatedPressable>
           ))}
         </View>
 
@@ -628,7 +655,7 @@ export default function SettingsScreen() {
                 Sign in to enable Firestore sync.
               </Text>
             )}
-            <TouchableOpacity
+            <AnimatedPressable
               style={[
                 styles.syncBtn,
                 {
@@ -638,12 +665,17 @@ export default function SettingsScreen() {
               ]}
               onPress={handleSyncNow}
               disabled={!user || syncing}
+              pressedScale={0.96}
             >
-              <IconSymbol name="icloud.fill" size={16} color="#fff" />
+              {syncing ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <IconSymbol name="icloud.fill" size={16} color="#fff" />
+              )}
               <Text style={styles.syncBtnText}>
-                {syncing ? "Syncing…" : "Sync Now"}
+                {syncing ? "Syncing" : "Sync Now"}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressable>
           </>
         )}
       </ScrollView>
@@ -803,6 +835,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   signOutBtn: {
+    minWidth: 82,
+    minHeight: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderRadius: Radius.pill,
     paddingHorizontal: 14,
@@ -824,6 +861,9 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
   },
   signInBtn: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
     borderRadius: Radius.pill,
     paddingVertical: 14,
     alignItems: "center",

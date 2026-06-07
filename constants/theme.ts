@@ -94,24 +94,24 @@ export const Radius = {
   /** Pills, chips, status badges */
   pill: 99,
   /** Main page cards and dashboard panels */
-  card: 28,
+  card: 16,
   /** Nested cards, menu rows, modals */
-  surface: 24,
+  surface: 12,
   /** Hero cards, bottom sheets */
-  hero: 28,
+  hero: 16,
   /** Icon tiles inside cards */
-  tile: 14,
+  tile: 8,
   /** Larger icon tiles in empty or prompt states */
-  tileLg: 16,
+  tileLg: 12,
   /** Small UI elements */
   sm: 8,
 } as const;
 
 export const Spacing = {
   page: 16,
-  section: 20,
-  cardPadding: 20,
-  rowGap: 14,
+  section: 16,
+  cardPadding: 16,
+  rowGap: 16,
   stackGap: 16,
 } as const;
 

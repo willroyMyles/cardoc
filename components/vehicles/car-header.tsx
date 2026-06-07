@@ -1,17 +1,17 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors, StatusColors } from "@/constants/theme";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
+import { Colors, Radius, Spacing, StatusColors, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Vehicle } from "@/models";
+import { haptics } from "@/services/haptics";
 import { useAuthStore } from "@/store";
 import { router } from "expo-router";
 import React from "react";
 import {
   Animated,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -95,8 +95,11 @@ export function CarHeader({
   });
 
   return (
-    <SafeAreaView edges={[ Platform.OS !== "ios" ? "top" : "bottom" ]} style={[styles.container, { backgroundColor: c.card }]}>
-    <View style={[styles.container, { backgroundColor: c.card }]}>
+    <SafeAreaView
+      edges={["top"]}
+      style={[styles.container, { backgroundColor: c.background }]}
+    >
+    <View style={[styles.container, { backgroundColor: c.background }]}>
       {/* ── Top row ── */}
       <View style={styles.topRow}>
         <Text style={[styles.systemLabel, { color: c.subtext }]}>
@@ -130,15 +133,16 @@ export function CarHeader({
               {synced ? "SYNCED" : "SYNCING"}
             </Text>
           </View>}
-          <TouchableOpacity
+          <AnimatedPressable
             onPress={() => router.push("/settings")}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={[styles.avatar, { backgroundColor: c.tint }]}
+            pressedScale={0.92}
           >
             <Text style={[styles.avatarText, { color: c.background }]}> 
               {initials}
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
       </View>
 
@@ -154,19 +158,22 @@ export function CarHeader({
         ]}
       >
         <View style={styles.nameRow}>
-          <TouchableOpacity
+          <AnimatedPressable
             onPress={onPrev}
             disabled={!hasPrev}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={[
+              styles.arrowButton,
+              { backgroundColor: c.background, borderColor: c.border },
+            ]}
+            pressedScale={0.92}
           >
-            <View style={{ borderRadius: 120, padding: 4, height: 48, width: 48, alignItems: "center", justifyContent: "center", backgroundColor: Colors.light.background }}>
-              <IconSymbol
-                name="chevron.left"
-                size={20}
-                color={hasPrev ? c.text : c.border}
-              />
-            </View>
-          </TouchableOpacity>
+            <IconSymbol
+              name="chevron.left"
+              size={20}
+              color={hasPrev ? c.text : c.border}
+            />
+          </AnimatedPressable>
 
           <View style={styles.vehicleNameWrap}>
             <Text style={[styles.vehicleName, { color: c.text }]}>
@@ -174,19 +181,22 @@ export function CarHeader({
             </Text>
           </View>
 
-          <TouchableOpacity
+          <AnimatedPressable
             onPress={onNext}
             disabled={!hasNext}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={[
+              styles.arrowButton,
+              { backgroundColor: c.background, borderColor: c.border },
+            ]}
+            pressedScale={0.92}
           >
-            <View style= {{borderRadius: 120, marginLeft: -80, padding: 4, height: 48, width: 48, alignItems: "center", justifyContent: "center", backgroundColor: Colors.light.background}}>
-              <IconSymbol
+            <IconSymbol
               name="chevron.right"
               size={20}
               color={hasNext ? c.text : c.border}
             />
-            </View>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
       </Animated.View>
 
@@ -200,9 +210,12 @@ export function CarHeader({
           {TABS.map(({ key, label }) => {
             const isActive = key === activeTab;
             return (
-              <TouchableOpacity
+              <AnimatedPressable
                 key={key}
-                onPress={() => onTabChange(key)}
+                onPress={() => {
+                  if (!isActive) void haptics.selection();
+                  onTabChange(key);
+                }}
                 style={[
                   styles.tab,
                   {
@@ -210,6 +223,7 @@ export function CarHeader({
                     borderColor: isActive ? c.tint : c.border,
                   },
                 ]}
+                pressedScale={0.95}
               >
                 <Text
                   style={[
@@ -219,7 +233,7 @@ export function CarHeader({
                 >
                   {label}
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressable>
             );
           })}
         </ScrollView>
@@ -231,17 +245,17 @@ export function CarHeader({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 10,
+    paddingHorizontal: Spacing.page,
     paddingTop: 0,
-    paddingBottom: 4,
-    gap: 10,
+    paddingBottom: 8,
+    gap: 8,
   },
   compactVehicleName: {
     flex: 1,
-    marginHorizontal: 10,
+    marginHorizontal: 8,
     fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
     textAlign: "center",
     textTransform: "uppercase",
   },
@@ -253,11 +267,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   systemLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    letterSpacing: 1.2,
+    ...Type.sectionLabel,
+    letterSpacing: 1,
     lineHeight: 15,
-    textTransform: "uppercase",
   },
   topRight: {
     flexDirection: "row",
@@ -267,10 +279,10 @@ const styles = StyleSheet.create({
   syncBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.sm,
   },
   syncDot: {
     width: 8,
@@ -285,7 +297,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: Radius.sm,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -299,7 +311,7 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 8,
   },
   nameRowClip: {
     overflow: "hidden",
@@ -308,8 +320,24 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  arrowBtn: {
+  arrowButton: {
+    width: 48,
+    height: 48,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  arrowCircle: {
+    borderRadius: 120,
     padding: 4,
+    height: 48,
+    width: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nextArrowCircle: {
+    marginLeft: -80,
   },
 
   vehicleName: {
@@ -321,11 +349,8 @@ const styles = StyleSheet.create({
     fontWeight: "300",
     letterSpacing: 2,
     textTransform: "uppercase",
-    textOverflow: "ellipsis",
-    textRendering: "optimizeLegibility",
-    marginHorizontal: 15,
+    marginHorizontal: 8,
     marginBottom: 8,
-    marginTop: 2,
   },
   dropCaret: {
     marginBottom: 6,
@@ -334,19 +359,17 @@ const styles = StyleSheet.create({
   // Tab row
   tabRow: {
     flexDirection: "row",
-    paddingBottom: 4,
+    paddingBottom: 8,
     marginBottom: 8,
-
   },
   tabScroll: {
     alignItems: "center",
-    paddingHorizontal: 2,
+    gap: 8,
   },
   tab: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 24,
-    marginRight: 6,
+    borderRadius: Radius.sm,
     borderWidth: 1,
   },
   tabLabel: {

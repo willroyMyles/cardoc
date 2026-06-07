@@ -4,17 +4,18 @@ import {
   DocumentSource,
   DocumentSourceSheet,
 } from "@/components/documents/document-source-sheet";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors, StatusColors } from "@/constants/theme";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { CAR_DOCUMENT_TYPE_LABELS, CarDocument } from "@/models";
+import { CarDocument } from "@/models";
 import { cancelDocumentExpiryReminders } from "@/services/notifications/expiry-reminders";
 import { useDocumentsStore, useVehiclesStore } from "@/store";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Platform,
@@ -23,28 +24,12 @@ import {
   ScrollViewProps,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
-
-const SIMULATED_SLIPS = [
-  "Progressive Platinum",
-  "State Farm Auto Premium",
-  "GEICO Gold Coverage",
-];
 
 interface DocVaultScreenProps {
   onScroll?: ScrollViewProps["onScroll"];
   scrollEventThrottle?: ScrollViewProps["scrollEventThrottle"];
-}
-
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 export function DocVaultScreen({
@@ -61,36 +46,14 @@ export function DocVaultScreen({
     null,
   );
   const [uploadSheetVisible, setUploadSheetVisible] = useState(false);
+  const [importingSource, setImportingSource] = useState<DocumentSource | null>(
+    null,
+  );
   const [uploadSheetInstanceKey, setUploadSheetInstanceKey] = useState(0);
   const uploadSheetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
   const galleryLabel = Platform.OS === "ios" ? "Photos" : "Gallery";
-
-  const expiringDocuments = useMemo(() => {
-    const now = new Date();
-    return documents
-      .map((doc) => ({
-        doc,
-        expiry: new Date(doc.expiryDate),
-      }))
-      .filter(({ expiry }) => expiry >= now)
-      .sort((a, b) => a.expiry.getTime() - b.expiry.getTime())
-      .map(({ doc }) => doc);
-  }, [documents]);
-
-  const reminder = expiringDocuments[0];
-  const reminderText = reminder
-    ? `Reminder for your upcoming ${CAR_DOCUMENT_TYPE_LABELS[reminder.type]} “${
-        reminder.title ?? reminder.documentNumber
-      }” at ${reminder.issuingAuthority ?? "Service Center"} scheduled for ${formatDate(
-        reminder.expiryDate,
-      )}.`
-    : "Scan a document to start receiving expiry reminders, appointments, and coverage warnings.";
-  const reminderTitle = reminder ? "Upcoming Appt tomorrow!" : "No active reminders";
-  const reminderIcon = reminder ? "exclamationmark.triangle.fill" : "info.circle.fill";
-  const reminderIconColor = reminder ? StatusColors.danger : StatusColors.info;
-  const reminderIconBg = reminder ? StatusColors.dangerBg : StatusColors.infoBg;
 
   const activeVehicle = vehicles[0];
   const documentsForVehicle = activeVehicle
@@ -135,6 +98,7 @@ export function DocVaultScreen({
 
   async function handleScanSource(source: DocumentSource) {
     setUploadSheetVisible(false);
+    setImportingSource(source);
 
     if (source === "gallery") {
       try {
@@ -159,6 +123,8 @@ export function DocVaultScreen({
         });
       } catch (error: any) {
         Alert.alert("Photos Error", String(error?.message ?? error));
+      } finally {
+        setImportingSource(null);
       }
       return;
     }
@@ -185,6 +151,8 @@ export function DocVaultScreen({
         });
       } catch (error: any) {
         Alert.alert("Files Error", String(error?.message ?? error));
+      } finally {
+        setImportingSource(null);
       }
       return;
     }
@@ -221,22 +189,23 @@ export function DocVaultScreen({
           <Text style={[styles.uploadSubtitle, { color: c.subtext }]}>Instantly analyze paper documents with Gemini Vision OCR. Supports JPEG & PNG slips.</Text>
 
           <View style={styles.uploadActions}>
-            <TouchableOpacity
-              style={[styles.uploadButton, { backgroundColor: "#1A1A1A" }]}
+            <Button
+              label="File Upload"
+              icon="square.and.arrow.up"
               onPress={openUploadSheet}
-              activeOpacity={0.85}
-            >
-              <IconSymbol name="square.and.arrow.up" size={14} color="#fff" />
-              <Text style={styles.uploadButtonText}>FILE UPLOAD</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.uploadButton, { backgroundColor: c.card, borderColor: c.border, borderWidth: 1 }]}
+              disabled={importingSource !== null}
+              loading={importingSource === "gallery" || importingSource === "files"}
+              style={styles.uploadButton}
+            />
+            <Button
+              label="Camera Live"
+              icon="camera.fill"
+              variant="secondary"
               onPress={() => handleScanSource("camera")}
-              activeOpacity={0.85}
-            >
-              <IconSymbol name="camera.fill" size={14} color={c.text} />
-              <Text style={[styles.uploadButtonText, { color: c.text }]}>CAMERA LIVE</Text>
-            </TouchableOpacity>
+              disabled={importingSource !== null}
+              loading={importingSource === "camera"}
+              style={styles.uploadButton}
+            />
           </View>
 
           {/* <View style={styles.simulatedSection}>
@@ -256,14 +225,13 @@ export function DocVaultScreen({
           </View> */}
         </Card>
 
-        <TouchableOpacity
-          style={[styles.manualButton, { borderColor: c.text }]}
+        <Button
+          label="Add Manual Policy Slip"
+          icon="plus"
+          variant="secondary"
           onPress={() => router.push("/document/add")}
-          activeOpacity={0.85}
-        >
-          <IconSymbol name="plus" size={16} color={c.text} />
-          <Text style={[styles.manualText, { color: c.text }]}>ADD MANUAL POLICY SLIP</Text>
-        </TouchableOpacity>
+          style={styles.manualButton}
+        />
 
         {documentsForVehicle.length > 0 ? (
           <View style={styles.documentList}>
@@ -277,10 +245,15 @@ export function DocVaultScreen({
             ))}
           </View>
         ) : (
-          <Card style={styles.emptyStateCard}>
-            <Text style={[styles.emptyTitle, { color: c.text }]}>No documents yet</Text>
-            <Text style={[styles.emptyText, { color: c.subtext }]}>Add a policy slip, scan a document, or upload a file to start building your vault.</Text>
-          </Card>
+          <EmptyState
+            icon="doc.text.fill"
+            title="No documents yet"
+            subtitle="Scan a document, upload a file, or add a policy slip manually to start building your vault."
+            actionLabel="Upload File"
+            onAction={openUploadSheet}
+            secondaryActionLabel="Add Manually"
+            onSecondaryAction={() => router.push("/document/add")}
+          />
         )}
       </ScrollView>
 
@@ -323,26 +296,26 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: 48 },
   sectionLabel: {
     marginTop: 24,
-    marginHorizontal: 20,
+    marginHorizontal: Spacing.section,
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1.5,
   },
   reminderCard: {
-    marginTop: 12,
-    marginHorizontal: 20,
-    borderRadius: 28,
-    padding: 20,
+    marginTop: 16,
+    marginHorizontal: Spacing.section,
+    borderRadius: Radius.card,
+    padding: Spacing.cardPadding,
   },
   reminderRow: {
     flexDirection: "row",
-    gap: 14,
+    gap: 16,
     alignItems: "flex-start",
   },
   reminderIcon: {
     width: 42,
     height: 42,
-    borderRadius: 16,
+    borderRadius: Radius.tileLg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -357,40 +330,25 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   uploadCard: {
-    marginTop: 20,
-    marginHorizontal: 20,
-    borderRadius: 28,
-    padding: 24,
+    marginTop: 16,
+    marginHorizontal: Spacing.section,
+    borderRadius: Radius.card,
+    padding: Spacing.cardPadding,
   },
   uploadTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    ...Type.title,
     marginBottom: 8,
   },
   uploadSubtitle: {
-    fontSize: 13,
-    lineHeight: 20,
-    marginBottom: 18,
+    ...Type.body,
+    marginBottom: 16,
   },
   uploadActions: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 18,
+    gap: 8,
   },
   uploadButton: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 16,
-  },
-  uploadButtonText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1.3,
   },
   simulatedSection: {
     borderTopWidth: 1,
@@ -420,39 +378,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   manualButton: {
-    marginTop: 20,
-    marginHorizontal: 20,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-    paddingVertical: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 10,
-    opacity: 0.8,
+    marginTop: 16,
+    marginHorizontal: Spacing.section,
   },
-  manualText: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.5,
-  },
-  documentList: { marginTop: 20 },
-  emptyStateCard: {
-    marginTop: 20,
-    marginHorizontal: 20,
-    padding: 24,
-    borderRadius: 28,
-    alignItems: "center",
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 13,
-    lineHeight: 20,
-    textAlign: "center",
-  },
+  documentList: { marginTop: 16 },
 });

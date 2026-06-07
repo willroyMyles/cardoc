@@ -38,6 +38,7 @@ export default function TicketDetailScreen() {
   const deleteTicket = useTicketsStore((s) => s.deleteTicket);
   const getVehicle = useVehiclesStore((s) => s.getVehicle);
   const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (!ticket) {
     return (
@@ -51,9 +52,14 @@ export default function TicketDetailScreen() {
 
   const vehicle = ticket.vehicleId ? getVehicle(ticket.vehicleId) : undefined;
 
-  function handleDelete() {
-    deleteTicket(id);
-    router.back();
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      deleteTicket(id);
+      router.back();
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -150,9 +156,13 @@ export default function TicketDetailScreen() {
         title="Delete Ticket"
         message="Permanently delete this ticket?"
         confirmLabel="Delete"
+        loadingLabel="Deleting"
+        loading={deleting}
         destructive
         onConfirm={handleDelete}
-        onCancel={() => setShowDelete(false)}
+        onCancel={() => {
+          if (!deleting) setShowDelete(false);
+        }}
       />
     </SafeAreaView>
   );

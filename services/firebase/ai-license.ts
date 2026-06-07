@@ -55,6 +55,7 @@ async function runExtraction(
   const model = getModel();
   const spec = getDriverLicenseSpec(country);
   const textPart: TextPart = { text: buildPrompt(country) };
+  console.log(textPart.text);
 
   const result = await model.generateContent([...imageParts, textPart]);
   const raw = result.response.text().trim();

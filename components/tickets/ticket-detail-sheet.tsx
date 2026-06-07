@@ -1,19 +1,21 @@
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { StatusBadge, StatusType } from "@/components/ui/status-badge";
 import { Colors, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Ticket, TICKET_STATUS_LABELS, TicketStatus } from "@/models";
+import { haptics } from "@/services/haptics";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetScrollView,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -29,7 +31,7 @@ interface TicketDetailSheetProps {
   vehicleName?: string;
   visible: boolean;
   onClose: () => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => void | Promise<void>;
 }
 
 export function TicketDetailSheet({
@@ -43,6 +45,8 @@ export function TicketDetailSheet({
   const c = Colors[scheme];
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["58%", "82%"], []);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -61,6 +65,8 @@ export function TicketDetailSheet({
       bottomSheetModalRef.current?.present();
     } else {
       bottomSheetModalRef.current?.dismiss();
+      setShowDelete(false);
+      setDeleting(false);
     }
   }, [ticket, visible]);
 
@@ -69,100 +75,129 @@ export function TicketDetailSheet({
   const issueDate = formatDate(ticket.date);
   const dueDate = ticket.dueDate ? formatDate(ticket.dueDate) : null;
 
-  function handleDelete() {
-    onDelete(ticket!.id);
-    bottomSheetModalRef.current?.dismiss();
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await onDelete(ticket!.id);
+      void haptics.warning();
+      setShowDelete(false);
+      bottomSheetModalRef.current?.dismiss();
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
-    <BottomSheetModal
-      ref={bottomSheetModalRef}
-      index={0}
-      snapPoints={snapPoints}
-      backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: c.card }}
-      handleIndicatorStyle={{ backgroundColor: c.border }}
-      enablePanDownToClose
-      onDismiss={onClose}
-    >
-      <BottomSheetScrollView
-        style={{ backgroundColor: c.card }}
-        contentContainerStyle={[
-          styles.sheet,
-          { backgroundColor: c.card, borderColor: c.border },
-        ]}
+    <>
+      <BottomSheetModal
+        ref={bottomSheetModalRef}
+        index={0}
+        snapPoints={snapPoints}
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{ backgroundColor: c.card }}
+        handleIndicatorStyle={{ backgroundColor: c.border }}
+        enablePanDownToClose
+        onDismiss={onClose}
       >
-        <View style={styles.sheetHeader}>
-          <View style={[styles.typeIcon, { backgroundColor: "#1A1A1A" }]}>
-            <IconSymbol
-              name="exclamationmark.triangle.fill"
-              size={18}
-              color="#f59e0b"
-            />
-          </View>
-          <View style={styles.headerText}>
-            <Text style={[styles.ticketNumber, { color: c.subtext }]}>
-              #{ticket.ticketNumber}
-            </Text>
-            <Text
-              style={[styles.violation, { color: c.text }]}
-              numberOfLines={2}
-            >
-              {ticket.violation}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => bottomSheetModalRef.current?.dismiss()}
-            hitSlop={8}
-          >
-            <IconSymbol name="xmark" size={18} color={c.subtext} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.amountRow}>
-          <Text style={[styles.amount, { color: c.text }]}>
-            {ticket.currency} {ticket.amount.toFixed(2)}
-          </Text>
-          <StatusBadge
-            label={TICKET_STATUS_LABELS[ticket.status]}
-            status={statusMap[ticket.status]}
-          />
-        </View>
-
-        <View style={[styles.divider, { backgroundColor: c.border }]} />
-
-        <View style={styles.details}>
-          {vehicleName ? <Row label="Vehicle" value={vehicleName} c={c} /> : null}
-          <Row label="Issued" value={issueDate} c={c} />
-          {dueDate ? <Row label="Due" value={dueDate} c={c} /> : null}
-          {ticket.issuingAuthority ? (
-            <Row label="Authority" value={ticket.issuingAuthority} c={c} />
-          ) : null}
-          {ticket.region ? <Row label="Region" value={ticket.region} c={c} /> : null}
-          {ticket.demeritPoints != null ? (
-            <Row
-              label="Demerits"
-              value={`${ticket.demeritPoints} point${
-                ticket.demeritPoints === 1 ? "" : "s"
-              }`}
-              c={c}
-            />
-          ) : null}
-          {ticket.notes ? <Row label="Notes" value={ticket.notes} c={c} /> : null}
-        </View>
-
-        <TouchableOpacity
-          style={[styles.deleteBtn, { borderColor: StatusColors.danger + "40" }]}
-          onPress={handleDelete}
-          activeOpacity={0.75}
+        <BottomSheetScrollView
+          style={{ backgroundColor: c.card }}
+          contentContainerStyle={[
+            styles.sheet,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
         >
-          <IconSymbol name="trash" size={16} color={StatusColors.danger} />
-          <Text style={[styles.deleteText, { color: StatusColors.danger }]}>
-            Delete Ticket
-          </Text>
-        </TouchableOpacity>
-      </BottomSheetScrollView>
-    </BottomSheetModal>
+          <View style={styles.sheetHeader}>
+            <View style={[styles.typeIcon, { backgroundColor: "#1A1A1A" }]}>
+              <IconSymbol
+                name="exclamationmark.triangle.fill"
+                size={18}
+                color="#f59e0b"
+              />
+            </View>
+            <View style={styles.headerText}>
+              <Text style={[styles.ticketNumber, { color: c.subtext }]}>
+                #{ticket.ticketNumber}
+              </Text>
+              <Text
+                style={[styles.violation, { color: c.text }]}
+                numberOfLines={2}
+              >
+                {ticket.violation}
+              </Text>
+            </View>
+            <AnimatedPressable
+              onPress={() => bottomSheetModalRef.current?.dismiss()}
+              hitSlop={8}
+              pressedScale={0.92}
+            >
+              <IconSymbol name="xmark" size={18} color={c.subtext} />
+            </AnimatedPressable>
+          </View>
+
+          <View style={styles.amountRow}>
+            <Text style={[styles.amount, { color: c.text }]}>
+              {ticket.currency} {ticket.amount.toFixed(2)}
+            </Text>
+            <StatusBadge
+              label={TICKET_STATUS_LABELS[ticket.status]}
+              status={statusMap[ticket.status]}
+            />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: c.border }]} />
+
+          <View style={styles.details}>
+            {vehicleName ? (
+              <Row label="Vehicle" value={vehicleName} c={c} />
+            ) : null}
+            <Row label="Issued" value={issueDate} c={c} />
+            {dueDate ? <Row label="Due" value={dueDate} c={c} /> : null}
+            {ticket.issuingAuthority ? (
+              <Row label="Authority" value={ticket.issuingAuthority} c={c} />
+            ) : null}
+            {ticket.region ? (
+              <Row label="Region" value={ticket.region} c={c} />
+            ) : null}
+            {ticket.demeritPoints != null ? (
+              <Row
+                label="Demerits"
+                value={`${ticket.demeritPoints} point${
+                  ticket.demeritPoints === 1 ? "" : "s"
+                }`}
+                c={c}
+              />
+            ) : null}
+            {ticket.notes ? (
+              <Row label="Notes" value={ticket.notes} c={c} />
+            ) : null}
+          </View>
+
+          <AnimatedPressable
+            style={[styles.deleteBtn, { borderColor: StatusColors.danger + "40" }]}
+            onPress={() => setShowDelete(true)}
+            pressedScale={0.96}
+          >
+            <IconSymbol name="trash" size={16} color={StatusColors.danger} />
+            <Text style={[styles.deleteText, { color: StatusColors.danger }]}>
+              Delete Ticket
+            </Text>
+          </AnimatedPressable>
+        </BottomSheetScrollView>
+      </BottomSheetModal>
+      <ConfirmDialog
+        visible={showDelete}
+        title="Delete Ticket"
+        message="This will permanently delete this ticket."
+        confirmLabel="Delete"
+        loadingLabel="Deleting"
+        loading={deleting}
+        destructive
+        onConfirm={handleDelete}
+        onCancel={() => {
+          if (!deleting) setShowDelete(false);
+        }}
+      />
+    </>
   );
 }
 

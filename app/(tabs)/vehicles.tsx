@@ -5,6 +5,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { Colors, Radius } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -16,7 +17,6 @@ import {
   Platform,
   SafeAreaView,
   StyleSheet,
-  TouchableOpacity,
 } from "react-native";
 
 export default function VehiclesTab() {
@@ -47,12 +47,13 @@ export default function VehiclesTab() {
             : undefined
         }
         right={
-          <TouchableOpacity
+          <AnimatedPressable
             style={[styles.addBtn, { backgroundColor: Colors[scheme].tint }]}
             onPress={() => setScannerSheetVisible(true)}
+            pressedScale={0.92}
           >
             <IconSymbol name="plus" size={20} color="#fff" />
-          </TouchableOpacity>
+          </AnimatedPressable>
         }
       />
 
@@ -67,7 +68,11 @@ export default function VehiclesTab() {
           <EmptyState
             icon="car.fill"
             title="No vehicles yet"
-            subtitle="Tap + to scan a document for your first vehicle"
+            subtitle="Create your first vehicle by scanning a registration, insurance slip, or other vehicle document."
+            actionLabel="Scan Document"
+            onAction={() => setScannerSheetVisible(true)}
+            secondaryActionLabel="Add Manually"
+            onSecondaryAction={() => router.push("/vehicle/add")}
           />
         }
       />

@@ -1,6 +1,8 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { haptics } from "@/services/haptics";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -8,7 +10,7 @@ import {
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 
 export type DocumentSource = "camera" | "gallery" | "files";
 
@@ -107,6 +109,7 @@ export function DocumentSourceSheet({
 
   function handleSelect(source: DocumentSource) {
     pendingSourceRef.current = source;
+    void haptics.selection();
     bottomSheetModalRef.current?.dismiss();
   }
 
@@ -131,13 +134,13 @@ export function DocumentSourceSheet({
               </Text>
             ) : null}
           </View>
-          <TouchableOpacity
+          <AnimatedPressable
             style={[styles.closeButton, { borderColor: c.border }]}
             onPress={() => bottomSheetModalRef.current?.dismiss()}
-            activeOpacity={0.75}
+            pressedScale={0.92}
           >
             <IconSymbol name="xmark" size={18} color={c.text} />
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
 
         <View
@@ -146,7 +149,7 @@ export function DocumentSourceSheet({
           {options.map((option) => {
             const meta = SOURCE_META[option.source];
             return (
-              <TouchableOpacity
+              <AnimatedPressable
                 key={option.source}
                 style={[
                   styles.option,
@@ -154,7 +157,7 @@ export function DocumentSourceSheet({
                   { backgroundColor: c.background, borderColor: c.border },
                 ]}
                 onPress={() => handleSelect(option.source)}
-                activeOpacity={0.78}
+                pressedScale={0.98}
               >
                 <View style={[styles.optionIcon, { backgroundColor: c.tint }]}>
                   <IconSymbol name={meta.icon} size={22} color="#fff" />
@@ -181,7 +184,7 @@ export function DocumentSourceSheet({
                 {isTwoOptionLayout ? null : (
                   <IconSymbol name="chevron.right" size={18} color={c.subtext} />
                 )}
-              </TouchableOpacity>
+              </AnimatedPressable>
             );
           })}
         </View>

@@ -37,6 +37,7 @@ export default function DocumentDetailScreen() {
   const deleteDocument = useDocumentsStore((s) => s.deleteDocument);
   const getVehicle = useVehiclesStore((s) => s.getVehicle);
   const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   if (!doc) {
@@ -53,9 +54,14 @@ export default function DocumentDetailScreen() {
   const accentColor = DocTypeColors[doc.type] ?? DocTypeColors.other;
 
   async function handleDelete() {
-    await cancelDocumentExpiryReminders(doc!.id).catch(() => {});
-    deleteDocument(id);
-    router.back();
+    setDeleting(true);
+    try {
+      await cancelDocumentExpiryReminders(doc!.id).catch(() => {});
+      deleteDocument(id);
+      router.back();
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -164,9 +170,13 @@ export default function DocumentDetailScreen() {
         title="Delete Document"
         message="This will permanently delete this document."
         confirmLabel="Delete"
+        loadingLabel="Deleting"
+        loading={deleting}
         destructive
         onConfirm={handleDelete}
-        onCancel={() => setShowDelete(false)}
+        onCancel={() => {
+          if (!deleting) setShowDelete(false);
+        }}
       />
 
       <ImageViewerModal

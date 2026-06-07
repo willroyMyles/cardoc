@@ -42,21 +42,34 @@ export default function VehicleDetailScreen() {
   );
 
   const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (!vehicle) {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: c.background }]}
       >
-        <ThemedText>Vehicle not found.</ThemedText>
+        <Header title="Vehicle" onBack={() => router.back()} />
+        <EmptyState
+          icon="car.fill"
+          title="Vehicle not found"
+          subtitle="This vehicle may have been deleted or is no longer available on this device."
+          actionLabel="Back to Vehicles"
+          onAction={() => router.replace("/(tabs)/vehicles")}
+        />
       </SafeAreaView>
     );
   }
 
-  function handleDelete() {
-    deleteDocumentsForVehicle(id);
-    deleteVehicle(id);
-    router.back();
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      deleteDocumentsForVehicle(id);
+      deleteVehicle(id);
+      router.back();
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -161,7 +174,9 @@ export default function VehicleDetailScreen() {
           <EmptyState
             icon="doc.fill"
             title="No documents"
-            subtitle="Tap + to add a document for this vehicle"
+            subtitle="Add a document for this vehicle so renewals, reminders, and policy details stay connected."
+            actionLabel="Add Document"
+            onAction={() => router.push("/document/add")}
           />
         )}
 
@@ -170,7 +185,7 @@ export default function VehicleDetailScreen() {
           <Text style={[styles.sectionTitle, { color: c.text }]}>
             Tickets ({tickets.length})
           </Text>
-          <TouchableOpacity onPress={() => router.push("/ticket/add")}>
+          <TouchableOpacity onPress={() => router.push("/ticket/lookup")}>
             <IconSymbol name="plus.circle.fill" size={22} color={c.tint} />
           </TouchableOpacity>
         </View>
@@ -181,7 +196,9 @@ export default function VehicleDetailScreen() {
           <EmptyState
             icon="exclamationmark.circle.fill"
             title="No tickets"
-            subtitle="No traffic tickets linked to this vehicle"
+            subtitle="Look up traffic fines and save any matches to link tickets with your vehicle records."
+            actionLabel="Look Up Ticket"
+            onAction={() => router.push("/ticket/lookup")}
           />
         )}
       </ScrollView>
@@ -191,9 +208,13 @@ export default function VehicleDetailScreen() {
         title="Delete Vehicle"
         message="This will permanently delete the vehicle and all its data. This cannot be undone."
         confirmLabel="Delete"
+        loadingLabel="Deleting"
+        loading={deleting}
         destructive
         onConfirm={handleDelete}
-        onCancel={() => setShowDelete(false)}
+        onCancel={() => {
+          if (!deleting) setShowDelete(false);
+        }}
       />
     </SafeAreaView>
   );

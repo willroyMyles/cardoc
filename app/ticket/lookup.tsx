@@ -2,9 +2,16 @@ import {
   JAMAICA_TICKET_FIELDS,
   TicketAggregator,
 } from "@/components/tickets/ticket-aggregator";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
+import {
+  ButtonLoadingContent,
+  SkeletonBlock,
+} from "@/components/ui/loading-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Colors, Radius, Shadows, Spacing, StatusColors, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -16,6 +23,7 @@ import {
   performJamaicaLookup,
   ticketSpec,
 } from "@/services/ticket-lookup/jamaica-lookup";
+import { haptics } from "@/services/haptics";
 import { TicketLookupProvider } from "@/services/ticket-lookup/provider";
 import { getProvidersByRegion } from "@/services/ticket-lookup/registry";
 import { useLicenseStore, useSettingsStore, useTicketsStore } from "@/store";
@@ -32,7 +40,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { WebView } from "react-native-webview";
@@ -76,6 +83,64 @@ function workflowToStatus(
 
 function isValidIsoDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(new Date(value).getTime());
+}
+
+function getLookupValidationError(
+  input: LookupInput,
+  inputMode: InputMode,
+): string | null {
+  const missing = ticketSpec.inputFields
+    .filter((field) => field.required)
+    .filter((field) => !input[field.id as keyof LookupInput]?.trim())
+    .map((field) => field.label);
+
+  if (missing.length > 0) {
+    return `Enter ${missing.join(", ")} before looking up tickets. These details are required by the Jamaica traffic ticket service.`;
+  }
+
+  if (!isValidIsoDate(input.origLicIssueDate)) {
+    return inputMode === "license"
+      ? `Your saved licence has an issue date that could not be read as YYYY-MM-DD. Switch to manual entry and enter the Original Licence Issue Date again.`
+      : "Enter the Original Licence Issue Date as YYYY-MM-DD, for example 2014-01-09.";
+  }
+
+  if (!isValidIsoDate(input.dateOfBirth)) {
+    return inputMode === "license"
+      ? "Your saved licence has a date of birth that could not be read as YYYY-MM-DD. Switch to manual entry and enter it again."
+      : "Enter Date of Birth as YYYY-MM-DD, for example 1989-08-09.";
+  }
+
+  return null;
+}
+
+function formatLookupError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  const msg = raw.replace(
+    /^(Licence validation failed|Failed to fetch (?:un)?paid? tickets): /i,
+    "",
+  );
+
+  if (/network error|failed to fetch|network request failed/i.test(raw)) {
+    return "We could not reach the ticket lookup service. Check your internet connection and try again.";
+  }
+
+  if (/licence validation failed/i.test(raw)) {
+    return `The Jamaica ticket service rejected the licence details. Check the licence number, FO/control number, issue date, and date of birth, then try again. ${msg}`;
+  }
+
+  if (/could not verify|not found|invalid/i.test(raw)) {
+    return "No matching licence record was found. Check each field against the physical driver's licence or switch to manual entry.";
+  }
+
+  if (/failed to fetch unpaid tickets/i.test(raw)) {
+    return `Your licence was verified, but unpaid tickets could not be loaded. Try again in a moment. ${msg}`;
+  }
+
+  if (/failed to fetch tickets/i.test(raw)) {
+    return `Your licence was verified, but ticket results could not be loaded. Try again in a moment. ${msg}`;
+  }
+
+  return msg || "Ticket lookup failed. Check the details and try again.";
 }
 
 /**
@@ -130,11 +195,18 @@ function normalizeToIsoDate(raw: string): string {
 interface TicketResultCardProps {
   ticket: JamaicaTicket;
   saved: boolean;
+  saving: boolean;
   onSave: () => void;
   c: (typeof Colors)["light"];
 }
 
-function TicketResultCard({ ticket, saved, onSave, c }: TicketResultCardProps) {
+function TicketResultCard({
+  ticket,
+  saved,
+  saving,
+  onSave,
+  c,
+}: TicketResultCardProps) {
   const badgeStatus = workflowToStatus(ticket.workflowState);
   return (
     <Card style={styles.resultCard}>
@@ -194,7 +266,7 @@ function TicketResultCard({ ticket, saved, onSave, c }: TicketResultCardProps) {
         </Text>
       ) : null}
 
-      <TouchableOpacity
+      <AnimatedPressable
         style={[
           styles.saveBtn,
           {
@@ -203,22 +275,51 @@ function TicketResultCard({ ticket, saved, onSave, c }: TicketResultCardProps) {
           },
         ]}
         onPress={onSave}
-        disabled={saved}
+        disabled={saved || saving}
+        pressedScale={0.96}
       >
-        <IconSymbol
-          name={saved ? "checkmark.circle.fill" : "square.and.arrow.down"}
-          size={15}
+        <ButtonLoadingContent
+          loading={saving}
+          label={saved ? "Saved" : "Save to Records"}
+          loadingLabel="Saving"
           color={saved ? StatusColors.success : "#fff"}
-        />
-        <Text
-          style={[
-            styles.saveBtnText,
-            { color: saved ? StatusColors.success : "#fff" },
-          ]}
         >
-          {saved ? "Saved" : "Save to Records"}
+          <IconSymbol
+            name={saved ? "checkmark.circle.fill" : "square.and.arrow.down"}
+            size={15}
+            color={saved ? StatusColors.success : "#fff"}
+          />
+          <Text
+            style={[
+              styles.saveBtnText,
+              { color: saved ? StatusColors.success : "#fff" },
+            ]}
+          >
+            {saved ? "Saved" : "Save to Records"}
+          </Text>
+        </ButtonLoadingContent>
+      </AnimatedPressable>
+    </Card>
+  );
+}
+
+function LookupProgressCard({ c }: { c: (typeof Colors)["light"] }) {
+  return (
+    <Card style={styles.progressCard}>
+      <View style={styles.progressHeader}>
+        <ActivityIndicator color={c.tint} size="small" />
+        <Text style={[styles.progressTitle, { color: c.text }]}>
+          Looking up tickets
         </Text>
-      </TouchableOpacity>
+      </View>
+      <Text style={[styles.progressText, { color: c.subtext }]}>
+        Validating licence details and checking the traffic fine portal.
+      </Text>
+      <View style={styles.progressSkeleton}>
+        <SkeletonBlock width="72%" height={12} />
+        <SkeletonBlock width="94%" height={12} />
+        <SkeletonBlock width="58%" height={12} />
+      </View>
     </Card>
   );
 }
@@ -255,6 +356,9 @@ export default function TicketLookupScreen() {
     dateOfBirth: "",
   });
   const [loading, setLoading] = useState(false);
+  const [webLoading, setWebLoading] = useState(true);
+  const [savingTicketNo, setSavingTicketNo] = useState<string | null>(null);
+  const [savingAll, setSavingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [allTickets, setAllTickets] = useState<JamaicaTicket[]>([]);
@@ -299,10 +403,12 @@ export default function TicketLookupScreen() {
 
   function selectProvider(p: TicketLookupProvider) {
     setSelectedProvider(p);
+    if (!p.apiLookup) setWebLoading(true);
     setCurrentView(p.apiLookup ? "form" : "web");
   }
 
   function switchToManualMode() {
+    if (inputMode !== "manual") void haptics.selection();
     setInputMode("manual");
     setInput({
       driversLicNo: "",
@@ -315,6 +421,7 @@ export default function TicketLookupScreen() {
 
   function switchToLicenseMode() {
     if (!license) return;
+    if (inputMode !== "license") void haptics.selection();
     setInputMode("license");
     setInput(normalizeMappedDates(mapLicenseToInput(license.fields)));
     setError(null);
@@ -326,27 +433,12 @@ export default function TicketLookupScreen() {
   }
 
   async function handleLookup() {
-    const { driversLicNo, controlNo, origLicIssueDate, dateOfBirth } = input;
-    // if (!driversLicNo || !controlNo || !origLicIssueDate || !dateOfBirth) {
-    //   setError("All fields are required.");
-    //   return;
-    // }
-    // if (!isValidIsoDate(origLicIssueDate)) {
-    //   setError(
-    //     inputMode === "license"
-    //       ? `Your saved licence contains an unrecognised issue date ("${origLicIssueDate}"). Switch to manual entry to enter it as YYYY-MM-DD.`
-    //       : `Invalid Original Licence Issue Date. Please use YYYY-MM-DD format (e.g. 2014-01-09).`,
-    //   );
-    //   return;
-    // }
-    // if (!isValidIsoDate(dateOfBirth)) {
-    //   setError(
-    //     inputMode === "license"
-    //       ? `Your saved licence contains an unrecognised date of birth ("${dateOfBirth}"). Switch to manual entry to enter it as YYYY-MM-DD.`
-    //       : `Invalid Date of Birth. Please use YYYY-MM-DD format (e.g. 1989-08-09).`,
-    //   );
-    //   return;
-    // }
+    const validationError = getLookupValidationError(input, inputMode);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -355,32 +447,37 @@ export default function TicketLookupScreen() {
       setUnpaidTickets(unpaid);
       setActiveFilter("all");
       setCurrentView("results");
+      void haptics.success();
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "An unexpected error occurred.";
-      // Strip internal prefixes so the raw API message is surfaced directly
-      setError(
-        msg.replace(
-          /^(Licence validation failed|Failed to fetch (?:un)?paid? tickets): /i,
-          "",
-        ),
-      );
+      setError(formatLookupError(err));
     } finally {
       setLoading(false);
     }
   }
 
-  function handleSaveTicket(jt: JamaicaTicket) {
-    addTickets([mapToTicket(jt)]);
+  async function handleSaveTicket(jt: JamaicaTicket) {
+    setSavingTicketNo(jt.ticketNo);
+    try {
+      addTickets([mapToTicket(jt)]);
+      void haptics.success();
+    } finally {
+      setSavingTicketNo(null);
+    }
   }
 
-  function handleSaveAll() {
+  async function handleSaveAll() {
     const displayed = activeFilter === "all" ? allTickets : unpaidTickets;
-    addTickets(displayed.map(mapToTicket));
-    Alert.alert(
-      "Saved",
-      `${displayed.length} ticket${displayed.length !== 1 ? "s" : ""} saved to your records.`,
-    );
+    setSavingAll(true);
+    try {
+      addTickets(displayed.map(mapToTicket));
+      void haptics.success();
+      Alert.alert(
+        "Saved",
+        `${displayed.length} ticket${displayed.length !== 1 ? "s" : ""} saved to your records.`,
+      );
+    } finally {
+      setSavingAll(false);
+    }
   }
 
   // ── Web view ──
@@ -394,12 +491,27 @@ export default function TicketLookupScreen() {
           title={selectedProvider.displayName}
           onBack={goBack}
           right={
-            <TouchableOpacity onPress={() => Linking.openURL(url)}>
+            <AnimatedPressable onPress={() => Linking.openURL(url)} pressedScale={0.92}>
               <IconSymbol name="square.and.arrow.up" size={20} color={c.tint} />
-            </TouchableOpacity>
+            </AnimatedPressable>
           }
         />
-        <WebView source={{ uri: url }} style={styles.webview} />
+        <View style={styles.webviewWrap}>
+          <WebView
+            source={{ uri: url }}
+            style={styles.webview}
+            onLoadStart={() => setWebLoading(true)}
+            onLoadEnd={() => setWebLoading(false)}
+          />
+          {webLoading ? (
+            <View style={[styles.webLoading, { backgroundColor: c.background }]}>
+              <ActivityIndicator color={c.tint} />
+              <Text style={[styles.webLoadingText, { color: c.subtext }]}>
+                Loading lookup portal
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </SafeAreaView>
     );
   }
@@ -444,7 +556,7 @@ export default function TicketLookupScreen() {
 
             {/* View Saved Tickets Button */}
             {totalSavedTickets > 0 && (
-              <TouchableOpacity
+              <AnimatedPressable
                 style={[
                   styles.savedTicketsBtn,
                   {
@@ -453,8 +565,10 @@ export default function TicketLookupScreen() {
                     ...Shadows.card,
                   },
                 ]}
-                onPress={() => router.push("/(tabs)/tickets")}
-                activeOpacity={0.7}
+                onPress={() =>
+                  router.push({ pathname: "/(tabs)", params: { tab: "tickets" } })
+                }
+                pressedScale={0.98}
               >
                 <View style={styles.savedTicketsContent}>
                   <View style={styles.savedTicketsHeader}>
@@ -555,7 +669,7 @@ export default function TicketLookupScreen() {
                     </View>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </AnimatedPressable>
             )}
 
             {inputMode === "license" && hasLicense ? (
@@ -596,7 +710,7 @@ export default function TicketLookupScreen() {
 
             {hasLicense && (
               <View style={styles.modeToggle}>
-                <TouchableOpacity
+                <AnimatedPressable
                   style={[
                     styles.modeButton,
                     inputMode === "license" && { backgroundColor: c.tint },
@@ -607,6 +721,7 @@ export default function TicketLookupScreen() {
                     },
                   ]}
                   onPress={switchToLicenseMode}
+                  pressedScale={0.96}
                 >
                   <IconSymbol
                     name="person.text.rectangle"
@@ -621,8 +736,8 @@ export default function TicketLookupScreen() {
                   >
                     Use Licence
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </AnimatedPressable>
+                <AnimatedPressable
                   style={[
                     styles.modeButton,
                     inputMode === "manual" && { backgroundColor: c.tint },
@@ -633,6 +748,7 @@ export default function TicketLookupScreen() {
                     },
                   ]}
                   onPress={switchToManualMode}
+                  pressedScale={0.96}
                 >
                   <IconSymbol
                     name="keyboard"
@@ -647,7 +763,7 @@ export default function TicketLookupScreen() {
                   >
                     Enter Manually
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressable>
               </View>
             )}
 
@@ -687,28 +803,19 @@ export default function TicketLookupScreen() {
                   </View>
                 </View>
                 <View style={styles.noLicenseActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.modeButton,
-                      {
-                        backgroundColor: c.card,
-                        borderColor: c.border,
-                        borderWidth: 1,
-                      },
-                    ]}
+                  <Button
+                    label="Add Licence"
+                    icon="person.text.rectangle"
+                    variant="secondary"
                     onPress={() => router.push("/license")}
-                  >
-                    <Text style={[styles.modeButtonText, { color: c.tint }]}>{"Add driver's licence"}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.modeButton,
-                      { backgroundColor: c.tint },
-                    ]}
+                    style={styles.actionButton}
+                  />
+                  <Button
+                    label="Enter Details"
+                    icon="keyboard"
                     onPress={switchToManualMode}
-                  >
-                    <Text style={[styles.modeButtonText, { color: "#fff" }]}>Enter licence details</Text>
-                  </TouchableOpacity>
+                    style={styles.actionButton}
+                  />
                 </View>
               </>
             )}
@@ -742,6 +849,7 @@ export default function TicketLookupScreen() {
                     }
                     autoCapitalize="none"
                     autoCorrect={false}
+                    editable={!loading}
                   />
                   {"hint" in field && field.hint ? (
                     <Text style={[styles.hint, { color: c.subtext }]}>
@@ -793,38 +901,28 @@ export default function TicketLookupScreen() {
                     {error}
                   </Text>
                   {inputMode === "license" && hasLicense ? (
-                    <TouchableOpacity onPress={switchToManualMode}>
-                      <Text
-                        style={[
-                          styles.errorLink,
-                          { color: StatusColors.danger },
-                        ]}
-                      >
-                        Switch to Manual Entry →
-                      </Text>
-                    </TouchableOpacity>
+                    <Button
+                      label="Switch to Manual Entry"
+                      icon="keyboard"
+                      variant="secondary"
+                      size="sm"
+                      onPress={switchToManualMode}
+                      style={styles.errorButton}
+                    />
                   ) : null}
                 </View>
               </View>
             ) : null}
 
-            <TouchableOpacity
-              style={[
-                styles.lookupBtn,
-                { backgroundColor: loading ? c.border : c.tint },
-              ]}
+            <Button
+              label="Look Up Tickets"
+              icon="magnifyingglass"
               onPress={handleLookup}
               disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <>
-                  <IconSymbol name="magnifyingglass" size={16} color="#fff" />
-                  <Text style={styles.lookupBtnText}>Look Up Tickets</Text>
-                </>
-              )}
-            </TouchableOpacity>
+              loading={loading}
+              style={styles.lookupBtn}
+            />
+            {loading ? <LookupProgressCard c={c} /> : null}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -855,7 +953,7 @@ export default function TicketLookupScreen() {
               tab === "all" ? allTickets.length : unpaidTickets.length;
             const active = activeFilter === tab;
             return (
-              <TouchableOpacity
+              <AnimatedPressable
                 key={tab}
                 style={[
                   styles.tab,
@@ -864,7 +962,11 @@ export default function TicketLookupScreen() {
                     borderBottomWidth: 2,
                   },
                 ]}
-                onPress={() => setActiveFilter(tab)}
+                onPress={() => {
+                  if (activeFilter !== tab) void haptics.selection();
+                  setActiveFilter(tab);
+                }}
+                pressedScale={0.98}
               >
                 <Text
                   style={[
@@ -875,7 +977,7 @@ export default function TicketLookupScreen() {
                   {tab === "all" ? "All" : "Unpaid"}{" "}
                   <Text style={styles.tabCount}>({count})</Text>
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressable>
             );
           })}
         </View>
@@ -892,26 +994,54 @@ export default function TicketLookupScreen() {
           />
 
           {displayed.length === 0 ? (
-            <View style={styles.emptyState}>
-              <IconSymbol
-                name="checkmark.seal.fill"
-                size={40}
-                color={StatusColors.success}
-              />
-              <Text style={[styles.emptyText, { color: c.subtext }]}>
-                {activeFilter === "unpaid"
-                  ? "No outstanding tickets found."
-                  : "No tickets found."}
-              </Text>
-            </View>
+            <EmptyState
+              icon={
+                activeFilter === "unpaid"
+                  ? "checkmark.seal.fill"
+                  : "magnifyingglass"
+              }
+              title={
+                activeFilter === "unpaid"
+                  ? "No unpaid tickets"
+                  : "No tickets found"
+              }
+              subtitle={
+                activeFilter === "unpaid" && allTickets.length > 0
+                  ? "There are no outstanding tickets in these results. You can still review saved paid or dismissed tickets."
+                  : "The lookup completed, but no tickets matched the licence details entered."
+              }
+              actionLabel={
+                activeFilter === "unpaid" && allTickets.length > 0
+                  ? "Show All Results"
+                  : "Search Again"
+              }
+              onAction={
+                activeFilter === "unpaid" && allTickets.length > 0
+                  ? () => setActiveFilter("all")
+                  : () => setCurrentView("form")
+              }
+              secondaryActionLabel={
+                activeFilter === "unpaid" && allTickets.length > 0
+                  ? undefined
+                  : "Retry Lookup"
+              }
+              onSecondaryAction={
+                activeFilter === "unpaid" && allTickets.length > 0
+                  ? undefined
+                  : handleLookup
+              }
+            />
           ) : (
             <View>
               {!allSaved && displayed.length > 0 ? (
-                <TouchableOpacity onPress={handleSaveAll}>
-                  <Text style={[styles.saveAllText, { color: c.tint }]}>
-                    Save All
-                  </Text>
-                </TouchableOpacity>
+                <Button
+                  label="Save All"
+                  icon="square.and.arrow.down"
+                  size="sm"
+                  onPress={handleSaveAll}
+                  loading={savingAll}
+                  style={styles.saveAllButton}
+                />
               ) : (
                 <View style={{ width: 56 }} />
               )}
@@ -920,6 +1050,7 @@ export default function TicketLookupScreen() {
                   key={ticket.ticketNo}
                   ticket={ticket}
                   saved={hasTicket(`jm-${ticket.ticketNo}`)}
+                  saving={savingTicketNo === ticket.ticketNo}
                   onSave={() => handleSaveTicket(ticket)}
                   c={c}
                 />
@@ -956,19 +1087,20 @@ export default function TicketLookupScreen() {
             <Text style={[styles.actionTitle, { color: c.text }]}>{"No driver's licence on file"}</Text>
             <Text style={[styles.actionText, { color: c.subtext }]}>{"Add your licence in the app for faster ticket lookup, or enter your licence details and FO manually to search now."}</Text>
             <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={[styles.actionButton, { borderColor: c.border }]}
+              <Button
+                label="Add Licence"
+                variant="secondary"
+                icon="person.text.rectangle"
                 onPress={() => router.push("/license")}
-              >
-                <Text style={[styles.actionButtonText, { color: c.tint }]}>Add Licence</Text>
-              </TouchableOpacity>
+                style={styles.actionButton}
+              />
               {apiProvider ? (
-                <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: c.tint }]}
+                <Button
+                  label="Lookup Manually"
+                  icon="keyboard"
                   onPress={openManualLookup}
-                >
-                  <Text style={[styles.actionButtonText, { color: "#fff" }]}>Lookup Manually</Text>
-                </TouchableOpacity>
+                  style={styles.actionButton}
+                />
               ) : null}
             </View>
           </View>
@@ -976,7 +1108,7 @@ export default function TicketLookupScreen() {
 
         {/* View Saved Tickets Button */}
         {totalSavedTickets > 0 && (
-          <TouchableOpacity
+          <AnimatedPressable
             style={[
               styles.savedTicketsBtn,
               {
@@ -985,8 +1117,10 @@ export default function TicketLookupScreen() {
                 ...Shadows.card,
               },
             ]}
-            onPress={() => router.push("/(tabs)/tickets")}
-            activeOpacity={0.7}
+            onPress={() =>
+              router.push({ pathname: "/(tabs)", params: { tab: "tickets" } })
+            }
+            pressedScale={0.98}
           >
             <View style={styles.savedTicketsContent}>
               <View style={styles.savedTicketsHeader}>
@@ -1068,33 +1202,24 @@ export default function TicketLookupScreen() {
                 </View>
               </View>
             </View>
-          </TouchableOpacity>
+          </AnimatedPressable>
         )}
 
         {providers.length === 0 ? (
-          <>
-            <Text style={[styles.noProviders, { color: c.subtext }]}>
-              No lookup services configured for your region.
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.settingsBtn,
-                { borderColor: c.border, backgroundColor: c.card },
-              ]}
-              onPress={() => router.push("/settings")}
-            >
-              <IconSymbol name="gearshape.fill" size={16} color={c.tint} />
-              <Text style={[styles.settingsBtnText, { color: c.tint }]}>
-                Change Region in Settings
-              </Text>
-            </TouchableOpacity>
-          </>
+          <EmptyState
+            icon="globe"
+            title="No lookup service for this region"
+            subtitle="Ticket lookup is not configured for your current region. Change your region in Settings or try again after services are added."
+            actionLabel="Change Region"
+            onAction={() => router.push("/settings")}
+            secondaryActionLabel="Refresh"
+            onSecondaryAction={() => setCurrentView("list")}
+          />
         ) : (
           providers.map((p, idx) => (
-            <TouchableOpacity
+            <AnimatedPressable
               key={idx}
               onPress={() => selectProvider(p)}
-              activeOpacity={0.75}
             >
               <Card style={styles.providerCard}>
                 <View style={styles.providerRow}>
@@ -1119,7 +1244,7 @@ export default function TicketLookupScreen() {
                   <IconSymbol name="chevron.right" size={18} color={c.icon} />
                 </View>
               </Card>
-            </TouchableOpacity>
+            </AnimatedPressable>
           ))
         )}
       </ScrollView>
@@ -1133,23 +1258,34 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { padding: Spacing.page, paddingBottom: 40, gap: Spacing.rowGap },
 
+  webviewWrap: { flex: 1 },
   webview: { flex: 1 },
+  webLoading: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    zIndex: 2,
+  },
+  webLoadingText: {
+    ...Type.caption,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
 
   // Provider list
   intro: Type.body,
-  noProviders: { ...Type.body, textAlign: "center", marginVertical: 24 },
   providerCard: { marginHorizontal: 0 },
-  providerRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  providerInfo: { flex: 1, gap: 4 },
+  providerRow: { flexDirection: "row", alignItems: "flex-start", gap: 16 },
+  providerInfo: { flex: 1, gap: 8 },
   providerName: Type.title,
   providerInstructions: Type.body,
   apiBadge: {
     alignSelf: "flex-start",
     backgroundColor: StatusColors.infoBg,
     borderRadius: Radius.pill,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   apiBadgeText: {
     fontSize: 10,
@@ -1158,31 +1294,19 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  settingsBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    padding: 14,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-  },
-  settingsBtnText: { fontSize: 15, fontWeight: "700" },
-
   // Saved tickets button
   savedTicketsBtn: {
     borderRadius: Radius.card,
     borderWidth: 1,
     padding: Spacing.cardPadding,
-    marginBottom: 12,
   },
   savedTicketsContent: {
-    gap: 14,
+    gap: 16,
   },
   savedTicketsHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 16,
   },
   iconCircle: {
     width: 40,
@@ -1193,7 +1317,7 @@ const styles = StyleSheet.create({
   },
   savedTicketsTextContainer: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   savedTicketsTitle: {
     ...Type.title,
@@ -1204,13 +1328,13 @@ const styles = StyleSheet.create({
   },
   savedTicketsCounts: {
     flexDirection: "row",
-    gap: 12,
+    gap: 8,
   },
   countBadge: {
     flex: 1,
     borderRadius: Radius.surface,
     borderWidth: 1,
-    padding: 12,
+    padding: 8,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1231,34 +1355,31 @@ const styles = StyleSheet.create({
   },
 
   // Form
-  formIntro: { ...Type.body, marginBottom: 4 },
+  formIntro: Type.body,
   licenseInfoCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    padding: 12,
+    gap: 8,
+    padding: 16,
     borderRadius: Radius.surface,
     borderWidth: 1,
-    marginTop: 4,
   },
-  licenseInfoTitle: { ...Type.body, fontWeight: "700", marginBottom: 2 },
+  licenseInfoTitle: { ...Type.body, fontWeight: "700" },
   licenseInfoText: Type.caption,
   noLicenseCard: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 12,
-    padding: 12,
+    gap: 8,
+    padding: 16,
     borderRadius: Radius.surface,
     borderWidth: 1,
-    marginTop: 4,
   },
-  noLicenseTitle: { ...Type.body, fontWeight: "700", marginBottom: 2 },
+  noLicenseTitle: { ...Type.body, fontWeight: "700" },
   noLicenseText: Type.caption,
   autoFilledCard: {
-    padding: 12,
+    padding: 16,
     borderRadius: Radius.surface,
     borderWidth: 1,
-    marginTop: 8,
   },
   autoFilledRow: {
     flexDirection: "row",
@@ -1279,10 +1400,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: Radius.pill,
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: Radius.sm,
   },
   modeButtonText: {
     ...Type.body,
@@ -1292,8 +1413,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.card,
     borderWidth: 1,
     padding: Spacing.cardPadding,
-    marginTop: 12,
-    gap: 10,
+    gap: 8,
   },
   actionTitle: {
     ...Type.title,
@@ -1304,59 +1424,55 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: "row",
     gap: 8,
-    marginTop: 10,
   },
   actionButton: {
     flex: 1,
-    borderRadius: Radius.pill,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  actionButtonText: {
-    ...Type.body,
-    fontWeight: "700",
   },
   noLicenseActions: {
     flexDirection: "row",
     gap: 8,
-    marginTop: 12,
   },
-  label: { ...Type.sectionLabel, marginBottom: 4, marginTop: 8 },
+  label: { ...Type.sectionLabel, marginBottom: 8 },
   input: {
     borderWidth: 1,
     borderRadius: Radius.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 15,
   },
-  hint: { ...Type.caption, marginTop: 3 },
+  hint: { ...Type.caption, marginTop: 8 },
   errorBox: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    padding: 12,
+    padding: 16,
     borderRadius: Radius.surface,
-    marginTop: 12,
-    marginBottom: 4,
   },
   errorText: { ...Type.body, fontWeight: "500" },
-  errorLink: {
-    fontSize: 13,
-    fontWeight: "700",
-    textDecorationLine: "underline",
+  errorButton: {
+    alignSelf: "flex-start",
   },
   lookupBtn: {
+    marginTop: 8,
+  },
+  progressCard: {
+    marginTop: 12,
+    marginHorizontal: 0,
+    gap: 10,
+  },
+  progressHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: Radius.pill,
-    marginTop: 16,
+    gap: 10,
   },
-  lookupBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  progressTitle: {
+    ...Type.title,
+  },
+  progressText: Type.body,
+  progressSkeleton: {
+    gap: 8,
+    paddingTop: 2,
+  },
 
   // Results
   tabRow: { flexDirection: "row", borderBottomWidth: 1 },
@@ -1364,47 +1480,41 @@ const styles = StyleSheet.create({
   tabText: { ...Type.body, fontWeight: "700" },
   tabCount: { fontWeight: "400" },
   resultScroll: { padding: Spacing.page, paddingBottom: 40, gap: Spacing.rowGap },
-  resultCard: { marginHorizontal: 0, marginBottom: 12 },
+  resultCard: { marginHorizontal: 0, marginBottom: 16 },
   resultHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 4,
+    marginBottom: 8,
   },
   ticketNo: Type.sectionLabel,
   offence: {
     ...Type.title,
     lineHeight: 20,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   resultMeta: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 16,
     marginBottom: 8,
   },
   metaItem: { gap: 2 },
   metaLabel: Type.sectionLabel,
   metaValue: { ...Type.body, fontWeight: "600" },
-  courtInfo: { ...Type.caption, marginBottom: 10 },
+  courtInfo: { ...Type.caption, marginBottom: 8 },
   saveBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 9,
-    borderRadius: Radius.pill,
+    gap: 8,
+    paddingVertical: 8,
+    borderRadius: Radius.sm,
     borderWidth: 1,
-    marginTop: 4,
   },
   saveBtnText: { fontSize: 13, fontWeight: "700" },
-  saveAllText: {
-    fontSize: 14,
-    fontWeight: "700",
-    width: 56,
-    textAlign: "right",
-    marginBottom: 12,
+  saveAllButton: {
+    alignSelf: "flex-end",
+    marginBottom: 16,
   },
-  emptyState: { alignItems: "center", paddingVertical: 48, gap: 12 },
-  emptyText: { ...Type.body, textAlign: "center" },
 });

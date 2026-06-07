@@ -1,4 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import * as Sharing from "expo-sharing";
 import React from "react";
 import {
@@ -11,7 +12,6 @@ import {
     StatusBar,
     StyleSheet,
     Text,
-    TouchableOpacity,
     View,
 } from "react-native";
 
@@ -66,25 +66,27 @@ export function ImageViewerModal({
       <View style={styles.container}>
         {/* Top bar */}
         <View style={styles.topBar}>
-          <TouchableOpacity
+          <AnimatedPressable
             onPress={onClose}
             style={styles.iconBtn}
             hitSlop={8}
+            pressedScale={0.92}
           >
             <IconSymbol name="xmark" size={22} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
+          </AnimatedPressable>
+          <AnimatedPressable
             onPress={handleShare}
             style={styles.iconBtn}
             hitSlop={8}
             disabled={sharing}
+            pressedScale={0.92}
           >
             {sharing ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <IconSymbol name="square.and.arrow.up" size={22} color="#fff" />
             )}
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
 
         {/* Image with pinch-to-zoom */}

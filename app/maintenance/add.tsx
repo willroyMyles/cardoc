@@ -11,6 +11,7 @@ import {
   useSettingsStore,
   useVehiclesStore,
 } from "@/store";
+import { haptics } from "@/services/haptics";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -65,6 +66,7 @@ export default function AddMaintenanceScreen() {
       updatedAt: now,
     };
     addEntry(entry);
+    void haptics.success();
     router.back();
   };
 

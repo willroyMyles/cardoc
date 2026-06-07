@@ -1,5 +1,6 @@
 import { EmptyState } from "@/components/ui/empty-state";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { FUEL_TYPE_LABELS, type FuelEntry } from "@/models/fuel-log";
@@ -10,7 +11,6 @@ import {
   FlatList,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -91,13 +91,13 @@ export function FuelTabContent() {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={[styles.sectionTitle, { color: c.subtext }]}>FUEL LEDGER{entries.length > 0 ? ` (${entries.length})` : ""}</Text>
-        <TouchableOpacity
+        <AnimatedPressable
           style={[styles.logBtn, { backgroundColor: c.text }]}
           onPress={() => router.push("/fuel/add")}
-          activeOpacity={0.85}
+          pressedScale={0.96}
         >
           <Text style={[styles.logBtnText, { color: c.background }]}>LOG REFILL</Text>
-        </TouchableOpacity>
+        </AnimatedPressable>
       </View>
 
       {entries.length > 0 && (
@@ -134,9 +134,9 @@ export function FuelTabContent() {
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: c.text }]}>Recent Fill-ups</Text>
         {entries.length > 0 ? (
-          <TouchableOpacity onPress={() => router.push("/fuel")}> 
+          <AnimatedPressable onPress={() => router.push("/fuel")} pressedScale={0.98}>
             <Text style={[styles.sectionLink, { color: c.tint }]}>View all</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         ) : null}
       </View>
 
@@ -149,7 +149,9 @@ export function FuelTabContent() {
           <EmptyState
             icon="fuelpump.fill"
             title="No Fuel Records"
-            subtitle="Log a refill to start tracking your fuel economy."
+            subtitle="Log your first refill to track fuel cost, mileage, and economy trends over time."
+            actionLabel="Log Refill"
+            onAction={() => router.push("/fuel/add")}
           />
         }
       />

@@ -2,6 +2,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ImageViewerModal } from "@/components/ui/image-viewer-modal";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { Colors, DocTypeColors, Radius, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CAR_DOCUMENT_TYPE_LABELS, CarDocument } from "@/models";
@@ -18,7 +19,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 interface DocumentDetailSheetProps {
   document: CarDocument | null;
@@ -40,6 +41,7 @@ export function DocumentDetailSheet({
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["62%", "86%"], []);
   const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   const renderBackdrop = useCallback(
@@ -60,6 +62,7 @@ export function DocumentDetailSheet({
     } else {
       bottomSheetModalRef.current?.dismiss();
       setShowDelete(false);
+      setDeleting(false);
       setViewerUri(null);
     }
   }, [document, visible]);
@@ -72,9 +75,14 @@ export function DocumentDetailSheet({
   const expiryDate = formatDate(document.expiryDate);
 
   async function handleDelete() {
-    await onDelete(document!.id);
-    setShowDelete(false);
-    bottomSheetModalRef.current?.dismiss();
+    setDeleting(true);
+    try {
+      await onDelete(document!.id);
+      setShowDelete(false);
+      bottomSheetModalRef.current?.dismiss();
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -108,12 +116,13 @@ export function DocumentDetailSheet({
                 {title}
               </Text>
             </View>
-            <TouchableOpacity
+            <AnimatedPressable
               onPress={() => bottomSheetModalRef.current?.dismiss()}
               hitSlop={8}
+              pressedScale={0.92}
             >
               <IconSymbol name="xmark" size={18} color={c.subtext} />
-            </TouchableOpacity>
+            </AnimatedPressable>
           </View>
 
           <View style={styles.typeRow}>
@@ -140,10 +149,10 @@ export function DocumentDetailSheet({
           </View>
 
           {document.imageUri ? (
-            <TouchableOpacity
+            <AnimatedPressable
               style={[styles.imageButton, { borderColor: c.border }]}
               onPress={() => setViewerUri(document.imageUri!)}
-              activeOpacity={0.8}
+              pressedScale={0.98}
             >
               <Image
                 source={{ uri: document.imageUri }}
@@ -159,22 +168,22 @@ export function DocumentDetailSheet({
                 </Text>
               </View>
               <IconSymbol name="chevron.right" size={18} color={c.icon} />
-            </TouchableOpacity>
+            </AnimatedPressable>
           ) : null}
 
-          <TouchableOpacity
+          <AnimatedPressable
             style={[
               styles.deleteBtn,
               { borderColor: StatusColors.danger + "40" },
             ]}
             onPress={() => setShowDelete(true)}
-            activeOpacity={0.75}
+            pressedScale={0.96}
           >
             <IconSymbol name="trash.fill" size={16} color={StatusColors.danger} />
             <Text style={[styles.deleteText, { color: StatusColors.danger }]}>
               Delete Document
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </BottomSheetScrollView>
       </BottomSheetModal>
 
@@ -183,9 +192,13 @@ export function DocumentDetailSheet({
         title="Delete Document"
         message="This will permanently delete this document."
         confirmLabel="Delete"
+        loadingLabel="Deleting"
+        loading={deleting}
         destructive
         onConfirm={handleDelete}
-        onCancel={() => setShowDelete(false)}
+        onCancel={() => {
+          if (!deleting) setShowDelete(false);
+        }}
       />
 
       <ImageViewerModal

@@ -1,11 +1,13 @@
 import { SAVED_TICKET_FIELDS, TicketAggregator } from "@/components/tickets/ticket-aggregator";
 import { TicketCard } from "@/components/tickets/ticket-card";
 import { TicketDetailSheet } from "@/components/tickets/ticket-detail-sheet";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Ticket, TicketStatus } from "@/models";
+import { haptics } from "@/services/haptics";
 import { useTicketsStore, useVehiclesStore } from "@/store";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -15,11 +17,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
-const FILTERS: Array<{ key: TicketStatus | "all"; label: string }> = [
+const FILTERS: { key: TicketStatus | "all"; label: string }[] = [
   { key: "all", label: "All" },
   { key: "unpaid", label: "Unpaid" },
   { key: "paid", label: "Paid" },
@@ -30,13 +31,6 @@ const FILTERS: Array<{ key: TicketStatus | "all"; label: string }> = [
 interface TicketTabContentProps {
   onScroll?: FlatListProps<Ticket>["onScroll"];
   scrollEventThrottle?: FlatListProps<Ticket>["scrollEventThrottle"];
-}
-
-function formatMoney(currency: string, amount: number): string {
-  return `${currency} ${amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
 }
 
 export function TicketTabContent({
@@ -57,13 +51,6 @@ export function TicketTabContent({
   const selectedTicket =
     selectedTicketId ? tickets.find((ticket) => ticket.id === selectedTicketId) ?? null : null;
 
-  const unpaidTotal = tickets
-    .filter((t) => t.status === "unpaid")
-    .reduce((sum, t) => sum + t.amount, 0);
-  const unpaidCurrency =
-    tickets.find((t) => t.status === "unpaid")?.currency ??
-    tickets[0]?.currency ??
-    "JMD";
   const getVehicleName = (ticket: Ticket) => {
     const vehicle = ticket.vehicleId ? getVehicle(ticket.vehicleId) : undefined;
     return vehicle
@@ -76,26 +63,25 @@ export function TicketTabContent({
       <View style={styles.headerRow}>
         <Text style={[styles.sectionTitle, { color: c.subtext }]}>TICKETS</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={[
-              styles.secondaryBtn,
-              { backgroundColor: c.card, borderColor: c.border },
-            ]}
-            onPress={() => setShowInsights(true)}
-            activeOpacity={0.85}
-          >
-            <IconSymbol name="chart.bar.fill" size={13} color={c.text} />
-            <Text style={[styles.secondaryBtnText, { color: c.text }]}>
-              Insight
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.lookupBtn, { backgroundColor: c.text }]}
-            onPress={() => router.push("/ticket/lookup")}
-            activeOpacity={0.85}
-          >
-            <Text style={[styles.lookupBtnText, { color: c.background }]}>Lookup</Text>
-          </TouchableOpacity>
+          <Button
+            label="Insight"
+            icon="chart.bar.fill"
+            variant="secondary"
+            size="sm"
+            onPress={() => {
+              void haptics.selection();
+              setShowInsights(true);
+            }}
+          />
+          <Button
+            label="Lookup"
+            icon="magnifyingglass"
+            size="sm"
+            onPress={() => {
+              void haptics.selection();
+              router.push("/ticket/lookup");
+            }}
+          />
         </View>
       </View>
 
@@ -165,7 +151,7 @@ export function TicketTabContent({
         contentContainerStyle={styles.chipRow}
       >
         {FILTERS.map((f) => (
-          <TouchableOpacity
+          <AnimatedPressable
             key={f.key}
             style={[
               styles.chip,
@@ -174,7 +160,11 @@ export function TicketTabContent({
                 borderColor: filter === f.key ? c.tint : c.border,
               },
             ]}
-            onPress={() => setFilter(f.key)}
+            onPress={() => {
+              if (filter !== f.key) void haptics.selection();
+              setFilter(f.key);
+            }}
+            pressedScale={0.95}
           >
             <Text
               style={[
@@ -184,7 +174,7 @@ export function TicketTabContent({
             >
               {f.label}
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         ))}
       </ScrollView>
 
@@ -208,8 +198,22 @@ export function TicketTabContent({
         ListEmptyComponent={
           <EmptyState
             icon="exclamationmark.circle.fill"
-            title="No tickets"
-            subtitle="Use Lookup to find and save traffic fines"
+            title={
+              tickets.length === 0
+                ? "No tickets saved"
+                : `No ${filter} tickets`
+            }
+            subtitle={
+              tickets.length === 0
+                ? "Look up traffic fines and save any matches to keep payment status, due dates, and court details in one place."
+                : "Try another filter or look up a ticket if you expected to see one here."
+            }
+            actionLabel="Look Up Ticket"
+            onAction={() => router.push("/ticket/lookup")}
+            secondaryActionLabel={tickets.length === 0 ? undefined : "Show All"}
+            onSecondaryAction={
+              tickets.length === 0 ? undefined : () => setFilter("all")
+            }
           />
         }
       />
@@ -232,32 +236,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  secondaryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-  },
-  secondaryBtnText: { fontSize: 13, fontWeight: "700" },
-  lookupBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-  },
-  lookupBtnText: { fontSize: 13, fontWeight: "700" },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: Spacing.section,
-    paddingTop: 18,
-    paddingBottom: 10,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   sectionTitle: {
     ...Type.sectionLabel,
@@ -265,7 +250,7 @@ const styles = StyleSheet.create({
   summaryCard: {
     flexDirection: "row",
     marginHorizontal: Spacing.section,
-    marginBottom: 14,
+    marginBottom: 16,
     borderRadius: Radius.surface,
     borderWidth: 1,
     paddingHorizontal: 14,
@@ -275,12 +260,12 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     minWidth: 0,
   },
   summaryIcon: {
-    width: 34,
-    height: 34,
+    width: 32,
+    height: 32,
     borderRadius: Radius.tile,
     alignItems: "center",
     justifyContent: "center",
@@ -290,7 +275,7 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 11, fontWeight: "600" },
   summaryValue: { fontSize: 18, fontWeight: "800", letterSpacing: 0 },
   summaryMoney: { fontSize: 16 },
-  summarySep: { width: 1, marginHorizontal: 12 },
+  summarySep: { width: 1, marginHorizontal: 16 },
   chipScroll: {
     flexGrow: 0,
     marginBottom: 8,
@@ -300,14 +285,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: Spacing.page,
     gap: 8,
-    paddingVertical: 5,
+    paddingVertical: 8,
   },
   chip: {
     minWidth: 72,
     alignItems: "center",
-    paddingHorizontal: 15,
-    paddingVertical: 9,
-    borderRadius: Radius.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: Radius.sm,
     borderWidth: 1,
   },
   chipText: { fontSize: 12, fontWeight: "700", letterSpacing: 0 },

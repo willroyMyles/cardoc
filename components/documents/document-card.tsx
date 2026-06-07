@@ -1,10 +1,11 @@
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { Colors, DocTypeColors, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CAR_DOCUMENT_TYPE_LABELS, CarDocument } from "@/models";
 import { router } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 interface DocumentCardProps {
   document: CarDocument;
@@ -30,7 +31,7 @@ export function DocumentCard({
       });
 
   return (
-    <TouchableOpacity
+    <AnimatedPressable
       onPress={
         onPress ??
         (() =>
@@ -39,7 +40,6 @@ export function DocumentCard({
             params: { id: document.id },
           }))
       }
-      activeOpacity={0.75}
       style={[
         styles.card,
         { backgroundColor: c.card, borderColor: c.border },
@@ -74,7 +74,7 @@ export function DocumentCard({
           ? `${vehicleName} / Expires ${expiryLabel}`
           : `Expires ${expiryLabel}`}
       </Text>
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }
 

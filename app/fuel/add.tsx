@@ -1,6 +1,9 @@
 import { Header } from "@/components/ui/header";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
+import { AppSwitch } from "@/components/ui/app-switch";
 import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { haptics } from "@/services/haptics";
 import {
     FUEL_TYPE_LABELS,
     type FuelEntry,
@@ -14,10 +17,8 @@ import {
     SafeAreaView,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TextInput,
-    TouchableOpacity,
     View,
 } from "react-native";
 import { v4 as uuidv4 } from "uuid";
@@ -78,6 +79,7 @@ export default function AddFuelScreen() {
       updatedAt: now,
     };
     addEntry(entry);
+    void haptics.success();
     router.back();
   };
 
@@ -87,9 +89,9 @@ export default function AddFuelScreen() {
         title="Add Fuel Entry"
         onBack={() => router.back()}
         right={
-          <TouchableOpacity onPress={handleSave}>
+          <AnimatedPressable onPress={handleSave} pressedScale={0.94}>
             <Text style={[styles.saveBtn, { color: c.tint }]}>Save</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         }
       />
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -97,7 +99,7 @@ export default function AddFuelScreen() {
         <Label text="Vehicle" c={c} />
         <View style={styles.chips}>
           {vehicles.map((v) => (
-            <TouchableOpacity
+            <AnimatedPressable
               key={v.id}
               style={[
                 styles.chip,
@@ -107,6 +109,7 @@ export default function AddFuelScreen() {
                 },
               ]}
               onPress={() => setVehicleId(v.id)}
+              pressedScale={0.95}
             >
               <Text
                 style={[
@@ -116,7 +119,7 @@ export default function AddFuelScreen() {
               >
                 {v.make} {v.model}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressable>
           ))}
         </View>
 
@@ -124,7 +127,7 @@ export default function AddFuelScreen() {
         <Label text="Fuel Type" c={c} />
         <View style={styles.chips}>
           {FUEL_TYPES.map(([key, label]) => (
-            <TouchableOpacity
+            <AnimatedPressable
               key={key}
               style={[
                 styles.chip,
@@ -134,6 +137,7 @@ export default function AddFuelScreen() {
                 },
               ]}
               onPress={() => setFuelType(key)}
+              pressedScale={0.95}
             >
               <Text
                 style={[
@@ -143,7 +147,7 @@ export default function AddFuelScreen() {
               >
                 {label}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressable>
           ))}
         </View>
 
@@ -175,17 +179,21 @@ export default function AddFuelScreen() {
             keyboardType="decimal-pad"
             placeholderTextColor={c.subtext}
           />
-          <TouchableOpacity
+          <AnimatedPressable
             style={[
               styles.unitToggle,
               { borderColor: c.border, backgroundColor: c.card },
             ]}
-            onPress={() => setUnit(unit === "liters" ? "gallons" : "liters")}
+            onPress={() => {
+              setUnit(unit === "liters" ? "gallons" : "liters");
+              void haptics.selection();
+            }}
+            pressedScale={0.95}
           >
             <Text style={[styles.chipText, { color: c.tint }]}>
               {unit === "liters" ? "L" : "gal"}
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
 
         {/* Price per unit */}
@@ -253,7 +261,13 @@ export default function AddFuelScreen() {
           <Text style={[styles.switchLabel, { color: c.text }]}>
             Full Tank Fill-up
           </Text>
-          <Switch value={fullTank} onValueChange={setFullTank} />
+          <AppSwitch
+            value={fullTank}
+            onValueChange={(value) => {
+              setFullTank(value);
+              void haptics.selection();
+            }}
+          />
         </View>
 
         {/* Notes */}

@@ -1,9 +1,11 @@
 import { DocumentCard } from "@/components/documents/document-card";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Header } from "@/components/ui/header";
-import { ScanPromptCard } from "@/components/ui/scan-prompt-card";
 import { Colors, Radius, Spacing } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CarDocumentType } from "@/models";
+import { haptics } from "@/services/haptics";
 import { useDocumentsStore, useVehiclesStore } from "@/store";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
@@ -12,7 +14,6 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -50,7 +51,7 @@ export default function DocumentsTab() {
       {/* Filter chips */}
       <View style={styles.chipRow}>
         {FILTERS.map((f) => (
-          <TouchableOpacity
+          <AnimatedPressable
             key={f.key}
             style={[
               styles.chip,
@@ -59,7 +60,11 @@ export default function DocumentsTab() {
                 borderColor: filter === f.key ? c.tint : c.border,
               },
             ]}
-            onPress={() => setFilter(f.key)}
+            onPress={() => {
+              if (filter !== f.key) void haptics.selection();
+              setFilter(f.key);
+            }}
+            pressedScale={0.95}
           >
             <Text
               style={[
@@ -69,7 +74,7 @@ export default function DocumentsTab() {
             >
               {f.label}
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         ))}
       </View>
 
@@ -89,9 +94,26 @@ export default function DocumentsTab() {
           filtered.length === 0 ? styles.emptyList : styles.list
         }
         ListEmptyComponent={
-          <ScanPromptCard
-            header="Documents"
-            subtitle="Scan a vehicle document — registration, insurance, inspection, or title — to get started."
+          <EmptyState
+            icon="doc.text.fill"
+            title={
+              documents.length === 0
+                ? "No documents saved"
+                : `No ${FILTERS.find((item) => item.key === filter)?.label ?? "matching"} documents`
+            }
+            subtitle={
+              documents.length === 0
+                ? "Scan or add a registration, insurance policy, inspection, title, or roadworthy certificate to start your vault."
+                : "Switch filters or add a new document for this category."
+            }
+            actionLabel={documents.length === 0 ? "Scan Document" : "Add Document"}
+            onAction={() => router.push("/scan")}
+            secondaryActionLabel={documents.length === 0 ? "Add Manually" : "Show All"}
+            onSecondaryAction={
+              documents.length === 0
+                ? () => router.push("/document/add")
+                : () => setFilter("all")
+            }
           />
         }
       />

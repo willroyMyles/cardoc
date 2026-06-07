@@ -65,7 +65,9 @@ export default function MaintenanceListScreen() {
           <EmptyState
             icon="wrench.and.screwdriver.fill"
             title="No Maintenance Records"
-            subtitle="Track your service history by tapping Log Record"
+            subtitle="Log oil changes, tyre rotations, inspections, and repairs so service history is easy to review."
+            actionLabel="Log Record"
+            onAction={() => router.push("/maintenance/add")}
           />
         }
       />
