@@ -1,0 +1,169 @@
+{
+  "type": "traffic_ticket_lookup",
+  "label": "Traffic Ticket Lookup",
+  "issuing_authority": "Jamaica Constabulary Force / Island Traffic Authority",
+  "baseUrl": "https://trafficticketlookup.gov.jm/api",
+  "steps": [
+    {
+      "id": "validate",
+      "label": "Validate Driver's Licence",
+      "description": "Verifies that the driver's licence details are valid before fetching tickets.",
+      "method": "POST",
+      "path": "/driver-licences/is-valid",
+      "contentType": "application/json",
+      "bodyFields": {
+        "driversLicNo": { "source": "input", "key": "driversLicNo" },
+        "controlNo": { "source": "input", "key": "controlNo" },
+        "origLicIssueDate": {
+          "source": "input",
+          "key": "origLicIssueDate",
+          "transform": "iso_date_to_unix_ms",
+          "note": "Send as epoch milliseconds, e.g. 1389243600000"
+        },
+        "dateOfBirth": {
+          "source": "input",
+          "key": "dateOfBirth",
+          "transform": "iso_date_to_unix_ms",
+          "note": "Send as epoch milliseconds, e.g. 618642000000"
+        },
+        "ipAddress": { "source": "auto", "key": "clientIp" }
+      },
+      "response": {
+        "type": "boolean",
+        "description": "true = valid, false = not found or invalid"
+      },
+      "onFalse": "error",
+      "errorMessage": "Could not verify your licence details. Please check and try again."
+    },
+    {
+      "id": "fetch_all",
+      "label": "Fetch All Tickets",
+      "description": "Returns all traffic tickets (paid and unpaid) for the driver.",
+      "method": "POST",
+      "path": "/traffic-tickets",
+      "query": { "size": 20, "sort": "id,desc" },
+      "contentType": "application/json",
+      "bodyFields": {
+        "driversLicNo": { "source": "input", "key": "driversLicNo" },
+        "controlNo": { "source": "input", "key": "controlNo" },
+        "origLicIssueDate": {
+          "source": "input",
+          "key": "origLicIssueDate",
+          "transform": "iso_date_to_iso_date",
+          "note": "Send as YYYY-MM-DD, e.g. 2014-01-09"
+        },
+        "dateOfBirth": {
+          "source": "input",
+          "key": "dateOfBirth",
+          "transform": "iso_date_to_iso_date",
+          "note": "Send as YYYY-MM-DD, e.g. 1989-08-09"
+        },
+        "ipAddress": { "source": "auto", "key": "clientIp" }
+      },
+      "response": {
+        "type": "array",
+        "itemSchema": "ticket"
+      }
+    },
+    {
+      "id": "fetch_unpaid",
+      "label": "Fetch Unpaid Tickets",
+      "description": "Returns only unpaid/outstanding traffic tickets for the driver.",
+      "method": "POST",
+      "path": "/traffic-tickets/unpaid",
+      "contentType": "application/json",
+      "bodyFields": {
+        "driversLicNo": { "source": "input", "key": "driversLicNo" },
+        "controlNo": { "source": "input", "key": "controlNo" },
+        "origLicIssueDate": {
+          "source": "input",
+          "key": "origLicIssueDate",
+          "transform": "iso_date_to_iso_date"
+        },
+        "dateOfBirth": {
+          "source": "input",
+          "key": "dateOfBirth",
+          "transform": "iso_date_to_iso_date"
+        },
+        "ipAddress": { "source": "auto", "key": "clientIp" }
+      },
+      "response": {
+        "type": "array",
+        "itemSchema": "ticket"
+      }
+    }
+  ],
+  "inputFields": [
+    {
+      "id": "driversLicNo",
+      "label": "Driver's Licence No.",
+      "type": "string",
+      "required": true,
+      "placeholder": "e.g. 118405977",
+      "keyboardType": "numeric",
+      "hint": "Your TAJ/ITA licence number (7–9 digits)",
+      "licenseField": "trn"
+    },
+    {
+      "id": "controlNo",
+      "label": "Control No.",
+      "type": "string",
+      "required": true,
+      "placeholder": "e.g. 0210151259",
+      "hint": "10-digit control number printed on your licence",
+      "licenseField": "controlNumber"
+    },
+    {
+      "id": "origLicIssueDate",
+      "label": "Original Licence Issue Date",
+      "type": "date",
+      "required": true,
+      "format": "YYYY-MM-DD",
+      "placeholder": "YYYY-MM-DD",
+      "hint": "The date your licence was first ever issued",
+      "licenseField": "originalIssueDate"
+    },
+    {
+      "id": "dateOfBirth",
+      "label": "Date of Birth",
+      "type": "date",
+      "required": true,
+      "format": "YYYY-MM-DD",
+      "placeholder": "YYYY-MM-DD",
+      "licenseField": "dateOfBirth"
+    }
+  ],
+  "ticketSchema": [
+    { "key": "ticketNo", "label": "Ticket No.", "type": "string" },
+    { "key": "idNumber", "label": "ID / Licence No.", "type": "string" },
+    { "key": "trnNo", "label": "TRN No.", "type": "string", "nullable": true },
+    { "key": "issueDate", "label": "Issue Date", "type": "date" },
+    { "key": "offenceCode", "label": "Offence Code", "type": "string" },
+    { "key": "offenceDesc", "label": "Offence", "type": "string" },
+    { "key": "fineAmount", "label": "Fine (JMD)", "type": "currency" },
+    { "key": "workflowState", "label": "Status", "type": "string" },
+    { "key": "workflowStateCode", "label": "Status Code", "type": "string" },
+    {
+      "key": "mandatoryCourtApp",
+      "label": "Court Appearance Required",
+      "type": "boolean"
+    },
+    { "key": "courtDate", "label": "Court Date", "type": "date" },
+    { "key": "courtLocation", "label": "Court Location", "type": "string" },
+    { "key": "demeritPoints", "label": "Demerit Points", "type": "string" },
+    { "key": "offenderFirstName", "label": "First Name", "type": "string" },
+    { "key": "offenderLastName", "label": "Last Name", "type": "string" },
+    { "key": "paymentDueDate", "label": "Payment Due Date", "type": "datetime" }
+  ],
+  "storeMapping": {
+    "ticketNumber": "ticketNo",
+    "violation": "offenceDesc",
+    "date": "issueDate",
+    "dueDate": "paymentDueDate",
+    "amount": "fineAmount",
+    "currency": "JMD",
+    "status": { "field": "workflowState", "transform": "paid_state_to_status" },
+    "issuingAuthority": "Jamaica Constabulary Force",
+    "region": "jamaica"
+  }
+}
