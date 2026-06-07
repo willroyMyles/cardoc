@@ -1,8 +1,8 @@
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
+import { AppSwitch } from "@/components/ui/app-switch";
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SectionHeader } from "@/components/ui/section-header";
-import { AnimatedPressable } from "@/components/ui/animated-pressable";
-import { AppSwitch } from "@/components/ui/app-switch";
 import {
   AccentColor,
   Colors,
@@ -31,8 +31,8 @@ import { useMediaLibraryPermissions } from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
   ActionSheetIOS,
+  ActivityIndicator,
   Alert,
   Linking,
   Platform,
@@ -61,13 +61,13 @@ const SYNC_MODES: { value: SyncMode; label: string; description: string }[] = [
 const QUICK_LINKS = [
   {
     label: "Vehicles",
-    route: "/(tabs)/vehicles",
+    route: "/vehicles",
     description: "Manage vehicles from scanned documents",
     icon: "car.fill",
   },
   {
     label: "Documents",
-    route: "/(tabs)/documents",
+    route: "/documents",
     description: "All your vehicle documents",
     icon: "doc.fill",
   },
@@ -437,17 +437,20 @@ export default function SettingsScreen() {
                 },
               ]}
               onPress={() => {
-                if (
-                  item.route === "/(tabs)/documents" ||
-                  item.route === "/(tabs)/vehicles"
-                ) {
-                  router.push({
-                    pathname: item.route as any,
-                    params: { backTo: "/settings" },
-                  });
-                  return;
-                }
+                // if (
+                //   item.route === "/(tabs)/documents" ||
+                //   item.route === "/(tabs)/vehicles"
+                // ) {
+                //   router.push({
+                //     pathname: item.route as any,
+                //     params: { backTo: "/settings" },
+                //   });
+                //   return;
+                // }
                 router.push(item.route as any);
+
+                console.log(item);
+                
               }}
             >
               <View style={[styles.menuIcon, { backgroundColor: "#1A1A1A" }]}>

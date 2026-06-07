@@ -1,4 +1,8 @@
 import { DocumentCard } from "@/components/documents/document-card";
+import {
+  DocumentImportSheet,
+  type DocumentSource,
+} from "@/components/documents/document-import-sheet";
 import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Header } from "@/components/ui/header";
@@ -12,9 +16,9 @@ import React, { useState } from "react";
 import {
   FlatList,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
-  View,
 } from "react-native";
 
 const FILTERS: Array<{ key: CarDocumentType | "all"; label: string }> = [
@@ -33,23 +37,43 @@ export default function DocumentsTab() {
   const documents = useDocumentsStore((s) => s.documents);
   const getVehicle = useVehiclesStore((s) => s.getVehicle);
   const [filter, setFilter] = useState<CarDocumentType | "all">("all");
+  const [importSheetVisible, setImportSheetVisible] = useState(false);
 
   const filtered =
     filter === "all" ? documents : documents.filter((d) => d.type === filter);
+
+  function handleBackToSettings() {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace("/settings");
+  }
+
+  function handleImportSource(source: DocumentSource) {
+    setImportSheetVisible(false);
+    router.push({
+      pathname: "/scan",
+      params: { source },
+    });
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <Header
         title="Documents"
         onBack={
-          backTo === "/settings"
-            ? () => router.replace("/settings")
-            : undefined
+          () => router.back()
         }
       />
 
       {/* Filter chips */}
-      <View style={styles.chipRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipRow}
+      >
         {FILTERS.map((f) => (
           <AnimatedPressable
             key={f.key}
@@ -76,7 +100,7 @@ export default function DocumentsTab() {
             </Text>
           </AnimatedPressable>
         ))}
-      </View>
+      </ScrollView>
 
       <FlatList
         data={filtered}
@@ -103,19 +127,23 @@ export default function DocumentsTab() {
             }
             subtitle={
               documents.length === 0
-                ? "Scan or add a registration, insurance policy, inspection, title, or roadworthy certificate to start your vault."
-                : "Switch filters or add a new document for this category."
+                ? "Scan a document, upload a file, or choose photos to start your vault."
+                : "Switch filters to see saved documents in another category."
             }
-            actionLabel={documents.length === 0 ? "Scan Document" : "Add Document"}
-            onAction={() => router.push("/scan")}
-            secondaryActionLabel={documents.length === 0 ? "Add Manually" : "Show All"}
-            onSecondaryAction={
+            actionLabel={documents.length === 0 ? "Add Document" : "Show All"}
+            onAction={
               documents.length === 0
-                ? () => router.push("/document/add")
+                ? () => setImportSheetVisible(true)
                 : () => setFilter("all")
             }
           />
         }
+      />
+
+      <DocumentImportSheet
+        visible={importSheetVisible}
+        onClose={() => setImportSheetVisible(false)}
+        onSelect={handleImportSource}
       />
     </SafeAreaView>
   );
@@ -135,8 +163,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: Spacing.page,
     gap: 8,
-    marginBottom: 8,
-    flexWrap: "wrap",
+    marginBottom: 0,
+    marginTop: 8,
+    flexWrap: "nowrap",
+    height: 32,
+    
   },
   chip: {
     paddingHorizontal: 14,

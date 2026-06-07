@@ -2,10 +2,10 @@ import {
   DocumentSource,
   DocumentSourceSheet,
 } from "@/components/documents/document-source-sheet";
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { Colors, Radius } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -35,6 +35,15 @@ export default function VehiclesTab() {
     });
   }
 
+  function handleBackToSettings() {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace("/settings");
+  }
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: Colors[scheme].background }]}
@@ -42,9 +51,7 @@ export default function VehiclesTab() {
       <Header
         title="Vehicles"
         onBack={
-          backTo === "/settings"
-            ? () => router.replace("/settings")
-            : undefined
+          () => router.back()
         }
         right={
           <AnimatedPressable
@@ -71,8 +78,6 @@ export default function VehiclesTab() {
             subtitle="Create your first vehicle by scanning a registration, insurance slip, or other vehicle document."
             actionLabel="Scan Document"
             onAction={() => setScannerSheetVisible(true)}
-            secondaryActionLabel="Add Manually"
-            onSecondaryAction={() => router.push("/vehicle/add")}
           />
         }
       />

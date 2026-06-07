@@ -1,8 +1,8 @@
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import {
-    DarkTheme,
-    DefaultTheme,
-    ThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
 } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
@@ -15,9 +15,9 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
 import { Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import "react-native-get-random-values";
 import "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Use the app's core sans font for every Text component by default.
 const defaultTextStyle = { fontFamily: Fonts.sans };
@@ -98,10 +98,6 @@ export default function Layout() {
           />
           {/* Document */}
           <Stack.Screen
-            name="document/add"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
             name="document/[id]"
             options={{ headerShown: false }}
           />
@@ -122,6 +118,14 @@ export default function Layout() {
           {/* Misc */}
           <Stack.Screen
             name="license"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="documents"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="vehicles"
             options={{ headerShown: false }}
           />
           <Stack.Screen

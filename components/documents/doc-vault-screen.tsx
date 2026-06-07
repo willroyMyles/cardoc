@@ -1,9 +1,9 @@
 import { DocumentCard } from "@/components/documents/document-card";
 import { DocumentDetailSheet } from "@/components/documents/document-detail-sheet";
 import {
-  DocumentSource,
-  DocumentSourceSheet,
-} from "@/components/documents/document-source-sheet";
+  DocumentImportSheet,
+  type DocumentSource,
+} from "@/components/documents/document-import-sheet";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -18,7 +18,6 @@ import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
-  Platform,
   SafeAreaView,
   ScrollView,
   ScrollViewProps,
@@ -53,7 +52,6 @@ export function DocVaultScreen({
   const uploadSheetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const galleryLabel = Platform.OS === "ios" ? "Photos" : "Gallery";
 
   const activeVehicle = vehicles[0];
   const documentsForVehicle = activeVehicle
@@ -157,6 +155,7 @@ export function DocVaultScreen({
       return;
     }
 
+    setImportingSource(null);
     router.push({
       pathname: "/scan",
       params: { source },
@@ -225,14 +224,6 @@ export function DocVaultScreen({
           </View> */}
         </Card>
 
-        <Button
-          label="Add Manual Policy Slip"
-          icon="plus"
-          variant="secondary"
-          onPress={() => router.push("/document/add")}
-          style={styles.manualButton}
-        />
-
         {documentsForVehicle.length > 0 ? (
           <View style={styles.documentList}>
             {documentsForVehicle.map((document) => (
@@ -248,11 +239,9 @@ export function DocVaultScreen({
           <EmptyState
             icon="doc.text.fill"
             title="No documents yet"
-            subtitle="Scan a document, upload a file, or add a policy slip manually to start building your vault."
-            actionLabel="Upload File"
+            subtitle="Scan a document, upload a file, or choose photos to start building your vault."
+            actionLabel="Add Document"
             onAction={openUploadSheet}
-            secondaryActionLabel="Add Manually"
-            onSecondaryAction={() => router.push("/document/add")}
           />
         )}
       </ScrollView>
@@ -267,23 +256,11 @@ export function DocVaultScreen({
         onDelete={handleDeleteDocument}
       />
 
-      <DocumentSourceSheet
+      <DocumentImportSheet
         key={uploadSheetInstanceKey}
         visible={uploadSheetVisible}
-        title="Upload document"
+        title="Add document"
         subtitle="Choose where to import the document from."
-        options={[
-          {
-            source: "gallery",
-            label: galleryLabel,
-            description: "Choose one or more images",
-          },
-          {
-            source: "files",
-            label: "Files",
-            description: "Choose a document or image",
-          },
-        ]}
         onClose={() => setUploadSheetVisible(false)}
         onSelect={handleScanSource}
       />
@@ -376,10 +353,6 @@ const styles = StyleSheet.create({
   simulatedText: {
     fontSize: 11,
     fontWeight: "700",
-  },
-  manualButton: {
-    marginTop: 16,
-    marginHorizontal: Spacing.section,
   },
   documentList: { marginTop: 16 },
 });

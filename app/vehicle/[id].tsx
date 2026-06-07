@@ -1,4 +1,8 @@
 import { DocumentCard } from "@/components/documents/document-card";
+import {
+  DocumentImportSheet,
+  type DocumentSource,
+} from "@/components/documents/document-import-sheet";
 import { ThemedText } from "@/components/themed-text";
 import { TicketCard } from "@/components/tickets/ticket-card";
 import { Card } from "@/components/ui/card";
@@ -43,6 +47,15 @@ export default function VehicleDetailScreen() {
 
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [importSheetVisible, setImportSheetVisible] = useState(false);
+
+  function handleImportSource(source: DocumentSource) {
+    setImportSheetVisible(false);
+    router.push({
+      pathname: "/scan",
+      params: { source },
+    });
+  }
 
   if (!vehicle) {
     return (
@@ -163,7 +176,7 @@ export default function VehicleDetailScreen() {
           <Text style={[styles.sectionTitle, { color: c.text }]}>
             Documents ({docs.length})
           </Text>
-          <TouchableOpacity onPress={() => router.push("/document/add")}>
+          <TouchableOpacity onPress={() => setImportSheetVisible(true)}>
             <IconSymbol name="plus.circle.fill" size={22} color={c.tint} />
           </TouchableOpacity>
         </View>
@@ -176,7 +189,7 @@ export default function VehicleDetailScreen() {
             title="No documents"
             subtitle="Add a document for this vehicle so renewals, reminders, and policy details stay connected."
             actionLabel="Add Document"
-            onAction={() => router.push("/document/add")}
+            onAction={() => setImportSheetVisible(true)}
           />
         )}
 
@@ -215,6 +228,12 @@ export default function VehicleDetailScreen() {
         onCancel={() => {
           if (!deleting) setShowDelete(false);
         }}
+      />
+
+      <DocumentImportSheet
+        visible={importSheetVisible}
+        onClose={() => setImportSheetVisible(false)}
+        onSelect={handleImportSource}
       />
     </SafeAreaView>
   );

@@ -1,13 +1,13 @@
+import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { ExpiryIndicator } from "@/components/ui/expiry-indicator";
 import { Header } from "@/components/ui/header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { AccentColor, Colors, Radius, Shadows, Spacing, StatusColors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
-    signInWithApple,
-    signInWithGoogle,
-    signOutUser,
+  signInWithApple,
+  signInWithGoogle,
+  signOutUser,
 } from "@/services/firebase/auth-service";
 import { haptics } from "@/services/haptics";
 import { useAuthStore, useLicenseStore } from "@/store";
@@ -15,15 +15,15 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    ActionSheetIOS,
-    Alert,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActionSheetIOS,
+  ActivityIndicator,
+  Alert,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 type MenuItem = {

@@ -1,5 +1,5 @@
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { AnimatedPressable } from "@/components/ui/animated-pressable";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Radius, Spacing, StatusColors, Type } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Vehicle } from "@/models";
@@ -9,6 +9,7 @@ import { router } from "expo-router";
 import React from "react";
 import {
   Animated,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -42,11 +43,17 @@ const TABS: { key: CarHeaderTab; label: string }[] = [
   // { key: "appointments", label: "APPOINTMENTS" },
 ];
 
-function getInitials(displayName: string | null | undefined): string {
-  if (!displayName) return "?";
-  const parts = displayName.trim().split(/\s+/);
+function getInitials(nameOrEmail: string | null | undefined): string | null {
+  if (!nameOrEmail) return null;
+  const value = nameOrEmail.trim();
+  if (!value) return null;
+
+  const namePart = value.split("@")[0];
+  const parts = namePart.split(/[\s._-]+/).filter(Boolean);
+  if (parts.length === 0) return null;
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
 export function CarHeader({
@@ -69,8 +76,8 @@ export function CarHeader({
   const vehicleName = vehicle
     ? `${vehicle.make.toUpperCase()} ${vehicle.model.toUpperCase()}`
     : "NO VEHICLE";
+  const userInitials = getInitials(user?.displayName ?? user?.email);
 
-  const initials = getInitials(user?.displayName);
   const hasPrev = activeIndex > 0;
   const hasNext = activeIndex < vehicles.length - 1;
   const nameRowHeight = activeScrollY.interpolate({
@@ -96,7 +103,7 @@ export function CarHeader({
 
   return (
     <SafeAreaView
-      edges={["top"]}
+      edges={[ Platform.OS !== "ios" ? "top" : "bottom" ]}
       style={[styles.container, { backgroundColor: c.background }]}
     >
     <View style={[styles.container, { backgroundColor: c.background }]}>
@@ -136,12 +143,16 @@ export function CarHeader({
           <AnimatedPressable
             onPress={() => router.push("/settings")}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={[styles.avatar, { backgroundColor: c.tint }]}
+            style={[styles.settingsButton, { backgroundColor: c.tint }]}
             pressedScale={0.92}
           >
-            <Text style={[styles.avatarText, { color: c.background }]}> 
-              {initials}
-            </Text>
+            {userInitials ? (
+              <Text style={[styles.settingsInitials, { color: c.background }]}>
+                {userInitials}
+              </Text>
+            ) : (
+              <IconSymbol name="gearshape.fill" size={20} color={c.background} />
+            )}
           </AnimatedPressable>
         </View>
       </View>
@@ -294,17 +305,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.8,
   },
-  avatar: {
+  settingsButton: {
     width: 40,
     height: 40,
-    borderRadius: Radius.sm,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: {
-    fontSize: 14,
-    fontWeight: "700",
-    letterSpacing: 0.5,
+  settingsInitials: {
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 0,
   },
 
   // Name row
