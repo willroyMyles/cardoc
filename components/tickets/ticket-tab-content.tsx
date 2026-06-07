@@ -11,6 +11,7 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   FlatList,
+  FlatListProps,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,6 +27,11 @@ const FILTERS: Array<{ key: TicketStatus | "all"; label: string }> = [
   { key: "dismissed", label: "Dismissed" },
 ];
 
+interface TicketTabContentProps {
+  onScroll?: FlatListProps<Ticket>["onScroll"];
+  scrollEventThrottle?: FlatListProps<Ticket>["scrollEventThrottle"];
+}
+
 function formatMoney(currency: string, amount: number): string {
   return `${currency} ${amount.toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -33,13 +39,17 @@ function formatMoney(currency: string, amount: number): string {
   })}`;
 }
 
-export function TicketTabContent() {
+export function TicketTabContent({
+  onScroll,
+  scrollEventThrottle = 16,
+}: TicketTabContentProps = {}) {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const tickets = useTicketsStore((s) => s.tickets);
   const deleteTicket = useTicketsStore((s) => s.deleteTicket);
   const getVehicle = useVehiclesStore((s) => s.getVehicle);
   const [filter, setFilter] = useState<TicketStatus | "all">("all");
+  const [showInsights, setShowInsights] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   const filtered =
@@ -65,16 +75,31 @@ export function TicketTabContent() {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={[styles.sectionTitle, { color: c.subtext }]}>TICKETS</Text>
-        <TouchableOpacity
-          style={[styles.lookupBtn, { backgroundColor: c.text }]}
-          onPress={() => router.push("/ticket/lookup")}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.lookupBtnText, { color: c.background }]}>Lookup</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={[
+              styles.secondaryBtn,
+              { backgroundColor: c.card, borderColor: c.border },
+            ]}
+            onPress={() => setShowInsights(true)}
+            activeOpacity={0.85}
+          >
+            <IconSymbol name="chart.bar.fill" size={13} color={c.text} />
+            <Text style={[styles.secondaryBtnText, { color: c.text }]}>
+              Insight
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.lookupBtn, { backgroundColor: c.text }]}
+            onPress={() => router.push("/ticket/lookup")}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.lookupBtnText, { color: c.background }]}>Lookup</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <View style={[styles.summaryCard, { backgroundColor: c.card, borderColor: c.border }]}>
+      {/* <View style={[styles.summaryCard, { backgroundColor: c.card, borderColor: c.border }]}>
         <View style={styles.summaryItem}>
           <View style={[styles.summaryIcon, { backgroundColor: c.background }]}>
             <IconSymbol name="ticket.fill" size={15} color={c.tint} />
@@ -100,11 +125,14 @@ export function TicketTabContent() {
             </Text>
           </View>
         </View>
-      </View>
+      </View> */}
 
       <TicketAggregator
         items={filtered}
         fields={SAVED_TICKET_FIELDS}
+        expanded={showInsights}
+        onExpandedChange={setShowInsights}
+        showCollapsedControl={false}
         getFieldValue={(ticket: Ticket, key) => {
           switch (key) {
             case "amount":
@@ -162,6 +190,8 @@ export function TicketTabContent() {
 
       <FlatList
         data={filtered}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
         keyExtractor={(ticket) => ticket.id}
         renderItem={({ item }) => {
           return (
@@ -197,6 +227,20 @@ export function TicketTabContent() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  secondaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+  },
+  secondaryBtnText: { fontSize: 13, fontWeight: "700" },
   lookupBtn: {
     flexDirection: "row",
     alignItems: "center",

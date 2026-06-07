@@ -13,6 +13,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
   FlatList,
+  Platform,
   SafeAreaView,
   StyleSheet,
   TouchableOpacity,
@@ -23,6 +24,8 @@ export default function VehiclesTab() {
   const { backTo } = useLocalSearchParams<{ backTo?: string }>();
   const vehicles = useVehiclesStore((s) => s.vehicles);
   const [scannerSheetVisible, setScannerSheetVisible] = useState(false);
+  const galleryLabel =
+    Platform.OS === "ios" ? "Choose from Photos" : "Choose from Gallery";
 
   function handleScannerSource(source: DocumentSource) {
     setScannerSheetVisible(false);
@@ -75,8 +78,8 @@ export default function VehiclesTab() {
         subtitle="Vehicles are created from an accompanying document."
         options={[
           { source: "camera", label: "Scan Document" },
-          { source: "gallery", label: "Choose from Gallery" },
-          { source: "files", label: "Choose File" },
+          { source: "gallery", label: galleryLabel },
+          { source: "files", label: "Choose Files" },
         ]}
         onClose={() => setScannerSheetVisible(false)}
         onSelect={handleScannerSource}

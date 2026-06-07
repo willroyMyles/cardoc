@@ -1,7 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Header } from "@/components/ui/header";
-import { AccentColor, Colors, Radius, Spacing, Type } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Radius } from "@/constants/theme";
 import {
   detectAndExtractDocumentFromParts,
   uriToInlineDataPart,
@@ -13,11 +11,12 @@ import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
+  InteractionManager,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -26,7 +25,7 @@ import {
   View,
 } from "react-native";
 
-type InputMode = "chooser" | "camera" | "preview";
+type InputMode = "picker" | "camera" | "preview";
 
 interface CapturedItem {
   id: string;
@@ -36,21 +35,70 @@ interface CapturedItem {
   converting: boolean;
 }
 
+type PickedFile = {
+  uri: string;
+  mimeType: string;
+};
+
 function makeId() {
   return Math.random().toString(36).slice(2);
 }
 
+function makeCapturedItem({ uri, mimeType }: PickedFile): CapturedItem {
+  return {
+    id: makeId(),
+    uri,
+    mimeType,
+    part: null,
+    converting: true,
+  };
+}
+
+function parsePickedFiles(value: string | string[] | undefined): PickedFile[] {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return [];
+
+  try {
+    const files = JSON.parse(raw);
+    if (!Array.isArray(files)) return [];
+
+    return files.filter(
+      (file): file is PickedFile =>
+        typeof file?.uri === "string" &&
+        typeof file?.mimeType === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+function waitForPickerPresentation() {
+  return new Promise<void>((resolve) => {
+    InteractionManager.runAfterInteractions(() => {
+      setTimeout(resolve, 150);
+    });
+  });
+}
+
 export default function ScanScreen() {
-  const scheme = useColorScheme() ?? "light";
-  const c = Colors[scheme];
   const country = useSettingsStore((s) => s.country);
   const [permission, requestPermission] = useCameraPermissions();
-  const [mode, setMode] = useState<InputMode>("chooser");
-  const [items, setItems] = useState<CapturedItem[]>([]);
+  const params = useLocalSearchParams();
+  const source = Array.isArray(params.source) ? params.source[0] : params.source;
+  const importedFiles = useMemo(
+    () => parsePickedFiles(params.files),
+    [params.files],
+  );
+  const isPickerSource = source === "gallery" || source === "files";
+  const [mode, setMode] = useState<InputMode>(() =>
+    importedFiles.length > 0 ? "preview" : isPickerSource ? "picker" : "camera",
+  );
+  const [items, setItems] = useState<CapturedItem[]>(() =>
+    importedFiles.map(makeCapturedItem),
+  );
   const [processing, setProcessing] = useState(false);
   const [pickerTriggered, setPickerTriggered] = useState(false);
   const cameraRef = useRef<CameraView>(null);
-  const params = useLocalSearchParams();
 
   // ── Eagerly convert a URI to InlineDataPart and update state ───────────────
   const startConversion = useCallback(
@@ -77,13 +125,7 @@ export default function ScanScreen() {
 
   const addItems = useCallback(
     (files: { uri: string; mimeType: string }[]) => {
-      const newItems: CapturedItem[] = files.map(({ uri, mimeType }) => ({
-        id: makeId(),
-        uri,
-        mimeType,
-        part: null,
-        converting: true,
-      }));
+      const newItems: CapturedItem[] = files.map(makeCapturedItem);
       setItems((prev) => [...prev, ...newItems]);
       newItems.forEach(({ id, uri, mimeType }) =>
         startConversion(id, uri, mimeType),
@@ -97,6 +139,7 @@ export default function ScanScreen() {
 
   // ── Open camera ────────────────────────────────────────────────────────────
   const openCamera = useCallback(async () => {
+    setMode("camera");
     if (!permission?.granted) {
       const { granted } = await requestPermission();
       if (!granted) {
@@ -104,21 +147,26 @@ export default function ScanScreen() {
           "Permission required",
           "Camera access is needed to take a photo.",
         );
+        router.back();
         return;
       }
     }
-    setMode("camera");
   }, [permission?.granted, requestPermission]);
 
   // ── Pick multiple photos from library ──────────────────────────────────────
   const handlePickPhoto = useCallback(async () => {
+    setMode("picker");
+    await waitForPickerPresentation();
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.9,
       allowsEditing: false,
       allowsMultipleSelection: true,
     });
-    if (result.canceled || !result.assets?.length) return;
+    if (result.canceled || !result.assets?.length) {
+      router.back();
+      return;
+    }
     addItems(
       result.assets.map((a) => ({ uri: a.uri, mimeType: "image/jpeg" })),
     );
@@ -127,12 +175,17 @@ export default function ScanScreen() {
 
   // ── Pick file (PDF / image) ────────────────────────────────────────────────
   const handlePickFile = useCallback(async () => {
+    setMode("picker");
+    await waitForPickerPresentation();
     const result = await DocumentPicker.getDocumentAsync({
       type: ["application/pdf", "image/*"],
       copyToCacheDirectory: true,
       multiple: true,
     });
-    if (result.canceled || !result.assets?.length) return;
+    if (result.canceled || !result.assets?.length) {
+      router.back();
+      return;
+    }
     addItems(
       result.assets.map((a) => ({
         uri: a.uri,
@@ -144,20 +197,32 @@ export default function ScanScreen() {
 
   useEffect(() => {
     if (pickerTriggered) return;
-    const source = params.source as string | undefined;
-    if (!source) return;
     const runPicker = async () => {
       setPickerTriggered(true);
-      if (source === "gallery") {
+      if (importedFiles.length > 0) {
+        items.forEach(({ id, uri, mimeType }) =>
+          startConversion(id, uri, mimeType),
+        );
+        setMode("preview");
+      } else if (source === "gallery") {
         await handlePickPhoto();
       } else if (source === "files") {
         await handlePickFile();
-      } else if (source === "camera") {
+      } else {
         await openCamera();
       }
     };
     runPicker();
-  }, [params.source, pickerTriggered, handlePickFile, handlePickPhoto, openCamera]);
+  }, [
+    importedFiles.length,
+    items,
+    pickerTriggered,
+    source,
+    startConversion,
+    handlePickFile,
+    handlePickPhoto,
+    openCamera,
+  ]);
 
   // ── Camera capture (adds to list, stays in camera mode) ───────────────────
   const handleCapture = async () => {
@@ -209,70 +274,12 @@ export default function ScanScreen() {
   const anyConverting = items.some((it) => it.converting);
   const canProcess = items.length > 0 && !anyConverting && !processing;
 
-  // ── Chooser state ──────────────────────────────────────────────────────────
-  if (mode === "chooser") {
+  // ── Picker launch state ────────────────────────────────────────────────────
+  if (mode === "picker") {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
-        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-        <Header title="Scan Document" />
-
-        <View style={styles.chooserBody}>
-          <TouchableOpacity
-            style={[
-              styles.choiceBtn,
-              { backgroundColor: c.card, borderColor: c.border },
-            ]}
-            onPress={openCamera}
-            activeOpacity={0.75}
-          >
-            <View style={styles.choiceIcon}>
-              <IconSymbol name="camera.fill" size={26} color={AccentColor} />
-            </View>
-            <View style={styles.choiceText}>
-              <Text style={[styles.choiceBtnLabel, { color: c.text }]}>Camera</Text>
-              <Text style={[styles.choiceBtnSub, { color: c.subtext }]}>
-                Take one or more photos of a document
-              </Text>
-            </View>
-            <IconSymbol name="chevron.right" size={16} color={c.subtext} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.choiceBtn,
-              { backgroundColor: c.card, borderColor: c.border },
-            ]}
-            onPress={handlePickPhoto}
-            activeOpacity={0.75}
-          >
-            <View style={styles.choiceIcon}>
-              <IconSymbol name="photo.fill" size={26} color={AccentColor} />
-            </View>
-            <View style={styles.choiceText}>
-              <Text style={[styles.choiceBtnLabel, { color: c.text }]}>Photo Library</Text>
-              <Text style={[styles.choiceBtnSub, { color: c.subtext }]}>Select one or more photos</Text>
-            </View>
-            <IconSymbol name="chevron.right" size={16} color={c.subtext} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.choiceBtn,
-              { backgroundColor: c.card, borderColor: c.border },
-            ]}
-            onPress={handlePickFile}
-            activeOpacity={0.75}
-          >
-            <View style={styles.choiceIcon}>
-              <IconSymbol name="doc.fill" size={26} color={AccentColor} />
-            </View>
-            <View style={styles.choiceText}>
-              <Text style={[styles.choiceBtnLabel, { color: c.text }]}>Choose File</Text>
-              <Text style={[styles.choiceBtnSub, { color: c.subtext }]}>Import PDF or image files</Text>
-            </View>
-            <IconSymbol name="chevron.right" size={16} color={c.subtext} />
-          </TouchableOpacity>
-        </View>
+      <SafeAreaView style={[styles.container, styles.pickerLaunchContainer]}>
+        <StatusBar style="light" />
+        <ActivityIndicator color="#1A1A1A" size="small" />
       </SafeAreaView>
     );
   }
@@ -286,7 +293,7 @@ export default function ScanScreen() {
           <TouchableOpacity
             onPress={() => {
               setItems([]);
-              setMode("chooser");
+              router.back();
             }}
             style={styles.closeBtn}
           >
@@ -381,7 +388,7 @@ export default function ScanScreen() {
         <View style={styles.topBar}>
           <TouchableOpacity
             onPress={() =>
-              items.length > 0 ? setMode("preview") : setMode("chooser")
+              items.length > 0 ? setMode("preview") : router.back()
             }
             style={styles.closeBtn}
           >
@@ -488,6 +495,11 @@ function Corner({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
+  pickerLaunchContainer: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    justifyContent: "center",
+  },
   overlay: { flex: 1 },
   topBar: {
     flexDirection: "row",
@@ -660,30 +672,4 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   processBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  // Chooser state styles
-  chooserBody: {
-    flex: 1,
-    paddingHorizontal: Spacing.page,
-    paddingTop: 8,
-    gap: Spacing.rowGap,
-  },
-  choiceBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    padding: Spacing.cardPadding,
-    borderRadius: Radius.card,
-    borderWidth: 1,
-  },
-  choiceIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.tileLg,
-    backgroundColor: "#1A1A1A",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  choiceText: { flex: 1 },
-  choiceBtnLabel: Type.title,
-  choiceBtnSub: { ...Type.body, marginTop: 2 },
 });

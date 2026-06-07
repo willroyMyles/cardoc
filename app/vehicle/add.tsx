@@ -9,6 +9,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  Platform,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -20,6 +21,8 @@ export default function AddVehicleScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const [scannerSheetVisible, setScannerSheetVisible] = useState(true);
+  const galleryLabel =
+    Platform.OS === "ios" ? "Choose from Photos" : "Choose from Gallery";
 
   function handleScannerSource(source: DocumentSource) {
     setScannerSheetVisible(false);
@@ -71,8 +74,8 @@ export default function AddVehicleScreen() {
         subtitle="Choose the accompanying document source."
         options={[
           { source: "camera", label: "Scan Document" },
-          { source: "gallery", label: "Choose from Gallery" },
-          { source: "files", label: "Choose File" },
+          { source: "gallery", label: galleryLabel },
+          { source: "files", label: "Choose Files" },
         ]}
         onClose={() => setScannerSheetVisible(false)}
         onSelect={handleScannerSource}

@@ -136,6 +136,9 @@ interface TicketAggregatorProps<T> {
   fields: AggregatorField[];
   getFieldValue: (item: T, key: string) => unknown;
   getDateValue: (item: T) => string | null | undefined;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
+  showCollapsedControl?: boolean;
 }
 
 export function TicketAggregator<T>({
@@ -143,14 +146,25 @@ export function TicketAggregator<T>({
   fields,
   getFieldValue,
   getDateValue,
+  expanded,
+  onExpandedChange,
+  showCollapsedControl = true,
 }: TicketAggregatorProps<T>) {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
 
-  const [expanded, setExpanded] = useState(false);
+  const [internalExpanded, setInternalExpanded] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [selectedKey, setSelectedKey] = useState(fields[0]?.key ?? "");
+
+  const isExpanded = expanded ?? internalExpanded;
+  const setExpanded = (nextExpanded: boolean) => {
+    if (expanded === undefined) {
+      setInternalExpanded(nextExpanded);
+    }
+    onExpandedChange?.(nextExpanded);
+  };
 
   const field = fields.find((f) => f.key === selectedKey) ?? fields[0];
 
@@ -178,7 +192,9 @@ export function TicketAggregator<T>({
     return aggregate(filteredItems, field, getFieldValue);
   }, [filteredItems, field, getFieldValue]);
 
-  if (!expanded) {
+  if (!isExpanded) {
+    if (!showCollapsedControl) return null;
+
     return (
       <TouchableOpacity
         style={[

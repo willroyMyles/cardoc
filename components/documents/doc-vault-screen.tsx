@@ -11,11 +11,16 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CAR_DOCUMENT_TYPE_LABELS, CarDocument } from "@/models";
 import { cancelDocumentExpiryReminders } from "@/services/notifications/expiry-reminders";
 import { useDocumentsStore, useVehiclesStore } from "@/store";
+import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
+  Platform,
   SafeAreaView,
   ScrollView,
+  ScrollViewProps,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -28,6 +33,11 @@ const SIMULATED_SLIPS = [
   "GEICO Gold Coverage",
 ];
 
+interface DocVaultScreenProps {
+  onScroll?: ScrollViewProps["onScroll"];
+  scrollEventThrottle?: ScrollViewProps["scrollEventThrottle"];
+}
+
 function formatDate(dateString: string) {
   const date = new Date(dateString);
   return date.toLocaleDateString(undefined, {
@@ -37,7 +47,10 @@ function formatDate(dateString: string) {
   });
 }
 
-export function DocVaultScreen() {
+export function DocVaultScreen({
+  onScroll,
+  scrollEventThrottle = 16,
+}: DocVaultScreenProps = {}) {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const documents = useDocumentsStore((s) => s.documents);
@@ -48,6 +61,11 @@ export function DocVaultScreen() {
     null,
   );
   const [uploadSheetVisible, setUploadSheetVisible] = useState(false);
+  const [uploadSheetInstanceKey, setUploadSheetInstanceKey] = useState(0);
+  const uploadSheetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const galleryLabel = Platform.OS === "ios" ? "Photos" : "Gallery";
 
   const expiringDocuments = useMemo(() => {
     const now = new Date();
@@ -82,6 +100,14 @@ export function DocVaultScreen() {
     ? documents.find((document) => document.id === selectedDocumentId) ?? null
     : null;
 
+  useEffect(() => {
+    return () => {
+      if (uploadSheetTimeoutRef.current !== null) {
+        clearTimeout(uploadSheetTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const getVehicleName = (document: CarDocument) => {
     const vehicle = getVehicle(document.vehicleId);
     return vehicle
@@ -94,8 +120,75 @@ export function DocVaultScreen() {
     deleteDocument(id);
   }
 
-  function handleScanSource(source: DocumentSource) {
+  const openUploadSheet = useCallback(() => {
+    if (uploadSheetTimeoutRef.current !== null) {
+      clearTimeout(uploadSheetTimeoutRef.current);
+    }
+
     setUploadSheetVisible(false);
+    uploadSheetTimeoutRef.current = setTimeout(() => {
+      uploadSheetTimeoutRef.current = null;
+      setUploadSheetInstanceKey((key) => key + 1);
+      setUploadSheetVisible(true);
+    }, 0);
+  }, []);
+
+  async function handleScanSource(source: DocumentSource) {
+    setUploadSheetVisible(false);
+
+    if (source === "gallery") {
+      try {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.9,
+          allowsEditing: false,
+          allowsMultipleSelection: true,
+        });
+        if (result.canceled || !result.assets?.length) return;
+
+        router.push({
+          pathname: "/scan",
+          params: {
+            files: JSON.stringify(
+              result.assets.map((asset) => ({
+                uri: asset.uri,
+                mimeType: asset.mimeType ?? "image/jpeg",
+              })),
+            ),
+          },
+        });
+      } catch (error: any) {
+        Alert.alert("Photos Error", String(error?.message ?? error));
+      }
+      return;
+    }
+
+    if (source === "files") {
+      try {
+        const result = await DocumentPicker.getDocumentAsync({
+          type: ["application/pdf", "image/*"],
+          copyToCacheDirectory: true,
+          multiple: true,
+        });
+        if (result.canceled || !result.assets?.length) return;
+
+        router.push({
+          pathname: "/scan",
+          params: {
+            files: JSON.stringify(
+              result.assets.map((asset) => ({
+                uri: asset.uri,
+                mimeType: asset.mimeType ?? "image/jpeg",
+              })),
+            ),
+          },
+        });
+      } catch (error: any) {
+        Alert.alert("Files Error", String(error?.message ?? error));
+      }
+      return;
+    }
+
     router.push({
       pathname: "/scan",
       params: { source },
@@ -104,7 +197,11 @@ export function DocVaultScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}> 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
+      >
         {/* <Text style={[styles.sectionLabel, { color: c.subtext }]}>ACTIVE REMINDERS & WARNINGS</Text>
 
         <Card style={styles.reminderCard}>
@@ -126,7 +223,7 @@ export function DocVaultScreen() {
           <View style={styles.uploadActions}>
             <TouchableOpacity
               style={[styles.uploadButton, { backgroundColor: "#1A1A1A" }]}
-              onPress={() => setUploadSheetVisible(true)}
+              onPress={openUploadSheet}
               activeOpacity={0.85}
             >
               <IconSymbol name="square.and.arrow.up" size={14} color="#fff" />
@@ -198,12 +295,21 @@ export function DocVaultScreen() {
       />
 
       <DocumentSourceSheet
+        key={uploadSheetInstanceKey}
         visible={uploadSheetVisible}
         title="Upload document"
         subtitle="Choose where to import the document from."
         options={[
-          { source: "gallery", label: "Gallery" },
-          { source: "files", label: "File" },
+          {
+            source: "gallery",
+            label: galleryLabel,
+            description: "Choose one or more images",
+          },
+          {
+            source: "files",
+            label: "Files",
+            description: "Choose a document or image",
+          },
         ]}
         onClose={() => setUploadSheetVisible(false)}
         onSelect={handleScanSource}

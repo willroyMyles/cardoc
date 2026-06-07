@@ -4,13 +4,18 @@ import { CarHeader, CarHeaderTab } from "@/components/vehicles/car-header";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useVehiclesStore } from "@/store";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   SafeAreaView,
   StyleSheet,
   Text,
   View
 } from "react-native";
+
+type ScrollHandler = (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
 
 function TabPlaceholder({
   title,
@@ -36,9 +41,23 @@ function TabPlaceholder({
 export default function HomeScreen() {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
+  const scrollY = useRef(new Animated.Value(0)).current;
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<CarHeaderTab>("doc vault");
   const vehicles = useVehiclesStore((s) => s.vehicles);
+
+  const handleContentScroll = useMemo(
+    () =>
+      Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        { useNativeDriver: false },
+      ) as ScrollHandler,
+    [scrollY],
+  );
+
+  useEffect(() => {
+    scrollY.setValue(0);
+  }, [activeTab, scrollY]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -48,11 +67,21 @@ export default function HomeScreen() {
   const renderTabContent = () => {
     return (
       <View style={styles.contentContainer}>
-        {activeTab === "doc vault" && <DocVaultScreen />}
+        {activeTab === "doc vault" && (
+          <DocVaultScreen
+            onScroll={handleContentScroll}
+            scrollEventThrottle={16}
+          />
+        )}
         {/* {activeTab === "maintenance" && <MaintenanceTabContent />}
         {activeTab === "appointments" && <AppointmentsTabContent />}
         {activeTab === "fuel" && <FuelTabContent />} */}
-        {activeTab === "tickets" && <TicketTabContent />}
+        {activeTab === "tickets" && (
+          <TicketTabContent
+            onScroll={handleContentScroll}
+            scrollEventThrottle={16}
+          />
+        )}
 
       </View>
     );
@@ -67,6 +96,7 @@ export default function HomeScreen() {
         onNext={() => {}}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        scrollY={scrollY}
       />
 
       {renderTabContent()}

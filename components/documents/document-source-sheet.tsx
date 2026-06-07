@@ -8,7 +8,7 @@ import {
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export type DocumentSource = "camera" | "gallery" | "files";
 
@@ -37,7 +37,7 @@ const SOURCE_META: Record<
     icon: "camera.fill",
   },
   gallery: {
-    label: "Gallery",
+    label: Platform.OS === "ios" ? "Photos" : "Gallery",
     description: "Choose document photos",
     icon: "photo.fill",
   },
@@ -59,15 +59,26 @@ export function DocumentSourceSheet({
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const pendingSourceRef = useRef<DocumentSource | null>(null);
+  const wasVisibleRef = useRef(false);
+  const isTwoOptionLayout = options.length === 2;
   const snapPoints = useMemo(
-    () => [options.length > 2 ? "44%" : "34%"],
-    [options.length],
+    () => [options.length > 2 ? "44%" : isTwoOptionLayout ? "40%" : "34%"],
+    [isTwoOptionLayout, options.length],
   );
 
   useEffect(() => {
     if (visible) {
-      bottomSheetModalRef.current?.present();
-    } else {
+      wasVisibleRef.current = true;
+      const frame = requestAnimationFrame(() => {
+        bottomSheetModalRef.current?.present();
+      });
+
+      return () => cancelAnimationFrame(frame);
+    }
+
+    if (wasVisibleRef.current) {
+      wasVisibleRef.current = false;
       bottomSheetModalRef.current?.dismiss();
     }
   }, [visible]);
@@ -84,9 +95,19 @@ export function DocumentSourceSheet({
     [],
   );
 
+  const handleDismiss = useCallback(() => {
+    const selectedSource = pendingSourceRef.current;
+    pendingSourceRef.current = null;
+    onClose();
+
+    if (selectedSource) {
+      onSelect(selectedSource);
+    }
+  }, [onClose, onSelect]);
+
   function handleSelect(source: DocumentSource) {
+    pendingSourceRef.current = source;
     bottomSheetModalRef.current?.dismiss();
-    onSelect(source);
   }
 
   return (
@@ -96,7 +117,7 @@ export function DocumentSourceSheet({
       snapPoints={snapPoints}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
-      onDismiss={onClose}
+      onDismiss={handleDismiss}
       backgroundStyle={{ backgroundColor: c.card }}
       handleIndicatorStyle={{ backgroundColor: c.border }}
     >
@@ -119,7 +140,9 @@ export function DocumentSourceSheet({
           </TouchableOpacity>
         </View>
 
-        <View style={styles.options}>
+        <View
+          style={[styles.options, isTwoOptionLayout && styles.optionsHorizontal]}
+        >
           {options.map((option) => {
             const meta = SOURCE_META[option.source];
             return (
@@ -127,6 +150,7 @@ export function DocumentSourceSheet({
                 key={option.source}
                 style={[
                   styles.option,
+                  isTwoOptionLayout && styles.optionHorizontal,
                   { backgroundColor: c.background, borderColor: c.border },
                 ]}
                 onPress={() => handleSelect(option.source)}
@@ -135,15 +159,28 @@ export function DocumentSourceSheet({
                 <View style={[styles.optionIcon, { backgroundColor: c.tint }]}>
                   <IconSymbol name={meta.icon} size={22} color="#fff" />
                 </View>
-                <View style={styles.optionCopy}>
+                <View
+                  style={[
+                    styles.optionCopy,
+                    isTwoOptionLayout && styles.optionCopyHorizontal,
+                  ]}
+                >
                   <Text style={[styles.optionLabel, { color: c.text }]}>
                     {option.label ?? meta.label}
                   </Text>
-                  <Text style={[styles.optionDescription, { color: c.subtext }]}>
+                  <Text
+                    style={[
+                      styles.optionDescription,
+                      isTwoOptionLayout && styles.optionDescriptionHorizontal,
+                      { color: c.subtext },
+                    ]}
+                  >
                     {option.description ?? meta.description}
                   </Text>
                 </View>
-                <IconSymbol name="chevron.right" size={18} color={c.subtext} />
+                {isTwoOptionLayout ? null : (
+                  <IconSymbol name="chevron.right" size={18} color={c.subtext} />
+                )}
               </TouchableOpacity>
             );
           })}
@@ -187,6 +224,9 @@ const styles = StyleSheet.create({
   options: {
     gap: 10,
   },
+  optionsHorizontal: {
+    flexDirection: "row",
+  },
   option: {
     minHeight: 72,
     borderRadius: Radius.surface,
@@ -196,6 +236,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+  },
+  optionHorizontal: {
+    flex: 1,
+    minHeight: 126,
+    flexDirection: "column",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    gap: 10,
   },
   optionIcon: {
     width: 44,
@@ -208,6 +257,10 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
+  optionCopyHorizontal: {
+    flex: 0,
+    alignItems: "center",
+  },
   optionLabel: {
     fontSize: 14,
     fontWeight: "700",
@@ -215,5 +268,8 @@ const styles = StyleSheet.create({
   optionDescription: {
     fontSize: 12,
     lineHeight: 17,
+  },
+  optionDescriptionHorizontal: {
+    textAlign: "center",
   },
 });

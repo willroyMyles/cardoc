@@ -178,6 +178,7 @@ export default function DashboardOverview() {
   const [bannerVisible, setBannerVisible] = useState(false);
   const [uploadSheetVisible, setUploadSheetVisible] = useState(false);
   const pulse = useRef(new Animated.Value(1)).current;
+  const galleryLabel = Platform.OS === "ios" ? "Photos" : "Gallery";
 
   const handleUploadChoice = (choice: "gallery" | "files") => {
     setUploadSheetVisible(false);
@@ -311,7 +312,9 @@ export default function DashboardOverview() {
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: c.tint }]}
-              onPress={() => router.push("/scan")}
+              onPress={() =>
+                router.push({ pathname: "/scan", params: { source: "camera" } })
+              }
               activeOpacity={0.85}
             >
               <Text style={[styles.actionButtonText, { color: "#fff" }]}>Camera</Text>
@@ -345,7 +348,7 @@ export default function DashboardOverview() {
                 onPress={() => handleUploadChoice("gallery")}
                 activeOpacity={0.75}
               >
-                <Text style={[styles.sheetOptionText, { color: c.text }]}>Gallery</Text>
+                <Text style={[styles.sheetOptionText, { color: c.text }]}>{galleryLabel}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.sheetOption, { borderColor: c.border }]}

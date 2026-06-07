@@ -6,6 +6,8 @@ import { useAuthStore } from "@/store";
 import { router } from "expo-router";
 import React from "react";
 import {
+  Animated,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -29,6 +31,7 @@ interface CarHeaderProps {
   activeTab: CarHeaderTab;
   onTabChange: (tab: CarHeaderTab) => void;
   synced?: boolean;
+  scrollY?: Animated.Value;
 }
 
 const TABS: { key: CarHeaderTab; label: string }[] = [
@@ -54,10 +57,13 @@ export function CarHeader({
   activeTab,
   onTabChange,
   synced = true,
+  scrollY,
 }: CarHeaderProps) {
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const user = useAuthStore((s) => s.user);
+  const fallbackScrollY = React.useRef(new Animated.Value(0)).current;
+  const activeScrollY = scrollY ?? fallbackScrollY;
 
   const vehicle = vehicles[activeIndex];
   const vehicleName = vehicle
@@ -67,15 +73,46 @@ export function CarHeader({
   const initials = getInitials(user?.displayName);
   const hasPrev = activeIndex > 0;
   const hasNext = activeIndex < vehicles.length - 1;
+  const nameRowHeight = activeScrollY.interpolate({
+    inputRange: [0, 96],
+    outputRange: [84, 0],
+    extrapolate: "clamp",
+  });
+  const nameRowOpacity = activeScrollY.interpolate({
+    inputRange: [0, 48, 96],
+    outputRange: [1, 0.35, 0],
+    extrapolate: "clamp",
+  });
+  const nameRowTranslateY = activeScrollY.interpolate({
+    inputRange: [0, 96],
+    outputRange: [0, -18],
+    extrapolate: "clamp",
+  });
+  const compactNameOpacity = activeScrollY.interpolate({
+    inputRange: [24, 96],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
 
   return (
-    <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: c.card }]}>
+    <SafeAreaView edges={[ Platform.OS !== "ios" ? "top" : "bottom" ]} style={[styles.container, { backgroundColor: c.card }]}>
     <View style={[styles.container, { backgroundColor: c.card }]}>
       {/* ── Top row ── */}
       <View style={styles.topRow}>
         <Text style={[styles.systemLabel, { color: c.subtext }]}>
           CARDOC
         </Text>
+
+        <Animated.Text
+          style={[
+            styles.compactVehicleName,
+            { color: c.text, opacity: compactNameOpacity },
+          ]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {vehicleName}
+        </Animated.Text>
 
         <View style={styles.topRight}>
           {false && <View style={styles.syncBadge}>
@@ -106,41 +143,52 @@ export function CarHeader({
       </View>
 
       {/* ── Vehicle name row ── */}
-      <View style={styles.nameRow}>
-        <TouchableOpacity
-          onPress={onPrev}
-          disabled={!hasPrev}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <View style={{ borderRadius: 120, padding: 4, height: 48, width: 48, alignItems: "center", justifyContent: "center", backgroundColor: Colors.light.background }}>
-            <IconSymbol
-              name="chevron.left"
+      <Animated.View
+        style={[
+          styles.nameRowClip,
+          {
+            height: nameRowHeight,
+            opacity: nameRowOpacity,
+            transform: [{ translateY: nameRowTranslateY }],
+          },
+        ]}
+      >
+        <View style={styles.nameRow}>
+          <TouchableOpacity
+            onPress={onPrev}
+            disabled={!hasPrev}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <View style={{ borderRadius: 120, padding: 4, height: 48, width: 48, alignItems: "center", justifyContent: "center", backgroundColor: Colors.light.background }}>
+              <IconSymbol
+                name="chevron.left"
+                size={20}
+                color={hasPrev ? c.text : c.border}
+              />
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.vehicleNameWrap}>
+            <Text style={[styles.vehicleName, { color: c.text }]}>
+              {vehicleName}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={onNext}
+            disabled={!hasNext}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <View style= {{borderRadius: 120, marginLeft: -80, padding: 4, height: 48, width: 48, alignItems: "center", justifyContent: "center", backgroundColor: Colors.light.background}}>
+              <IconSymbol
+              name="chevron.right"
               size={20}
-              color={hasPrev ? c.text : c.border}
+              color={hasNext ? c.text : c.border}
             />
-          </View>
-        </TouchableOpacity>
-
-        <View>
-          <Text style={[styles.vehicleName, { color: c.text }]}>
-            {vehicleName}
-          </Text>
+            </View>
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          onPress={onNext}
-          disabled={!hasNext}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <View style= {{borderRadius: 120, marginLeft: -80, padding: 4, height: 48, width: 48, alignItems: "center", justifyContent: "center", backgroundColor: Colors.light.background}}>
-            <IconSymbol
-            name="chevron.right"
-            size={20}
-            color={hasNext ? c.text : c.border}
-          />
-          </View>
-        </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* ── Tab row ── */}
       <View style={styles.tabRow}>
@@ -187,6 +235,15 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 4,
     gap: 10,
+  },
+  compactVehicleName: {
+    flex: 1,
+    marginHorizontal: 10,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textAlign: "center",
+    textTransform: "uppercase",
   },
 
   // Top row
@@ -244,15 +301,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
+  nameRowClip: {
+    overflow: "hidden",
+  },
+  vehicleNameWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
   arrowBtn: {
     padding: 4,
   },
 
   vehicleName: {
-    maxWidth: '70%',
     lineHeight: 30,
     flexShrink: 1,
-    flexGrow: 1,
     flexWrap: "wrap",
     textAlign: "left",
     fontSize: 30,
